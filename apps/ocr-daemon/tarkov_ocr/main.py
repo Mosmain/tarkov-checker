@@ -17,7 +17,6 @@ def on_new_screenshot(path: Path):
 
     if text:
         print(f"🔤 Распознанный текст: {text}")
-        # cropped.show()
         loop.call_soon_threadsafe(asyncio.create_task, push_item_name(text))
     else:
         print("❌ Текст не распознан")
@@ -27,11 +26,7 @@ def run_watcher():
 
 def main():
     print("🔄 Запуск OCR-демона и WebSocket-сервера...")
-
-    # Запускаем watcher в отдельном потоке
     threading.Thread(target=run_watcher, daemon=True).start()
-
-    # Запускаем WebSocket-сервер (асинхронно, в основном потоке)
     loop.run_until_complete(run_websocket_server())
 
 if __name__ == "__main__":
