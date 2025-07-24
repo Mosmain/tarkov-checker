@@ -1,0 +1,10 @@
+requests
+pillow
+rapidfuzz
+watchdog
+python-dotenv
+easyocr
+pyautogui
+numpy
+opencv-python
+websockets

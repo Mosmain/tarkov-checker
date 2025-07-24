@@ -1,2 +1,11 @@
+# Node
 node_modules
 .turbo
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+data
+dump
