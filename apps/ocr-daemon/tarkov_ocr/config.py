@@ -16,3 +16,5 @@ ITEMS_CACHE_PATH = Path("data") / "items.json"
 
 # Интервал отслеживания файлов (сек)
 WATCH_INTERVAL_SECONDS = 1.5
+
+LOG_PATH = "D:\EFT\Logs"

@@ -6,10 +6,19 @@ from pathlib import Path
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from tarkov_ocr import config
+from tarkov_ocr.map_finder import LocationFinder
+from threading import Thread
 
 connected_clients = set()
 latest_payload = {}
 
+def on_change(map_name: str):
+    print("New map:", map_name)
+    asyncio.run_coroutine_threadsafe(broadcast_to_clients({"type": "location", "map": map_name}), loop)
+
+def start_location_finder():
+    finder = LocationFinder(path=config.LOG_PATH, interval=5)
+    finder.startWatch(on_change=on_change)
 
 def parse_screenshot_name(filename: str) -> dict | None:
     name = Path(filename).stem
@@ -36,10 +45,19 @@ def parse_screenshot_name(filename: str) -> dict | None:
         print(f"[parse error] {filename}: {e}")
         return None
 
+last_sent_payload = {}
 
 async def broadcast_to_clients(data: dict) -> None:
+    global last_sent_payload
     if not connected_clients:
         return
+
+    # Сравниваем данные (например, с округлением или сортировкой)
+    if data == last_sent_payload:
+        print("🔁 Пропускаем отправку — данные не изменились.")
+        return
+
+    last_sent_payload = data.copy()
     message = json.dumps(data, ensure_ascii=False)
     print(f"📢 Отправляем клиентам: {message}")
     tasks = [asyncio.create_task(client.send(message)) for client in connected_clients]
@@ -76,7 +94,6 @@ async def websocket_handler(websocket):
     finally:
         connected_clients.remove(websocket)
 
-
 async def run_websocket_server():
     print(f"🌐 WebSocket-сервер запущен на ws://{config.WS_HOST}:{config.WS_PORT}")
     print("🛠️ Ожидаем подключения клиентов...")
@@ -85,6 +102,9 @@ async def run_websocket_server():
     observer.schedule(ScreenshotCreatedHandler(), config.SCREENSHOTS_DIR, recursive=False)
     observer.start()
 
+    # 🔥 Запускаем мониторинг локации в отдельном потоке
+    Thread(target=start_location_finder, daemon=True).start()
+
     async with websockets.serve(websocket_handler, config.WS_HOST, config.WS_PORT):
         try:
             while True:
@@ -92,6 +112,7 @@ async def run_websocket_server():
         except KeyboardInterrupt:
             observer.stop()
         observer.join()
+
 
 
 loop = asyncio.new_event_loop()
