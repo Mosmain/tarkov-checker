@@ -13,6 +13,7 @@ WS_PORT = 8765
 
 # Путь к кэшу с предметами
 ITEMS_CACHE_PATH = Path("data") / "items.json"
+CACHE_TTL = 60 * 60 * 24  # 24 часа
 
 # Интервал отслеживания файлов (сек)
 WATCH_INTERVAL_SECONDS = 1.5

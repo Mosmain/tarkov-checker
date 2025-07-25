@@ -1,4 +1,4 @@
-from tarkov_ocr import watcher, mouse, cropper, ocr
+from tarkov_ocr import watcher, mouse, cropper, ocr, items
 from tarkov_ocr.ws import run_websocket_server, loop, push_item_name
 from pathlib import Path
 import threading
@@ -25,6 +25,10 @@ def run_watcher():
     watcher.start_watcher(on_new_screenshot)
 
 def main():
+    print("🧠 Загрузка списка предметов Tarkov...")
+    item_names = items.load_items()
+    print(f"✅ Загружено {len(item_names)} предметов")
+
     print("🔄 Запуск OCR-демона и WebSocket-сервера...")
     threading.Thread(target=run_watcher, daemon=True).start()
     loop.run_until_complete(run_websocket_server())
