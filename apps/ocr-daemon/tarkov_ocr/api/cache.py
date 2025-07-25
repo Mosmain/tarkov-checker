@@ -2,7 +2,7 @@ import json
 import time
 from pathlib import Path
 from tarkov_ocr.core import config
-from tarkov_ocr.api.tarkov import fetch_item_names
+from tarkov_ocr.api.items import fetch_item_names
 
 def is_cache_fresh(path: Path) -> bool:
     return path.exists() and (time.time() - path.stat().st_mtime < config.CACHE_TTL)

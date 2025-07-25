@@ -1,17 +1,18 @@
 import requests
-from typing import Any
-from tarkov_ocr.api.schema import QUERY_ITEM_NAMES
+from tarkov_ocr.api.constants import TARKOV_API_URL
 
-TARKOV_API_URL = "https://api.tarkov.dev/graphql"
-
-def fetch_item_names() -> list[str]:
+def graphql_request(query: str, variables: dict | None = None) -> dict:
     try:
-        response = requests.post(TARKOV_API_URL, json={"query": QUERY_ITEM_NAMES})
+        payload = {"query": query}
+        if variables:
+            payload["variables"] = variables
+
+        response = requests.post(TARKOV_API_URL, json=payload)
         response.raise_for_status()
+        return response.json()
     except requests.RequestException as e:
         print(f"❌ Ошибка при запросе к Tarkov API: {e}")
         raise
 
-    data: dict[str, Any] = response.json()
-    items_data = data["data"]["items"]
-    return [item["name"] for item in items_data]
+def extract_items(response_data: dict) -> list[dict]:
+    return response_data.get("data", {}).get("items", [])

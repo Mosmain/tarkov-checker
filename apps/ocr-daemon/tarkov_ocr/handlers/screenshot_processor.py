@@ -7,6 +7,7 @@ from tarkov_ocr.handlers import cropper, mouse, ocr, screenshot
 from tarkov_ocr.utils.filesystem import wait_for_file_ready
 from tarkov_ocr.ws import loop
 from tarkov_ocr.ws.dispatcher import broadcast_to_clients
+from tarkov_ocr.api.item import fetch_item_details
 
 class ScreenshotProcessor:
     def __init__(self, item_names: Sequence[str]):
@@ -41,8 +42,16 @@ class ScreenshotProcessor:
         if match:
             name, score = match
             print(f"🎯 Совпадение: {name} ({score:.1f}%)")
-            payload["item"] = name
+
+            item_details = fetch_item_details(name)
+
+            if item_details:
+                payload["item"] = item_details
+                print(f"📦 Детали предмета получены: {item_details['name']}")
+            else:
+                print("⚠️ Не удалось получить детали предмета")
         else:
             print("❌ Совпадений не найдено")
+
 
         loop.call_soon_threadsafe(asyncio.create_task, broadcast_to_clients(payload))
