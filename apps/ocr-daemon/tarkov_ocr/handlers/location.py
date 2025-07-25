@@ -1,6 +1,6 @@
 import asyncio
-from tarkov_ocr import config
-from tarkov_ocr.map_finder import LocationFinder
+from tarkov_ocr.core import config
+from tarkov_ocr.handlers.map_finder import LocationFinder
 from tarkov_ocr.ws.dispatcher import broadcast_to_clients
 from tarkov_ocr.ws.state import loop
 

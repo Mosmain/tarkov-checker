@@ -2,7 +2,7 @@
 import pyautogui
 from PIL import Image
 from pathlib import Path
-from tarkov_ocr import config
+from tarkov_ocr.core import config
 import numpy as np
 import cv2
 

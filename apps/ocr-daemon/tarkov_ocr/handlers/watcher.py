@@ -3,24 +3,24 @@ from watchdog.events import FileSystemEventHandler
 from pathlib import Path
 import time
 from typing import Callable
-from tarkov_ocr import config
-
-class ScreenshotHandler(FileSystemEventHandler):
-    def __init__(self, on_new_image: Callable[[Path], None]):
-        super().__init__()
-        self.on_new_image = on_new_image  # ✅ сохраняем в on_new_image
-
-    def on_created(self, event):
-        path = Path(event.src_path)
-        if path.is_file() and path.suffix.lower() in [".png", ".jpg", ".jpeg"]:
-            print(f"🖼️ Найден новый скриншот: {path.name}")
-            self.on_new_image(path)  # ✅ вызываем корректно
+from tarkov_ocr.core import config
 
 def start_watcher(callback: Callable[[Path], None]) -> None:
+    """
+    Запускает наблюдатель за скриншотами.
+    При появлении нового изображения вызывает callback с путём до файла.
+    """
     screenshots_dir = config.SCREENSHOTS_DIR
     screenshots_dir.mkdir(parents=True, exist_ok=True)
 
-    event_handler = ScreenshotHandler(callback)
+    class ScreenshotHandler(FileSystemEventHandler):
+        def on_created(self, event):
+            path = Path(event.src_path)
+            if path.is_file() and path.suffix.lower() in [".png", ".jpg", ".jpeg"]:
+                print(f"🖼️ Найден новый скриншот: {path.name}")
+                callback(path)
+
+    event_handler = ScreenshotHandler()
     observer = Observer()
     observer.schedule(event_handler, str(screenshots_dir), recursive=False)
     observer.start()

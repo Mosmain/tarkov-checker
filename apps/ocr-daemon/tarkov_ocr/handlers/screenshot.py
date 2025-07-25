@@ -1,12 +1,15 @@
 import asyncio
 from pathlib import Path
 import re
-from watchdog.events import FileSystemEventHandler
 
 from tarkov_ocr.ws.dispatcher import broadcast_to_clients
 from tarkov_ocr.ws.state import latest_payload, loop
 
 def parse_screenshot_name(filename: str) -> dict | None:
+    """
+    Извлекает datetime, координаты, кватернионы и доп. значение из имени скриншота.
+    Пример: 2025-07-25_123.45,678.90,101.11_0.12,0.34,0.56,0.78_someExtraValue.png
+    """
     name = Path(filename).stem
     parts = name.split("_")
 
@@ -31,20 +34,19 @@ def parse_screenshot_name(filename: str) -> dict | None:
         print(f"[❌ parse error] {filename}: {e}")
         return None
 
-class ScreenshotCreatedHandler(FileSystemEventHandler):
-    def on_created(self, event):
-        if event.is_directory or not event.src_path.lower().endswith(".png"):
-            return
+def handle_screenshot_created(path: Path) -> None:
+    """
+    Обрабатывает новый скриншот: парсит имя файла и отправляет данные по WebSocket.
+    """
+    filename = path.name
+    print(f"📸 Новый скриншот: {filename}")
 
-        filename = Path(event.src_path).name
-        print(f"📸 Новый скриншот: {filename}")
-
-        parsed = parse_screenshot_name(filename)
-        if parsed:
-            latest_payload.clear()
-            latest_payload.update(parsed)
-            print(f"📊 Обновлённые данные: {latest_payload}")
-            loop.call_soon_threadsafe(
-                asyncio.create_task,
-                broadcast_to_clients(latest_payload)
-            )
+    parsed = parse_screenshot_name(filename)
+    if parsed:
+        latest_payload.clear()
+        latest_payload.update(parsed)
+        print(f"📊 Обновлённые данные: {latest_payload}")
+        loop.call_soon_threadsafe(
+            asyncio.create_task,
+            broadcast_to_clients(latest_payload)
+        )
