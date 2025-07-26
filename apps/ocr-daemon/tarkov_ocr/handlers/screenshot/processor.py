@@ -81,6 +81,7 @@ class ScreenshotProcessor:
             await broadcast_error(str(e))
 
         finally:
+            # Удаляем скриншот, смотрим только на настройки последнего клиента
             if get_settings().get("delete_screenshots", False):
                 try:
                     path.unlink()
@@ -92,18 +93,3 @@ class ScreenshotProcessor:
         dump_dir = Path("dump")
         dump_dir.mkdir(exist_ok=True)
         image.save(dump_dir / path.name)
-
-
-
-# 🛠 Если хочешь довести его до production-ready:
-#  Добавь глобальное логгирование;
-
-#  Покрой ключевую логику handlers юнит-тестами;
-
-#  Перенеси параметры в .env/yaml;
-
-#  Внедри линтер (ruff, black, isort);
-
-#  Подключи mypy/pyright.
-
-# Если хочешь — могу помочь настроить всё это по шагам.

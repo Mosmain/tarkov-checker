@@ -4,7 +4,6 @@ from websockets.server import WebSocketServerProtocol
 
 from tarkov_ocr.ws import state
 from tarkov_ocr.core.client_settings import update_settings
-from tarkov_ocr.core.client_settings import update_settings
 
 
 async def websocket_handler(websocket: WebSocketServerProtocol) -> None:
@@ -27,7 +26,6 @@ async def websocket_handler(websocket: WebSocketServerProtocol) -> None:
         print(f"❌ Клиент отключился: {e}")
     finally:
         state.connected_clients.remove(websocket)
-        update_settings(websocket, {})  # сброс настроек
 
 
 def camel_to_snake(name: str) -> str:
@@ -42,9 +40,11 @@ async def handle_message(websocket: WebSocketServerProtocol, message: str) -> No
         print(f"❌ Ошибка парсинга JSON: {message}")
         return
 
-    # Обработка только словарей с настройками
-    if isinstance(data, dict) and "lang" in data and "gameMode" in data:
-        normalized = {camel_to_snake(k): v for k, v in data.items()}
+    msg_type = data.get("type")
+    payload = data.get("data")
+    if msg_type == "settings" and isinstance(payload, dict):
+        # конвертим ключи в snake_case и обновляем настройки
+        normalized = {camel_to_snake(k): v for k, v in payload.items()}
         update_settings(websocket, normalized)
     else:
         print(f"⚠️ Неизвестное сообщение: {data}")
