@@ -15,18 +15,17 @@ class ScreenshotProcessor:
         self.normalized_items = fuzz.prepare_normalized_map(item_names)
 
     def handle(self, path: Path) -> None:
-        # Парсим скриншот -> формируем координатный payload
+        # Пробуем распарсить координаты из имени
         coords = screenshot.parse_screenshot_name(path.name)
-        if not coords:
-            print("❌ Не удалось распарсить имя скриншота")
-            return
+        if coords:
+            print(f"📸 Новый скриншот (с координатами): {path.name}")
+            print(f"📊 Обновлённые данные: {coords}")
+            asyncio.run_coroutine_threadsafe(broadcast_location_update(coords), loop)
+        else:
+            print(f"📸 Новый скриншот (БЕЗ координат): {path.name}")
+            print("ℹ️ Обработка без координат (предположительно: схрон)")
 
-        print(f"📊 Обновлённые данные: {coords}")
-
-        # Сразу отправляем координаты клиенту
-        asyncio.run_coroutine_threadsafe(broadcast_location_update(coords), loop)
-
-        # Дожидаемся полной готовности файла
+        # Дожидаемся готовности файла
         if not wait_for_file_ready(path):
             print("❌ Файл не готов к чтению. Пропуск...")
             return
@@ -40,6 +39,10 @@ class ScreenshotProcessor:
 
         if not ocr_text:
             print("❌ Текст не распознан")
+            dump_dir = Path("dump")
+            dump_dir.mkdir(exist_ok=True)
+            fallback_path = dump_dir / (path.name)
+            cropped.save(fallback_path)
             return
 
         print(f"🔤 OCR: {ocr_text}")

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>WebSocket отладка</title>
+    <style>
+      body {
+        font-family: monospace;
+        background-color: #1e1e1e;
+        color: #dcdcdc;
+        padding: 20px;
+      }
+
+      button {
+        background: #2d2d2d;
+        color: #fff;
+        border: 1px solid #555;
+        padding: 8px 16px;
+        cursor: pointer;
+        margin-right: 10px;
+      }
+      button:hover {
+        background: #444;
+      }
+
+      #status {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 5px;
+        font-weight: bold;
+      }
+      .status-connected {
+        background-color: #228b22;
+        color: #fff;
+      }
+      .status-disconnected {
+        background-color: #b22222;
+        color: #fff;
+      }
+
+      /* Общий контейнер */
+      #layout {
+        display: flex;
+        align-items: flex-start;
+        gap: 40px;
+        margin-top: 30px;
+      }
+
+      /* Левая часть — карточки */
+      #items {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      /* Правая часть — логи */
+      #log {
+        flex: 1;
+        max-height: 90vh;
+        overflow-y: auto;
+        background-color: #2e2e2e;
+        border-left: 4px solid #555;
+        padding: 10px;
+        font-size: 0.9em;
+      }
+
+      .log-entry {
+        margin-bottom: 10px;
+        border-left: 2px solid #888;
+        padding-left: 10px;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      /* 🎴 Карточка предмета */
+      .item-card {
+        background: #2a2a2a;
+        border: 1px solid #444;
+        border-radius: 8px;
+        padding: 16px;
+        max-width: 600px;
+        color: #e0e0e0;
+      }
+
+      .item-header {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+      }
+
+      .item-header img {
+        width: 64px;
+        height: 64px;
+        object-fit: contain;
+        border: 1px solid #555;
+        background: #1c1c1c;
+        border-radius: 4px;
+      }
+
+      .item-header h2 {
+        margin: 0;
+        font-size: 1.2em;
+      }
+
+      .item-types {
+        margin: 4px 0 0;
+        color: #aaa;
+        font-size: 0.9em;
+      }
+
+      .item-description {
+        margin-top: 12px;
+        line-height: 1.4;
+      }
+
+      .item-prices {
+        margin-top: 12px;
+        font-size: 0.95em;
+      }
+      .item-prices p {
+        margin: 4px 0;
+      }
+
+      .item-vendors {
+        margin-top: 12px;
+      }
+      .item-vendors h3 {
+        margin-bottom: 6px;
+        font-size: 1em;
+      }
+      .item-vendors ul {
+        list-style: none;
+        padding-left: 0;
+        margin: 0;
+      }
+      .item-vendors li {
+        margin: 2px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>WebSocket клиент</h1>
+    <button onclick="connect()">🔁 Переподключиться</button>
+    <span id="status" class="status-disconnected">Отключено</span>
+
+      <div id="layout">
+        <div id="items"></div>
+        <div id="log"></div>
+      </div>
+    </body>
+
+    <script>
+      let socket;
+      const logDiv = document.getElementById("log");
+      const statusEl = document.getElementById("status");
+      const itemContainer = document.getElementById("items");
+
+      function log(message) {
+        const div = document.createElement("div");
+        div.className = "log-entry";
+        div.textContent = message;
+        logDiv.prepend(div); // Новые записи сверху
+      }
+
+      function setStatus(connected) {
+        if (connected) {
+          statusEl.textContent = "Подключено";
+          statusEl.className = "status-connected";
+        } else {
+          statusEl.textContent = "Отключено";
+          statusEl.className = "status-disconnected";
+        }
+      }
+
+      function connect() {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+          socket.close();
+        }
+
+        const url = `ws://localhost:8765`; // ← укажи свой IP, если нужно
+        socket = new WebSocket(url);
+
+        socket.addEventListener("open", () => {
+          log(`🟢 Подключено к ${url}`);
+          setStatus(true);
+        });
+
+        socket.addEventListener("message", (event) => {
+          try {
+            const json = JSON.parse(event.data);
+            log(`📨 ${JSON.stringify(json, null, 2)}`);
+
+            if (json.type === "item") {
+              renderItemCard(json.data);
+            }
+          } catch (e) {
+            log(`❌ Ошибка при парсинге: ${event.data}`);
+          }
+        });
+
+        socket.addEventListener("close", () => {
+          log(`🔴 Соединение закрыто`);
+          setStatus(false);
+        });
+
+        socket.addEventListener("error", (err) => {
+          log(`❌ Ошибка WebSocket`);
+          setStatus(false);
+        });
+      }
+
+      function renderItemCard(data) {
+        const vendors = data.sellFor
+          .map(
+            (v) => `<li>${v.vendor.name}: ${v.price.toLocaleString()} ₽</li>`
+          )
+          .join("");
+
+        const avgPrice =
+          data.avg24hPrice != null
+            ? `${data.avg24hPrice.toLocaleString()} ₽`
+            : "–";
+        const basePrice =
+          data.basePrice != null ? `${data.basePrice.toLocaleString()} ₽` : "–";
+        const changePercent =
+          data.changeLast48hPercent != null
+            ? `${data.changeLast48hPercent}%`
+            : "–";
+
+        const html = `
+    <div class="item-card">
+      <div class="item-header">
+        <img src="${data.image512pxLink}" alt="${data.name}" />
+        <div>
+          <h2>${data.name}</h2>
+          <p class="item-types">${data.types.join(" · ")}</p>
+        </div>
+      </div>
+      <p class="item-description">${data.description}</p>
+      <div class="item-prices">
+        <p>💰 Средняя цена за 24ч: <strong>${avgPrice}</strong></p>
+        <p>🏷️ Базовая цена: <strong>${basePrice}</strong></p>
+        <p>📉 Изменение за 48ч: <strong>${changePercent}</strong></p>
+      </div>
+      <div class="item-vendors">
+        <h3>Продавцы:</h3>
+        <ul>${vendors}</ul>
+      </div>
+    </div>
+  `;
+
+        itemContainer.insertAdjacentHTML("afterbegin", html);
+      }
+
+      connect(); // Автозапуск при загрузке
+    </script>
+  </body>
+</html>

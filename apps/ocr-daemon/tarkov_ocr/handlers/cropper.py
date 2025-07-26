@@ -7,11 +7,6 @@ import numpy as np
 import cv2
 
 def crop_around_cursor(image_path: Path, cursor_x: int, cursor_y: int) -> Image.Image:
-    """
-    Умная обрезка области описания предмета Tarkov.
-    Сначала выполняется обычный кроп по курсору,
-    затем через OpenCV вырезается точная область текста.
-    """
     screen_width, _ = pyautogui.size()
     crop_w, crop_h = config.CROP_WIDTH, config.CROP_HEIGHT
 
@@ -32,7 +27,6 @@ def crop_around_cursor(image_path: Path, cursor_x: int, cursor_y: int) -> Image.
         # OpenCV нормализация
         cv_img = cv2.cvtColor(np.array(cropped), cv2.COLOR_RGB2BGR)
         gray = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
-        # С первым значением 10, всё работает нормально, было 50
         _, thresh = cv2.threshold(gray, 10, 255, cv2.THRESH_BINARY_INV)
         contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -47,19 +41,8 @@ def crop_around_cursor(image_path: Path, cursor_x: int, cursor_y: int) -> Image.
             refined_crop = cv_img[y:y+h, x:x+w]
             break
 
-        # Куда сохраняем
-        dump_dir = Path("dump")
-        dump_dir.mkdir(exist_ok=True)
-        dump_path = dump_dir / image_path.name
-
         if refined_crop is not None:
-            cv2.imwrite(str(dump_path), refined_crop)
-            print(f"💾 Точная область сохранена в: {dump_path}")
-            # Вернём как PIL.Image
+            # Возвращаем PIL.Image без сохранения
             return Image.fromarray(cv2.cvtColor(refined_crop, cv2.COLOR_BGR2RGB)).copy()
-        else:
-            print("⚠️ Точная область не найдена, возвращаю исходный кроп.")
-            # fallback: обычный кроп
-            fallback_path = dump_dir / ("fallback_" + image_path.name)
-            cropped.save(fallback_path)
-            return cropped.copy()
+
+        return cropped.copy()
