@@ -1,5 +1,6 @@
 from pathlib import Path
-from PIL.Image import Image  # если используешь PIL
+from PIL.Image import Image
+import os
 
 from tarkov_ocr.api.item import fetch_item_details
 from tarkov_ocr.core.client_settings import get_settings
@@ -46,32 +47,46 @@ class ScreenshotProcessor:
         cropped = self.ctx.crop(path, x, y)
         match = self.identifier.identify(cropped)
 
-        if not match:
-            print("❌ Текст не распознан или совпадений не найдено")
-            await broadcast_error("Не удалось распознать текст предмета")
-            self._dump_failed(path, cropped)
-            return
-
-        name, score, *_ = match
-        print(f"🎯 Совпадение: {name} ({score:.1f}%)")
-        await broadcast_status("fetching", item_name=name)
-
-        if self.cache.is_duplicate(name):
-            cached = self.cache.get_cached()
-            if cached:
-                await broadcast_item_update(cached)
-            return
-
         try:
-            item = fetch_item_details(name, **get_settings())
+            if not match:
+                print("❌ Текст не распознан или совпадений не найдено")
+                await broadcast_error("Не удалось распознать текст предмета")
+                self._dump_failed(path, cropped)
+                return
+
+            name, score, *_ = match
+            print(f"🎯 Совпадение: {name} ({score:.1f}%)")
+            await broadcast_status("fetching", item_name=name)
+
+            if self.cache.is_duplicate(name):
+                cached = self.cache.get_cached()
+                if cached:
+                    await broadcast_item_update(cached)
+                return
+
+            settings = get_settings()
+            item = fetch_item_details(
+                name,
+                lang=settings.get("lang", "en"),
+                game_mode=settings.get("game_mode", "regular"),
+            )
             if item:
                 item_with_status = self.cache.update(item)
                 await broadcast_item_update(item_with_status)
             else:
                 print(f"⚠️ GraphQL вернул пустой ответ для предмета: {name}")
+
         except Exception as e:
             print(f"❌ Ошибка при обработке предмета: {e}")
             await broadcast_error(str(e))
+
+        finally:
+            if get_settings().get("delete_screenshots", False):
+                try:
+                    path.unlink()
+                    print(f"🧹 Скриншот удалён: {path}")
+                except Exception as e:
+                    print(f"❌ Ошибка при удалении скриншота: {e}")
 
     def _dump_failed(self, path: Path, image: Image) -> None:
         dump_dir = Path("dump")

@@ -4,7 +4,8 @@ client_settings: dict[WebSocketServerProtocol, dict] = {}
 
 DEFAULT_SETTINGS = {
     "lang": "en",
-    "game_mode": "regular"
+    "game_mode": "regular",
+    "delete_screenshots": False,
 }
 
 def update_settings(websocket: WebSocketServerProtocol, new_settings: dict) -> None:
