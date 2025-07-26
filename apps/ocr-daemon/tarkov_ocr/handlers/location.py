@@ -1,14 +1,14 @@
 import asyncio
 from tarkov_ocr.core import config
 from tarkov_ocr.handlers.map_finder import LocationFinder
-from tarkov_ocr.ws.dispatcher import broadcast_to_clients
+from tarkov_ocr.ws.dispatcher import broadcast_location_update
 from tarkov_ocr.ws.state import loop
 
 def on_location_change(map_name: str):
     print(f"🗺️ Новая карта: {map_name}")
     loop.call_soon_threadsafe(
         asyncio.create_task,
-        broadcast_to_clients({"type": "location", "map": map_name})
+        broadcast_location_update({"type": "location", "map": map_name})
     )
 
 def start_location_finder():

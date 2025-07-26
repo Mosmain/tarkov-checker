@@ -2,14 +2,10 @@ import asyncio
 from pathlib import Path
 import re
 
-from tarkov_ocr.ws.dispatcher import broadcast_to_clients
-from tarkov_ocr.ws.state import latest_payload, loop
+from tarkov_ocr.ws.dispatcher import broadcast_location_update
+from tarkov_ocr.ws.state import loop
 
 def parse_screenshot_name(filename: str) -> dict | None:
-    """
-    Извлекает datetime, координаты, кватернионы и доп. значение из имени скриншота.
-    Пример: 2025-07-25_123.45,678.90,101.11_0.12,0.34,0.56,0.78_someExtraValue.png
-    """
     name = Path(filename).stem
     parts = name.split("_")
 
@@ -34,19 +30,16 @@ def parse_screenshot_name(filename: str) -> dict | None:
         print(f"[❌ parse error] {filename}: {e}")
         return None
 
-def handle_screenshot_created(path: Path) -> None:
-    """
-    Обрабатывает новый скриншот: парсит имя файла и отправляет данные по WebSocket.
-    """
+def handle_screenshot_created(path: Path) -> dict | None:
     filename = path.name
     print(f"📸 Новый скриншот: {filename}")
 
     parsed = parse_screenshot_name(filename)
     if parsed:
-        latest_payload.clear()
-        latest_payload.update(parsed)
-        print(f"📊 Обновлённые данные: {latest_payload}")
+        print(f"📊 Обновлённые данные: {parsed}")
         loop.call_soon_threadsafe(
             asyncio.create_task,
-            broadcast_to_clients(latest_payload)
+            broadcast_location_update(parsed)
         )
+        return parsed
+    return None
