@@ -1,15 +1,15 @@
-# Храним строки GraphQL-запросов отдельно
+# Храним строки GraphQL-запросов с переменными
 QUERY_ITEM_NAMES = """
-{
-  items(lang: ru, gameMode: pve) {
+query ($lang: LanguageCode, $gameMode: GameMode) {
+  items(lang: $lang, gameMode: $gameMode) {
     name
   }
 }
 """
 
 QUERY_ITEM_DETAILS_BY_NAME = """
-query ($name: String!) {
-  items(name: $name, lang: ru, gameMode: pve) {
+query ($name: String!, $lang: LanguageCode, $gameMode: GameMode) {
+  items(name: $name, lang: $lang, gameMode: $gameMode) {
     name
     description
     types

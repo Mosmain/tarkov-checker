@@ -8,4 +8,4 @@ pyautogui
 numpy
 opencv-python
 websockets
-rapidfuzz
+tenacity

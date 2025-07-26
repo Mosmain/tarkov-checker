@@ -1,70 +1,74 @@
 import json
-import asyncio
-from typing import Literal
+from typing import Any
 
-from .state import connected_clients, last_sent_location, last_sent_item, last_sent_map
-
-MessageType = Literal["location", "item", "map", "error"]
-
-def _make_message(type_: MessageType, data: dict, message: str | None = None) -> str:
-    payload = {
-        "type": type_,
-        "data": data
-    }
-    if message:
-        payload["message"] = message
-    return json.dumps(payload, ensure_ascii=False)
+from tarkov_ocr.ws import state
 
 
-async def _broadcast_json(message: str) -> None:
-    if not connected_clients:
-        return
+async def broadcast_update(type_: str, data: dict[str, Any], *, force: bool = False) -> None:
+    if type_ == "map":
+        if not force and state.last_sent_map is not None and data == state.last_sent_map:
+            return
+        state.last_sent_map = data.copy()
 
-    tasks = [asyncio.create_task(client.send(message)) for client in connected_clients]
-    await asyncio.gather(*tasks, return_exceptions=True)
+    elif type_ == "location":
+        if not force and state.last_sent_location is not None and data == state.last_sent_location:
+            return
+        state.last_sent_location = data.copy()
+
+    message = json.dumps({"type": type_, "data": data}, ensure_ascii=False)
+
+    for client in state.connected_clients.copy():
+        try:
+            await client.send(message)
+        except Exception as e:
+            print(f"❌ Ошибка при отправке клиенту: {e}")
 
 
-async def broadcast_location_update(data: dict) -> None:
-    if data == last_sent_location:
-        print("🔁 Пропускаем отправку координат — данные не изменились.")
-        return
+async def broadcast_location_update(location: dict[str, Any]) -> None:
+    await broadcast_update("location", location)
 
-    last_sent_location.clear()
-    last_sent_location.update(data)
-
-    message = _make_message("location", data)
-    print(f"📢 Отправляем координаты: {message}")
-    await _broadcast_json(message)
-
-
-async def broadcast_item_update(data: dict) -> None:
-    if not data or data == last_sent_item:
-        print("🔁 Пропускаем отправку предмета — данные не изменились.")
-        return
-
-    last_sent_item.clear()
-    last_sent_item.update(data)
-
-    msg_text = f"Предмет: {data.get('name', '[без имени]')}"
-    message = _make_message("item", data)
-    print(f"📦 Отправляем предмет: {msg_text}")
-    await _broadcast_json(message)
 
 async def broadcast_map_update(map_name: str) -> None:
-    if last_sent_map.get("name") == map_name:
-        print("🔁 Пропускаем отправку карты — данные не изменились.")
-        return
+    await broadcast_update("map", {"name": map_name})
 
-    last_sent_map.clear()
-    last_sent_map["name"] = map_name
 
-    data = {"name": map_name}
-    message = _make_message("map", data)
-    print(f"🗺️ Новая карта: {map_name}")
-    await _broadcast_json(message)
+async def broadcast_item_update(item_with_status: dict[str, Any]) -> None:
+    """Отправка информации о предмете, статус уже должен быть установлен (ready/cached)"""
+    message = json.dumps({"type": "item", "data": item_with_status}, ensure_ascii=False)
 
-async def broadcast_error(error_message: str) -> None:
-    error_data = {"code": "generic_error"}  # можно передавать и другие поля
-    message = _make_message("error", error_data, error_message)
-    print(f"❌ Ошибка: {error_message}")
-    await _broadcast_json(message)
+    print(f"📦 Предмет — отправляем с флагом {item_with_status.get('status')}.")
+    print(f"📢 Отправляем item: {message}")
+
+    for client in state.connected_clients.copy():
+        try:
+            await client.send(message)
+        except Exception as e:
+            print(f"❌ Ошибка при отправке предмета клиенту: {e}")
+
+
+async def broadcast_status(event: str, item_name: str) -> None:
+    message = json.dumps(
+        {"type": "status", "data": {"event": event, "item_name": item_name}},
+        ensure_ascii=False,
+    )
+    for client in state.connected_clients.copy():
+        try:
+            await client.send(message)
+        except Exception as e:
+            print(f"❌ Ошибка при отправке статуса клиенту: {e}")
+
+
+async def broadcast_error(message: str) -> None:
+    payload = {
+        "type": "error",
+        "data": {
+            "message": message
+        }
+    }
+
+    json_str = json.dumps(payload, ensure_ascii=False)
+    for client in state.connected_clients.copy():
+        try:
+            await client.send(json_str)
+        except Exception as e:
+            print(f"❌ Ошибка при отправке ошибки клиенту: {e}")

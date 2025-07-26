@@ -1,21 +1,50 @@
+import re
+import json
 from websockets.server import WebSocketServerProtocol
-from .state import connected_clients, last_sent_map
-from .dispatcher import _make_message
+
+from tarkov_ocr.ws import state
+from tarkov_ocr.core.client_settings import update_settings
+from tarkov_ocr.core.client_settings import update_settings
+
 
 async def websocket_handler(websocket: WebSocketServerProtocol) -> None:
     print(f"📶 Подключен клиент: {websocket.remote_address}")
-    connected_clients.add(websocket)
+    state.connected_clients.add(websocket)
 
-    # Отправляем текущую карту сразу после подключения
-    if "name" in last_sent_map:
-        map_payload = _make_message("map", {"name": last_sent_map["name"]})
-        await websocket.send(map_payload)
-        print(f"📤 Отправлена текущая карта: {last_sent_map['name']}")
+    # Отправка последней карты при подключении
+    if state.last_sent_map is not None:
+        message = json.dumps({
+            "type": "map",
+            "data": state.last_sent_map,
+        }, ensure_ascii=False)
+        await websocket.send(message)
+        print(f"📤 Отправлена текущая карта клиенту: {state.last_sent_map}")
 
     try:
-        async for _ in websocket:
-            pass
-    except:
-        print("❌ Клиент отключился")
+        async for message in websocket:
+            await handle_message(websocket, message)
+    except Exception as e:
+        print(f"❌ Клиент отключился: {e}")
     finally:
-        connected_clients.remove(websocket)
+        state.connected_clients.remove(websocket)
+        update_settings(websocket, {})  # сброс настроек
+
+
+def camel_to_snake(name: str) -> str:
+    """Преобразование ключей из camelCase в snake_case"""
+    return re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
+
+
+async def handle_message(websocket: WebSocketServerProtocol, message: str) -> None:
+    try:
+        data = json.loads(message)
+    except json.JSONDecodeError:
+        print(f"❌ Ошибка парсинга JSON: {message}")
+        return
+
+    # Обработка только словарей с настройками
+    if isinstance(data, dict) and "lang" in data and "gameMode" in data:
+        normalized = {camel_to_snake(k): v for k, v in data.items()}
+        update_settings(websocket, normalized)
+    else:
+        print(f"⚠️ Неизвестное сообщение: {data}")
