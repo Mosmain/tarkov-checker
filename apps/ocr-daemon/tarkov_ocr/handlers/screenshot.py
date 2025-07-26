@@ -32,7 +32,6 @@ def parse_screenshot_name(filename: str) -> dict | None:
 
 def handle_screenshot_created(path: Path) -> dict | None:
     filename = path.name
-    print(f"📸 Новый скриншот: {filename}")
 
     parsed = parse_screenshot_name(filename)
     if parsed:

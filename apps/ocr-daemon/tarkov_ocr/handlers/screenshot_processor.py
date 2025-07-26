@@ -21,7 +21,6 @@ class ScreenshotProcessor:
             print("❌ Не удалось распарсить имя скриншота")
             return
 
-        print(f"📸 Новый скриншот: {path.name}")
         print(f"📊 Обновлённые данные: {coords}")
 
         # Сразу отправляем координаты клиенту

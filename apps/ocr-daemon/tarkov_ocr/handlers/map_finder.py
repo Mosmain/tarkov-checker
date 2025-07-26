@@ -44,12 +44,6 @@ class LocationFinder:
         self.interval = max(1, int(interval))
         self._prev: Optional[str] = None
 
-        logging.basicConfig(
-            level=logging.INFO,
-            format="%(asctime)s [%(levelname)s] %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S",
-        )
-
     # ---------------- internal helpers -------------------
     @staticmethod
     def _newest(paths: List[Path]) -> Optional[Path]:
@@ -105,16 +99,8 @@ class LocationFinder:
         on_change : Callable[[str], Awaitable[Any] | None]
             Синхронная функция или async‑функция, принимающая название карты.
         """
-        logging.info(
-            "EFT location monitor started (dir=%s, interval=%ss)",
-            self.logs_dir,
-            self.interval,
-        )
 
         for loc in self.poll():
-            ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            logging.info("[%s] Current Location: %s", ts, loc)
-
             if on_change is None:
                 continue
 

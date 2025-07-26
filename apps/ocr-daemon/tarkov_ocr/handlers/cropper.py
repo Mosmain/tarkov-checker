@@ -12,7 +12,7 @@ def crop_around_cursor(image_path: Path, cursor_x: int, cursor_y: int) -> Image.
     Сначала выполняется обычный кроп по курсору,
     затем через OpenCV вырезается точная область текста.
     """
-    screen_width, screen_height = pyautogui.size()
+    screen_width, _ = pyautogui.size()
     crop_w, crop_h = config.CROP_WIDTH, config.CROP_HEIGHT
 
     with Image.open(image_path) as img:
@@ -54,11 +54,11 @@ def crop_around_cursor(image_path: Path, cursor_x: int, cursor_y: int) -> Image.
 
         if refined_crop is not None:
             cv2.imwrite(str(dump_path), refined_crop)
-            print(f"💾 Refined crop saved to: {dump_path}")
+            print(f"💾 Точная область сохранена в: {dump_path}")
             # Вернём как PIL.Image
             return Image.fromarray(cv2.cvtColor(refined_crop, cv2.COLOR_BGR2RGB)).copy()
         else:
-            print("⚠️ Refined crop not found, returning initial crop.")
+            print("⚠️ Точная область не найдена, возвращаю исходный кроп.")
             # fallback: обычный кроп
             fallback_path = dump_dir / ("fallback_" + image_path.name)
             cropped.save(fallback_path)

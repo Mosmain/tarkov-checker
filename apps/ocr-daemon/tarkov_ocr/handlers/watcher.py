@@ -17,7 +17,7 @@ def start_watcher(callback: Callable[[Path], None]) -> None:
         def on_created(self, event):
             path = Path(event.src_path)
             if path.is_file() and path.suffix.lower() in [".png", ".jpg", ".jpeg"]:
-                print(f"🖼️ Найден новый скриншот: {path.name}")
+                print(f"🕵️ Обнаружен файл: {path.name}")
                 callback(path)
 
     event_handler = ScreenshotHandler()
