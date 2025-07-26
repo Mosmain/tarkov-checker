@@ -1,11 +1,12 @@
 from websockets.server import WebSocketServerProtocol
+from tarkov_ocr.api.constants import DEFAULT_DELETE_SCREENSHOTS, DEFAULT_LANG, DEFAULT_GAME_MODE
 
 client_settings: dict[WebSocketServerProtocol, dict] = {}
 
 DEFAULT_SETTINGS = {
-    "lang": "en",
-    "game_mode": "regular",
-    "delete_screenshots": False,
+    "lang": DEFAULT_LANG,
+    "game_mode": DEFAULT_GAME_MODE,
+    "delete_screenshots": DEFAULT_DELETE_SCREENSHOTS,
 }
 
 def update_settings(websocket: WebSocketServerProtocol, new_settings: dict) -> None:
