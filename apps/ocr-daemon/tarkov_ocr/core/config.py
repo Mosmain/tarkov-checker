@@ -1,7 +1,10 @@
 from pathlib import Path
 
+# Путь к папке с логами
+LOGS_PATH = Path("D:/EFT/Logs")
+
 # Путь к папке со скриншотами
-SCREENSHOTS_DIR = Path.home() / "OneDrive" / "Документы" / "Escape from Tarkov" / "Screenshots"
+SCREENSHOTS_PATH = Path.home() / "OneDrive" / "Документы" / "Escape from Tarkov" / "Screenshots"
 
 # Размер области вокруг мыши
 CROP_WIDTH = 400
@@ -15,4 +18,3 @@ WS_PORT = 8765
 ITEMS_CACHE_PATH = Path("data") / "items.json"
 CACHE_TTL = 60 * 60 * 24  # 24 часа
 
-LOG_PATH = "D:\EFT\Logs"

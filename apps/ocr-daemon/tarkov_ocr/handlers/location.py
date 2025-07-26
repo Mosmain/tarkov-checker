@@ -12,5 +12,5 @@ def on_location_change(map_name: str):
     )
 
 def start_location_finder():
-    finder = LocationFinder(path=config.LOG_PATH, interval=5)
+    finder = LocationFinder(path=config.LOGS_PATH, interval=5)
     finder.startWatch(on_change=on_location_change)

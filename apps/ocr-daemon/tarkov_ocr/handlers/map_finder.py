@@ -10,14 +10,13 @@ from eft_location import LocationFinder
 async def send_to_ws(map_name: str):
     await ws.send({"type": "location", "map": map_name})
 
-LocationFinder(path=LOG_PATH, interval=5).startWatch(on_change=send_to_ws)
+LocationFinder(path=LOGS_PATH, interval=5).startWatch(on_change=send_to_ws)
 ```
 """
 import asyncio
 import logging
 import re
 import time
-from datetime import datetime
 from pathlib import Path
 from typing import Callable, Iterator, List, Optional, Union
 

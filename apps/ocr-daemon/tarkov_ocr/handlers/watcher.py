@@ -10,8 +10,8 @@ def start_watcher(callback: Callable[[Path], None]) -> None:
     Запускает наблюдатель за скриншотами.
     При появлении нового изображения вызывает callback с путём до файла.
     """
-    screenshots_dir = config.SCREENSHOTS_DIR
-    screenshots_dir.mkdir(parents=True, exist_ok=True)
+    screenshots_path = config.SCREENSHOTS_PATH
+    screenshots_path.mkdir(parents=True, exist_ok=True)
 
     class ScreenshotHandler(FileSystemEventHandler):
         def on_created(self, event):
@@ -22,10 +22,10 @@ def start_watcher(callback: Callable[[Path], None]) -> None:
 
     event_handler = ScreenshotHandler()
     observer = Observer()
-    observer.schedule(event_handler, str(screenshots_dir), recursive=False)
+    observer.schedule(event_handler, str(screenshots_path), recursive=False)
     observer.start()
 
-    print(f"👀 Вотчер следит за: {screenshots_dir}")
+    print(f"👀 Вотчер следит за: {screenshots_path}")
 
     try:
         while True:
