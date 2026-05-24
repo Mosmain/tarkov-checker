@@ -2,9 +2,15 @@
 import { computed, ref } from "vue";
 import { useLeafletMap } from "./composables/useLeafletMap";
 import { useWebSocket } from "./composables/useWebSocket";
+import { mapInfo, mapSvgPath } from "@shared/maps";
+
+// TODO: drive currentMapCode from the raid store / WS raid-start event.
+const currentMapCode = "bigmap" as const;
+const currentMapInfo = mapInfo(currentMapCode);
+const svgUrl = mapSvgPath(currentMapCode);
 
 const mapContainer = ref<HTMLElement | null>(null);
-useLeafletMap(mapContainer);
+const { error: mapError } = useLeafletMap(mapContainer, svgUrl);
 
 const wsUrl = `ws://${window.location.hostname}:3000/ws`;
 const { status } = useWebSocket(wsUrl);
@@ -24,16 +30,23 @@ const badgeClass = computed(() => {
 </script>
 
 <template>
-  <div class="relative h-screen w-screen">
+  <div class="relative h-screen w-screen bg-neutral-950">
     <div ref="mapContainer" class="absolute inset-0 z-0" />
 
-    <div
-      class="pointer-events-none absolute inset-x-0 top-4 z-10 flex justify-center"
-    >
+    <div class="pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center">
       <span
         class="rounded-md bg-black/60 px-3 py-1 text-sm font-medium text-neutral-100 backdrop-blur"
       >
-        Customs map placeholder
+        {{ currentMapInfo.displayName }}
+      </span>
+    </div>
+
+    <div
+      v-if="mapError"
+      class="pointer-events-none absolute inset-x-0 top-12 z-10 flex justify-center"
+    >
+      <span class="rounded-md bg-rose-900/80 px-3 py-1 text-xs text-rose-50 backdrop-blur">
+        Map load error: {{ mapError }}
       </span>
     </div>
 

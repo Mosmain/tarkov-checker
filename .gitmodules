@@ -1,0 +1,3 @@
+[submodule "apps/client/public/maps"]
+	path = apps/client/public/maps
+	url = https://github.com/the-hideout/tarkov-dev-svg-maps.git
