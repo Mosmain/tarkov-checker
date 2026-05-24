@@ -24,7 +24,7 @@ export async function registerWebSocket(app: FastifyInstance): Promise<void> {
       app.log.info("ws client disconnected");
     });
 
-    socket.on("error", (err) => {
+    socket.on("error", (err: Error) => {
       app.log.warn({ err }, "ws client error");
     });
   });
