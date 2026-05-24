@@ -1,0 +1,16 @@
+{
+  "name": "@tarkov-checker/desktop",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "lint": "echo \"(no JS sources to lint)\"",
+    "typecheck": "echo \"(no TS sources to typecheck)\""
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.1.0"
+  }
+}
