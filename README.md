@@ -19,8 +19,16 @@ renders the map with Leaflet. The same client is consumed two ways:
 ## Install
 
 ```pwsh
+git clone --recurse-submodules https://github.com/Mosmain/tarkov-checker.git
+# or, if already cloned:
+git submodule update --init --recursive
+
 pnpm install
 ```
+
+The `--recurse-submodules` step pulls the SVG maps repo into
+`apps/client/public/maps/`. See [CREDITS.md](CREDITS.md) for attribution
+and licensing.
 
 ## Workspace layout
 
