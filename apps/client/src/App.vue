@@ -1,16 +1,31 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useLeafletMap } from "./composables/useLeafletMap";
 import { useWebSocket } from "./composables/useWebSocket";
-import { mapInfo, mapSvgPath } from "@shared/maps";
+import { fetchExtractsForMap } from "./api/tarkov-dev";
+import { mapInfo, type TarkovMapCode } from "@shared/maps";
 
 // TODO: drive currentMapCode from the raid store / WS raid-start event.
-const currentMapCode = "bigmap" as const;
+const currentMapCode: TarkovMapCode = "bigmap";
 const currentMapInfo = mapInfo(currentMapCode);
-const svgUrl = mapSvgPath(currentMapCode);
 
 const mapContainer = ref<HTMLElement | null>(null);
-const { error: mapError } = useLeafletMap(mapContainer, svgUrl);
+const { mapError, addExtractMarkers } = useLeafletMap(mapContainer, currentMapCode);
+
+const extractsError = ref<string | null>(null);
+
+onMounted(async () => {
+  try {
+    const result = await fetchExtractsForMap(currentMapCode);
+    if (result) {
+      addExtractMarkers(result.extracts);
+    } else {
+      extractsError.value = `tarkov.dev: no map matched nameId=${currentMapCode}`;
+    }
+  } catch (err) {
+    extractsError.value = err instanceof Error ? err.message : String(err);
+  }
+});
 
 const wsUrl = `ws://${window.location.hostname}:3000/ws`;
 const { status } = useWebSocket(wsUrl);
@@ -42,11 +57,20 @@ const badgeClass = computed(() => {
     </div>
 
     <div
-      v-if="mapError"
-      class="pointer-events-none absolute inset-x-0 top-12 z-10 flex justify-center"
+      v-if="mapError || extractsError"
+      class="pointer-events-none absolute inset-x-0 top-12 z-10 flex flex-col items-center gap-1"
     >
-      <span class="rounded-md bg-rose-900/80 px-3 py-1 text-xs text-rose-50 backdrop-blur">
+      <span
+        v-if="mapError"
+        class="rounded-md bg-rose-900/80 px-3 py-1 text-xs text-rose-50 backdrop-blur"
+      >
         Map load error: {{ mapError }}
+      </span>
+      <span
+        v-if="extractsError"
+        class="rounded-md bg-amber-900/80 px-3 py-1 text-xs text-amber-50 backdrop-blur"
+      >
+        Extracts: {{ extractsError }}
       </span>
     </div>
 
