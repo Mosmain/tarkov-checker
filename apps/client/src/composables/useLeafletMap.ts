@@ -2,7 +2,6 @@ import { onMounted, onBeforeUnmount, ref, shallowRef, type Ref, type ShallowRef 
 import L, {
   type Map as LeafletMap,
   type LatLngExpression,
-  type LatLngBoundsExpression,
   type CRS,
   type CircleMarker,
 } from "leaflet";
@@ -18,6 +17,8 @@ interface LoadedMap {
 interface MarkerEntry {
   marker: CircleMarker;
   extract: Extract;
+  /** Tooltip offset in screen pixels relative to the marker centre. */
+  tooltipOffset: [number, number];
 }
 
 export type LabelMode = "hover" | "smart";
@@ -34,10 +35,12 @@ interface UseLeafletMapResult {
 const FALLBACK_COLOR = "#94a3b8";
 /** Smart labels appear once the user zooms in by this many steps past the fit-bounds zoom. */
 const SMART_LABEL_ZOOM_DELTA = 1;
-/** Markers within this many in-game units of each other are spread radially. */
-const OVERLAP_TOLERANCE = 2;
-/** Radial offset in SVG pixels between co-located markers (scaled into game units per map). */
-const OVERLAP_OFFSET_PIXELS = 7;
+/** Extracts within this many in-game units of each other share a tooltip ring. */
+const COLOCATION_TOLERANCE = 2;
+/** Radial distance from marker centre to the centre of its tooltip, in screen pixels. */
+const TOOLTIP_RING_RADIUS = 22;
+/** How much of the map bounds the user is allowed to pan past (0.15 = 15%). */
+const PAN_PAD = 0.15;
 
 function factionColor(faction: Extract["faction"]): string {
   const key = faction ?? "shared";
@@ -80,14 +83,11 @@ function inGameLatLng(x: number, z: number): LatLngExpression {
   return [z, x];
 }
 
-function mapBoundsLatLng(
+function mapLatLngBounds(
   bounds: readonly [readonly [number, number], readonly [number, number]],
-): LatLngBoundsExpression {
+): L.LatLngBounds {
   const [[x1, z1], [x2, z2]] = bounds;
-  return [
-    [z1, x1],
-    [z2, x2],
-  ];
+  return L.latLngBounds(L.latLng(z1, x1), L.latLng(z2, x2));
 }
 
 async function fetchSvg(url: string): Promise<{
@@ -137,7 +137,7 @@ export function useLeafletMap(
 
   const info = mapInfo(mapCode);
   const crs = buildCRS(info.transform, info.rotation);
-  const bounds = mapBoundsLatLng(info.bounds);
+  const bounds = mapLatLngBounds(info.bounds);
 
   let extractsLayer: L.LayerGroup | null = null;
   const entries: MarkerEntry[] = [];
@@ -154,10 +154,9 @@ export function useLeafletMap(
     return state.masterVisible && state.visibleFactions.has(factionForFilter(entry.extract.faction));
   }
 
-  function buildTooltipOpts(): L.TooltipOptions {
+  function buildTooltipOpts(): Omit<L.TooltipOptions, "offset"> {
     return {
-      direction: "auto",
-      offset: [0, -6],
+      direction: "center",
       opacity: 0.95,
       permanent: state.labelMode === "smart",
       sticky: state.labelMode === "hover",
@@ -166,10 +165,13 @@ export function useLeafletMap(
   }
 
   function applyTooltipBindings(): void {
-    const opts = buildTooltipOpts();
+    const base = buildTooltipOpts();
     for (const entry of entries) {
       entry.marker.unbindTooltip();
-      entry.marker.bindTooltip(entry.extract.name, opts);
+      entry.marker.bindTooltip(entry.extract.name, {
+        ...base,
+        offset: entry.tooltipOffset,
+      });
     }
   }
 
@@ -224,17 +226,18 @@ export function useLeafletMap(
         fillColor: factionColor(ex.faction),
         fillOpacity: 0.9,
       });
-      entries.push({ marker, extract: ex });
+      entries.push({ marker, extract: ex, tooltipOffset: [0, -TOOLTIP_RING_RADIUS] });
     }
-    spreadOverlapping();
+    computeTooltipOffsets();
     applyTooltipBindings();
     applyVisibility();
   }
 
-  function spreadOverlapping(): void {
-    // Group entries whose (x, z) coordinates are within OVERLAP_TOLERANCE.
-    // For each group of N > 1, place members around a small circle so each is visible.
-    const bucketSize = Math.max(OVERLAP_TOLERANCE, 1);
+  function computeTooltipOffsets(): void {
+    // Markers stay at their true (x, z); only their tooltips get a radial offset
+    // so labels do not stack on top of each other when extracts share a spot
+    // (e.g. RUAF Roadblock has both a PMC and a Scav variant a metre apart).
+    const bucketSize = Math.max(COLOCATION_TOLERANCE, 1);
     const groups = new Map<string, MarkerEntry[]>();
     for (const entry of entries) {
       const bx = Math.round(entry.extract.position.x / bucketSize);
@@ -247,18 +250,15 @@ export function useLeafletMap(
         groups.set(key, [entry]);
       }
     }
-    // Convert constant SVG-pixel offset into in-game units via the map's scale.
-    const offsetUnits = OVERLAP_OFFSET_PIXELS / info.transform[0];
     for (const group of groups.values()) {
-      if (group.length <= 1) continue;
-      const step = (2 * Math.PI) / group.length;
-      for (let i = 0; i < group.length; i++) {
+      const total = group.length;
+      const step = (2 * Math.PI) / total;
+      for (let i = 0; i < total; i++) {
         const angle = i * step - Math.PI / 2;
-        const dx = Math.cos(angle) * offsetUnits;
-        const dz = Math.sin(angle) * offsetUnits;
-        const entry = group[i]!;
-        const { x, z } = entry.extract.position;
-        entry.marker.setLatLng(inGameLatLng(x + dx, z + dz));
+        group[i]!.tooltipOffset = [
+          Math.cos(angle) * TOOLTIP_RING_RADIUS,
+          Math.sin(angle) * TOOLTIP_RING_RADIUS,
+        ];
       }
     }
   }
@@ -295,10 +295,13 @@ export function useLeafletMap(
       minZoom: -5,
       maxZoom: 4,
       zoomSnap: 0.25,
+      maxBoundsViscosity: 1.0,
     });
     map.value = instance;
     instance.fitBounds(bounds);
     initialZoom = instance.getZoom();
+    instance.setMinZoom(initialZoom);
+    instance.setMaxBounds(bounds.pad(PAN_PAD));
 
     instance.on("moveend zoomend", refreshSmartLabels);
 
