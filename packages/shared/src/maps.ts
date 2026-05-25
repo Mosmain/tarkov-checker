@@ -13,6 +13,13 @@ interface TarkovMapInfo {
   readonly rotation: number;
   /** Top-level `<g>` group id in the SVG that acts as the base ground layer. */
   readonly svgLayer: string | null;
+  /**
+   * Non-null when this entry is an alias of another map (same SVG, different
+   * Tarkov nameId). Hide aliases from selectors; keep them in the table so
+   * raw log nameIds like `factory4_night` still resolve. Canonical entries
+   * have null.
+   */
+  readonly canonical: string | null;
 }
 
 export const TARKOV_MAPS = {
@@ -26,9 +33,10 @@ export const TARKOV_MAPS = {
     transform: [0.239, 168.65, 0.239, 136.35],
     rotation: 180,
     svgLayer: "Ground_Level",
+    canonical: null,
   },
   factory4_day: {
-    displayName: "Factory (Day)",
+    displayName: "Factory",
     svgFile: "Factory.svg",
     bounds: [
       [77, -64.5],
@@ -37,6 +45,7 @@ export const TARKOV_MAPS = {
     transform: [1.629, 119.9, 1.629, 139.3],
     rotation: 90,
     svgLayer: "Ground_Floor",
+    canonical: null,
   },
   factory4_night: {
     displayName: "Factory (Night)",
@@ -48,6 +57,7 @@ export const TARKOV_MAPS = {
     transform: [1.629, 119.9, 1.629, 139.3],
     rotation: 90,
     svgLayer: "Ground_Floor",
+    canonical: "factory4_day",
   },
   woods: {
     displayName: "Woods",
@@ -59,6 +69,7 @@ export const TARKOV_MAPS = {
     transform: [0.1855, 112.95, 0.1855, 167.85],
     rotation: 180,
     svgLayer: "Ground_Level",
+    canonical: null,
   },
   shoreline: {
     displayName: "Shoreline",
@@ -70,6 +81,7 @@ export const TARKOV_MAPS = {
     transform: [0.16, 83.2, 0.16, 111.1],
     rotation: 180,
     svgLayer: "Ground_Level",
+    canonical: null,
   },
   rezervbase: {
     displayName: "Reserve",
@@ -81,6 +93,7 @@ export const TARKOV_MAPS = {
     transform: [0.395, 122, 0.395, 137.65],
     rotation: 180,
     svgLayer: "Ground_Level",
+    canonical: null,
   },
   interchange: {
     displayName: "Interchange",
@@ -92,6 +105,7 @@ export const TARKOV_MAPS = {
     transform: [0.265, 150.6, 0.265, 134.6],
     rotation: 180,
     svgLayer: "Ground_Level",
+    canonical: null,
   },
   lighthouse: {
     displayName: "Lighthouse",
@@ -103,6 +117,7 @@ export const TARKOV_MAPS = {
     transform: [0.2, 0, 0.2, 0],
     rotation: 180,
     svgLayer: "Ground_Level",
+    canonical: null,
   },
   tarkovstreets: {
     displayName: "Streets of Tarkov",
@@ -114,6 +129,7 @@ export const TARKOV_MAPS = {
     transform: [0.38, 0, 0.38, 0],
     rotation: 180,
     svgLayer: "Ground_Level",
+    canonical: null,
   },
   laboratory: {
     displayName: "The Lab",
@@ -125,6 +141,7 @@ export const TARKOV_MAPS = {
     transform: [0.575, 281.2, 0.575, 193.7],
     rotation: 270,
     svgLayer: null,
+    canonical: null,
   },
   sandbox: {
     displayName: "Ground Zero",
@@ -136,6 +153,7 @@ export const TARKOV_MAPS = {
     transform: [0.524, 167.3, 0.524, 65.1],
     rotation: 180,
     svgLayer: "Ground_Level",
+    canonical: null,
   },
   sandbox_high: {
     displayName: "Ground Zero (High)",
@@ -147,6 +165,7 @@ export const TARKOV_MAPS = {
     transform: [0.524, 167.3, 0.524, 65.1],
     rotation: 180,
     svgLayer: "Ground_Level",
+    canonical: "sandbox",
   },
 } as const satisfies Record<string, TarkovMapInfo>;
 
@@ -168,6 +187,22 @@ export function mapDisplayName(code: string): TarkovMapName | "Unknown" {
 export function mapSvgPath(code: TarkovMapCode, basePath = "/maps"): string {
   return `${basePath}/${TARKOV_MAPS[code].svgFile}`;
 }
+
+/**
+ * Resolve a raw Tarkov map code to its canonical variant — e.g. when a log
+ * line surfaces `factory4_night` we still want to render the Factory SVG
+ * via the `factory4_day` entry. Returns the input unchanged for canonicals
+ * and for unknown codes.
+ */
+export function canonicalMapCode(code: string): TarkovMapCode | string {
+  if (!isKnownMapCode(code)) return code;
+  return TARKOV_MAPS[code].canonical ?? code;
+}
+
+/** Map codes that should appear in user-facing pickers (canonicals only). */
+export const VISIBLE_MAP_CODES = (Object.keys(TARKOV_MAPS) as TarkovMapCode[]).filter(
+  (code) => TARKOV_MAPS[code].canonical === null,
+);
 
 export const FACTION_COLORS = {
   pmc: "#22c55e",

@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useSettingsStore, type ExtractFactionFilter } from "../stores/settings";
-import { FACTION_COLORS, TARKOV_MAPS, type TarkovMapCode } from "@shared/maps";
+import { FACTION_COLORS, TARKOV_MAPS, VISIBLE_MAP_CODES, type TarkovMapCode } from "@shared/maps";
 import type { ServerConfigResponse } from "@shared/config-api";
 import { useUiText } from "../i18n";
 import {
@@ -16,7 +16,7 @@ const settings = useSettingsStore();
 const { apiLang, extractFactions, extractLabelMode, mapCode } = storeToRefs(settings);
 const t = useUiText();
 
-const MAP_CODES = Object.keys(TARKOV_MAPS) as TarkovMapCode[];
+const MAP_CODES = VISIBLE_MAP_CODES;
 const localizedMapNames = ref<Partial<Record<string, string>>>({});
 
 async function loadMapNames(): Promise<void> {
