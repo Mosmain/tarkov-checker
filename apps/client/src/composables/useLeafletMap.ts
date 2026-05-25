@@ -393,17 +393,22 @@ export function useLeafletMap(
       return;
     }
     const ground = info.defaultFloor;
-    const groundActive = id === ground;
+    const activeFloor = info.floors.find((f) => f.id === id);
+    const groundFloor = info.floors.find((f) => f.id === ground);
+    const activeLabel = activeFloor ? Number(activeFloor.label) : NaN;
+    const groundLabel = groundFloor ? Number(groundFloor.label) : NaN;
+    // Ground stays as a dim context only when the user goes UP. For below-
+    // ground floors (Labs/Factory basement covers the same area as ground)
+    // we hide it completely so the underground view isn't masked.
+    const showGroundDim =
+      Number.isFinite(activeLabel) && Number.isFinite(groundLabel) && activeLabel > groundLabel;
     for (const fid of floorIds) {
       const group = map.get(fid);
       if (!group) continue;
       if (fid === id) {
-        // The chosen floor is fully visible on top of the ground context.
         group.style.display = "";
         group.style.opacity = "";
-      } else if (fid === ground && !groundActive) {
-        // Ground stays dimly visible so the upper-floor interior still has
-        // street layout for context.
+      } else if (fid === ground && showGroundDim) {
         group.style.display = "";
         group.style.opacity = "0.15";
       } else {
