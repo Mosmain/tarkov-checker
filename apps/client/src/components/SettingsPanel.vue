@@ -241,7 +241,7 @@ function statusDotClass(slot: "gameDir" | "screenshotsDir" | "logsDir"): string 
       <div
         v-if="open"
         aria-hidden="true"
-        class="fixed inset-0 z-[2000] bg-black/40 backdrop-blur-sm"
+        class="fixed inset-0 z-[2000] bg-black/40"
         @click="close"
       />
     </Transition>
@@ -260,7 +260,9 @@ function statusDotClass(slot: "gameDir" | "screenshotsDir" | "logsDir"): string 
         role="dialog"
         :aria-label="t.settings"
       >
-        <div class="flex items-center justify-between px-4 py-3 border-b border-base-300">
+        <div
+          class="sticky top-0 z-10 flex items-center justify-between bg-base-200 px-4 py-3 border-b border-base-300"
+        >
           <h2 class="text-sm font-semibold uppercase tracking-wider opacity-70">
             {{ t.settings }}
           </h2>
