@@ -46,21 +46,46 @@ Configuration is CSS-first via `@theme` — there is **no `tailwind.config.ts`**
 
 ## Map rendering
 
-`useLeafletMap.ts` uses `L.CRS.Simple` (flat coords, no Web Mercator) +
-`L.svgOverlay` with bounds derived from the SVG's `viewBox`. SVGs are
-fetched at runtime from `/maps/<File>.svg` and parsed with `DOMParser`
-so top-level `<g>` groups stay accessible for future floor toggling.
+`useLeafletMap.ts` builds a **custom CRS** extending `L.CRS.Simple` per
+map: rotation is applied in `projection`, and the in-game-to-pixel
+affine sits in `transformation`. The whole pipeline is a direct port of
+`the-hideout/tarkov-dev`'s `src/pages/map/index.jsx` (MIT) so we can
+reuse their calibration values verbatim. Concretely: a marker placed
+with `L.marker([position.z, position.x])` lands at the visually correct
+spot on the SVG without any per-call math.
 
-Floor-group semantics differ per map: single-level maps (Customs, Woods,
-Shoreline, Lighthouse) have feature layers as top-level `<g>` (Ground,
-Trees, Buildings, ...), while multi-level maps (Factory, Reserve,
-Interchange, Labs) have floor groups (Basement, Ground_Floor, ...). Any
-floor-switcher UI must consult a per-map allowlist of which group IDs
-are "floors" — don't toggle all top-level groups blindly.
+Per-map calibration lives in `packages/shared/src/maps.ts`:
+- `transform: [scaleX, offsetX, scaleY, offsetY]` — fed to
+  `L.Transformation(scaleX, offsetX, -scaleY, offsetY)` (scaleY is
+  negated to flip the Leaflet lat axis).
+- `rotation` — degrees, applied in `projection` via
+  `applyRotation(latLng, rotation)`.
+- `bounds: [[x1, z1], [x2, z2]]` — in-game corner pair in the same
+  shape as tarkov-dev's `maps.json`. The composable swaps the corners
+  into `(lat, lng)` order before handing them to `L.latLngBounds` and
+  `svgOverlay`.
 
-In-game (x, z) → SVG (x, y) calibration is **per-map and not provided
-upstream**; will be measured empirically once real position events
-arrive over WS.
+The SVG is fetched at runtime from `/maps/<File>.svg` (the git submodule
+under `apps/client/public/maps/`). Top-level `<g>` groups are still
+collected into `loaded.floors` for the future floor switcher, but
+semantics differ per map: single-level maps (Customs, Woods, Shoreline,
+Lighthouse) have feature layers as top-level `<g>` (Ground, Trees,
+Buildings, ...), while multi-level maps (Factory, Reserve, Interchange,
+Labs) have floor groups (Basement, Ground_Floor, ...). Any floor-
+switcher UI must consult a per-map allowlist of which group IDs are
+"floors" — don't toggle all top-level groups blindly.
+
+## tarkov.dev API client
+
+`apps/client/src/api/tarkov-dev.ts` is a thin GraphQL client (plain
+`fetch`, module-level promise cache, zod-validated payloads — no Apollo/
+urql for a handful of queries). Schemas live in
+`packages/shared/src/tarkov-api.ts` so the server can reuse them later
+if needed.
+
+`Map.nameId` from the API matches our raw Tarkov codes (`bigmap`,
+`factory4_day`, `RezervBase`, ...) case-insensitively — see
+`fetchExtractsForMap` for the lookup.
 
 ## Environment quirks hit during bootstrap
 

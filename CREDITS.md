@@ -15,3 +15,19 @@ for the full text and the explicit no-cheating clause.
 satisfied. Should this repo ever be open-sourced, the SVG maps remain
 under their original CC BY-NC-SA 4.0 license; the submodule keeps them
 separate from this project's code so the two licenses don't entangle.
+
+## Map calibration
+
+Per-map affine transform values (scale, offset, rotation) used to project
+in-game `(x, z)` coordinates onto the SVG were taken from the
+[the-hideout/tarkov-dev](https://github.com/the-hideout/tarkov-dev)
+frontend (MIT-licensed), specifically `src/data/maps.json` and the
+custom-CRS construction in `src/pages/map/index.jsx`. They are the
+single source of truth for `transform` / `coordinateRotation` /
+`bounds` per map.
+
+## Game data API
+
+Live extract / spawn / loot data comes from the public GraphQL endpoint
+at <https://api.tarkov.dev/graphql>. Maintained by the same community,
+no authentication required.
