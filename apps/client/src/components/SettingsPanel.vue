@@ -29,6 +29,8 @@ async function loadMapNames(): Promise<void> {
     localizedMapNames.value = byNameId;
   } catch {
     // Fall back silently to TARKOV_MAPS.displayName via the helper below.
+  } finally {
+    refreshCacheTimestamp();
   }
 }
 

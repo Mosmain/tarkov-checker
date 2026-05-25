@@ -20,6 +20,14 @@ export const mapExtracts = z.object({
   extracts: z.array(extract),
 });
 
+export const extractsCacheResponse = z.object({
+  lang: z.string(),
+  fetchedAt: z.number().int().nonnegative(),
+  data: z.array(mapExtracts),
+});
+
+export type ExtractsCacheResponse = z.infer<typeof extractsCacheResponse>;
+
 export type Position3D = z.infer<typeof position3d>;
 export type ExtractFaction = z.infer<typeof extractFaction>;
 export type Extract = z.infer<typeof extract>;
