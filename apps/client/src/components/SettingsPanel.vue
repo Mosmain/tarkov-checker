@@ -3,21 +3,22 @@ import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { storeToRefs } from "pinia";
 import { useSettingsStore, type ExtractFactionFilter } from "../stores/settings";
 import { FACTION_COLORS } from "@shared/maps";
+import { useUiText } from "../i18n";
 
 const settings = useSettingsStore();
 const { apiLang, extractFactions, extractsVisible, extractLabelMode } = storeToRefs(settings);
+const t = useUiText();
 
 const open = ref(false);
 const root = ref<HTMLElement | null>(null);
 
 const FACTION_OPTIONS: ReadonlyArray<{
   value: ExtractFactionFilter;
-  label: string;
   color: string;
 }> = [
-  { value: "pmc", label: "PMC", color: FACTION_COLORS.pmc },
-  { value: "scav", label: "Scav", color: FACTION_COLORS.scav },
-  { value: "shared", label: "Shared", color: FACTION_COLORS.shared },
+  { value: "pmc", color: FACTION_COLORS.pmc },
+  { value: "scav", color: FACTION_COLORS.scav },
+  { value: "shared", color: FACTION_COLORS.shared },
 ];
 
 function toggle(): void {
@@ -55,7 +56,7 @@ const factionLabelDisabled = computed(() => !extractsVisible.value);
       type="button"
       class="flex h-9 w-9 items-center justify-center rounded-md bg-black/60 text-neutral-200 backdrop-blur transition hover:bg-black/80 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
       :aria-expanded="open"
-      aria-label="Settings"
+      :aria-label="t.settings"
       @click="toggle"
     >
       <svg
@@ -86,14 +87,14 @@ const factionLabelDisabled = computed(() => !extractsVisible.value);
     >
       <div
         v-if="open"
-        class="fixed inset-x-3 bottom-16 z-20 rounded-xl border border-white/10 bg-neutral-900/95 p-4 text-sm text-neutral-100 shadow-2xl backdrop-blur sm:absolute sm:inset-x-auto sm:right-0 sm:bottom-full sm:mb-2 sm:w-64"
+        class="fixed inset-x-3 bottom-16 z-[1010] rounded-xl border border-white/10 bg-neutral-900/95 p-4 text-sm text-neutral-100 shadow-2xl backdrop-blur sm:absolute sm:inset-x-auto sm:right-0 sm:bottom-full sm:mb-2 sm:w-64"
         role="dialog"
-        aria-label="Settings"
+        :aria-label="t.settings"
       >
         <div class="space-y-4">
           <section>
             <h3 class="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-400">
-              Language
+              {{ t.language }}
             </h3>
             <div class="flex gap-2">
               <label
@@ -121,10 +122,10 @@ const factionLabelDisabled = computed(() => !extractsVisible.value);
           <section>
             <div class="mb-2 flex items-center justify-between">
               <h3 class="text-xs font-semibold uppercase tracking-wider text-neutral-400">
-                Extracts
+                {{ t.extracts }}
               </h3>
               <label class="inline-flex cursor-pointer items-center gap-2">
-                <span class="text-xs text-neutral-300">{{ extractsVisible ? "On" : "Off" }}</span>
+                <span class="text-xs text-neutral-300">{{ extractsVisible ? t.on : t.off }}</span>
                 <span class="relative">
                   <input v-model="extractsVisible" type="checkbox" class="peer sr-only" />
                   <span
@@ -157,7 +158,7 @@ const factionLabelDisabled = computed(() => !extractsVisible.value);
                   :style="{ backgroundColor: opt.color }"
                   aria-hidden="true"
                 ></span>
-                <span class="text-sm">{{ opt.label }}</span>
+                <span class="text-sm">{{ t.factions[opt.value] }}</span>
               </label>
             </div>
 
@@ -165,7 +166,7 @@ const factionLabelDisabled = computed(() => !extractsVisible.value);
               class="mt-3 transition"
               :class="factionLabelDisabled ? 'opacity-40 pointer-events-none' : ''"
             >
-              <p class="mb-1.5 text-xs text-neutral-400">Labels</p>
+              <p class="mb-1.5 text-xs text-neutral-400">{{ t.labels }}</p>
               <div class="flex gap-2">
                 <label
                   v-for="opt in (['hover', 'smart'] as const)"
@@ -184,11 +185,11 @@ const factionLabelDisabled = computed(() => !extractsVisible.value);
                     name="label-mode"
                     class="sr-only"
                   />
-                  {{ opt === "hover" ? "On hover" : "Smart" }}
+                  {{ opt === "hover" ? t.labelHover : t.labelSmart }}
                 </label>
               </div>
               <p class="mt-1.5 text-[10px] leading-relaxed text-neutral-500">
-                Smart shows names only for extracts visible on screen at higher zoom.
+                {{ t.labelHint }}
               </p>
             </div>
           </section>

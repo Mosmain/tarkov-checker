@@ -76,7 +76,7 @@ const badgeClass = computed(() => {
   <div class="relative h-screen w-screen bg-neutral-950">
     <div ref="mapContainer" class="absolute inset-0 z-0" />
 
-    <div class="pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center">
+    <div class="pointer-events-none absolute top-3 right-3 z-[1000]">
       <span
         class="rounded-md bg-black/60 px-3 py-1 text-sm font-medium text-neutral-100 backdrop-blur"
       >
@@ -86,7 +86,7 @@ const badgeClass = computed(() => {
 
     <div
       v-if="mapError || extractsError"
-      class="pointer-events-none absolute inset-x-0 top-12 z-10 flex flex-col items-center gap-1"
+      class="pointer-events-none absolute top-14 inset-x-3 z-[1000] flex flex-col items-center gap-1"
     >
       <span
         v-if="mapError"
@@ -102,7 +102,7 @@ const badgeClass = computed(() => {
       </span>
     </div>
 
-    <div class="absolute bottom-3 right-3 z-10 flex items-center gap-2">
+    <div class="absolute bottom-3 right-3 z-[1000] flex items-center gap-2">
       <SettingsPanel />
       <div class="flex items-center gap-2 rounded-md bg-black/60 px-2 py-1 backdrop-blur">
         <span :class="['h-2.5 w-2.5 rounded-full', badgeClass]" aria-hidden="true" />
