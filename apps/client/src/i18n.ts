@@ -38,8 +38,8 @@ const BUNDLES: Readonly<Record<ApiLang, UiBundle>> = {
     off: "Off",
     labels: "Labels",
     labelHover: "On hover",
-    labelSmart: "Smart",
-    labelHint: "Smart shows names only for extracts visible on screen at higher zoom.",
+    labelSmart: "Always",
+    labelHint: "Always shows extract names; switch to On hover for a minimal view.",
     settings: "Settings",
     factions: {
       pmc: "PMC",
@@ -73,8 +73,8 @@ const BUNDLES: Readonly<Record<ApiLang, UiBundle>> = {
     off: "Выкл",
     labels: "Подписи",
     labelHover: "При наведении",
-    labelSmart: "Авто",
-    labelHint: "Авто-подписи появляются для выходов в кадре при достаточном приближении.",
+    labelSmart: "Всегда",
+    labelHint: "Подписи видны всегда; переключи на «При наведении», если хочется меньше шума.",
     settings: "Настройки",
     factions: {
       pmc: "ЧВК",

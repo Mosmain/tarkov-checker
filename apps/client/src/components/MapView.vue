@@ -41,7 +41,7 @@ watch(
   () => props.lastMessage,
   (msg) => {
     if (!msg || msg.type !== "position") return;
-    setPlayerPosition({ x: msg.x, y: msg.y, z: msg.z });
+    setPlayerPosition({ x: msg.x, y: msg.y, z: msg.z }, msg.yaw ?? null);
     if (playerStaleTimer !== null) clearTimeout(playerStaleTimer);
     playerStaleTimer = setTimeout(() => {
       clearPlayerPosition();

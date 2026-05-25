@@ -21,7 +21,7 @@ interface MarkerEntry {
   tooltipOffset: [number, number];
 }
 
-export type LabelMode = "hover" | "smart";
+export type LabelMode = "hover" | "always";
 
 interface UseLeafletMapResult {
   map: ShallowRef<LeafletMap | null>;
@@ -30,13 +30,11 @@ interface UseLeafletMapResult {
   addExtractMarkers: (extracts: readonly Extract[]) => void;
   setExtractFilter: (visibleFactions: ReadonlyArray<string>, masterVisible: boolean) => void;
   setLabelMode: (mode: LabelMode) => void;
-  setPlayerPosition: (pos: Position3D) => void;
+  setPlayerPosition: (pos: Position3D, yaw?: number | null) => void;
   clearPlayerPosition: () => void;
 }
 
 const FALLBACK_COLOR = "#94a3b8";
-/** Smart labels appear once the user zooms in by this many steps past the fit-bounds zoom. */
-const SMART_LABEL_ZOOM_DELTA = 1;
 /** Extracts within this many in-game units of each other share a tooltip ring. */
 const COLOCATION_TOLERANCE = 2;
 /** Radial distance from marker centre to the centre of its tooltip, in screen pixels. */
@@ -146,7 +144,7 @@ export function useLeafletMap(
   let initialZoom = 0;
 
   let playerLayer: L.LayerGroup | null = null;
-  let playerCore: CircleMarker | null = null;
+  let playerCore: L.Marker | null = null;
   let playerPulse: CircleMarker | null = null;
 
   // Internal state, mutated by setters; addExtractMarkers re-applies when (re)creating markers.
@@ -164,7 +162,7 @@ export function useLeafletMap(
     return {
       direction: "center",
       opacity: 0.95,
-      permanent: state.labelMode === "smart",
+      permanent: state.labelMode === "always",
       sticky: state.labelMode === "hover",
       className: "extract-tooltip",
     };
@@ -181,27 +179,6 @@ export function useLeafletMap(
     }
   }
 
-  function refreshSmartLabels(): void {
-    if (!map.value) return;
-    if (state.labelMode !== "smart") return;
-
-    const mapBounds = map.value.getBounds();
-    const showAtZoom = map.value.getZoom() >= initialZoom + SMART_LABEL_ZOOM_DELTA;
-
-    for (const entry of entries) {
-      if (!isEntryVisible(entry)) {
-        entry.marker.closeTooltip();
-        continue;
-      }
-      const inView = mapBounds.contains(entry.marker.getLatLng());
-      if (showAtZoom && inView) {
-        entry.marker.openTooltip();
-      } else {
-        entry.marker.closeTooltip();
-      }
-    }
-  }
-
   function applyVisibility(): void {
     if (!map.value || !extractsLayer) return;
     for (const entry of entries) {
@@ -213,7 +190,6 @@ export function useLeafletMap(
         extractsLayer.removeLayer(entry.marker);
       }
     }
-    refreshSmartLabels();
   }
 
   function addExtractMarkers(extracts: readonly Extract[]): void {
@@ -282,43 +258,62 @@ export function useLeafletMap(
     if (state.labelMode === mode) return;
     state.labelMode = mode;
     applyTooltipBindings();
-    if (mode === "smart") {
-      refreshSmartLabels();
-    } else {
+    if (mode === "hover") {
       for (const entry of entries) {
         entry.marker.closeTooltip();
       }
     }
   }
 
-  function setPlayerPosition(pos: Position3D): void {
+  function setPlayerPosition(pos: Position3D, yaw: number | null = null): void {
     if (!map.value) return;
     const latLng = inGameLatLng(pos.x, pos.z);
     if (!playerLayer) {
       playerLayer = L.layerGroup().addTo(map.value);
     }
-    if (!playerCore) {
+    if (!playerPulse) {
       playerPulse = L.circleMarker(latLng, {
-        radius: 14,
+        radius: 12,
         color: "#f43f5e",
         weight: 2,
-        opacity: 0.9,
+        opacity: 0.7,
         fill: false,
         className: "player-pulse",
         interactive: false,
       }).addTo(playerLayer);
-      playerCore = L.circleMarker(latLng, {
-        radius: 6,
-        color: "#fff",
-        weight: 2,
-        fillColor: "#f43f5e",
-        fillOpacity: 1,
+    } else {
+      playerPulse.setLatLng(latLng);
+    }
+    // The in-game yaw must be rotated by the map's own coordinateRotation
+    // so the arrow points where the player is looking in the rendered view.
+    const displayYaw = yaw === null ? null : yaw + info.rotation;
+    const iconHtml = buildPlayerIconHtml(displayYaw);
+    const icon = L.divIcon({
+      html: iconHtml,
+      className: "player-icon-wrapper",
+      iconSize: [32, 32],
+      iconAnchor: [16, 16],
+    });
+    if (!playerCore) {
+      playerCore = L.marker(latLng, {
+        icon,
         interactive: false,
+        keyboard: false,
+        // Ensure the arrow renders on top of the pulse ring.
+        zIndexOffset: 1000,
       }).addTo(playerLayer);
     } else {
       playerCore.setLatLng(latLng);
-      playerPulse?.setLatLng(latLng);
+      playerCore.setIcon(icon);
     }
+  }
+
+  function buildPlayerIconHtml(displayYaw: number | null): string {
+    const cone =
+      displayYaw === null
+        ? ""
+        : `<polygon class="player-cone" points="0,-14 6,-2 -6,-2" transform="rotate(${displayYaw})" />`;
+    return `<svg viewBox="-16 -16 32 32" xmlns="http://www.w3.org/2000/svg">${cone}<circle class="player-dot" cx="0" cy="0" r="5" /></svg>`;
   }
 
   function clearPlayerPosition(): void {
@@ -347,8 +342,6 @@ export function useLeafletMap(
     initialZoom = instance.getZoom();
     instance.setMinZoom(initialZoom);
     instance.setMaxBounds(bounds.pad(PAN_PAD));
-
-    instance.on("moveend zoomend", refreshSmartLabels);
 
     try {
       const svgUrl = mapSvgPath(mapCode);

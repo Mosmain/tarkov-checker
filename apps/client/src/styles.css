@@ -1,5 +1,8 @@
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
+@plugin "daisyui" {
+  themes: dark --default;
+}
 
 html,
 body,
@@ -9,7 +12,7 @@ body,
 }
 
 .leaflet-container {
-  background: #0b0b0b;
+  background: oklch(var(--color-base-100));
 }
 
 .leaflet-tooltip.extract-tooltip {
@@ -30,15 +33,36 @@ body,
 .leaflet-overlay-pane path.player-pulse {
   transform-origin: center;
   transform-box: fill-box;
-  animation: player-pulse 1.6s ease-out infinite;
+  animation: player-pulse 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 @keyframes player-pulse {
   0% {
-    transform: scale(0.4);
-    stroke-opacity: 0.9;
+    transform: scale(1);
+    stroke-opacity: 0.55;
   }
   100% {
-    transform: scale(2.2);
+    transform: scale(1.55);
     stroke-opacity: 0;
   }
+}
+
+.player-icon-wrapper {
+  pointer-events: none;
+}
+.player-icon-wrapper svg {
+  display: block;
+  width: 32px;
+  height: 32px;
+  overflow: visible;
+}
+.player-icon-wrapper .player-cone {
+  fill: #f43f5e;
+  fill-opacity: 0.92;
+  stroke: rgba(0, 0, 0, 0.4);
+  stroke-width: 0.6;
+}
+.player-icon-wrapper .player-dot {
+  fill: #fff;
+  stroke: #f43f5e;
+  stroke-width: 2;
 }
