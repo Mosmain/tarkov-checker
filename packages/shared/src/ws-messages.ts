@@ -22,6 +22,9 @@ export const positionMessage = z.object({
   x: z.number(),
   y: z.number(),
   z: z.number(),
+  /** In-game yaw in degrees (clockwise from +Z), null when the screenshot
+   * filename didn't carry an orientation quaternion. */
+  yaw: z.number().nullable().optional(),
 });
 
 export const serverMessage = z.discriminatedUnion("type", [

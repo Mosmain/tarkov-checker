@@ -1,6 +1,6 @@
 import chokidar from "chokidar";
 import type { FastifyBaseLogger } from "fastify";
-import { parseScreenshotFilename } from "@tarkov-checker/shared";
+import { parseScreenshotFilename, quaternionToYawDegrees } from "@tarkov-checker/shared";
 import type { Hub } from "../ws.js";
 
 export interface ScreenshotWatcher {
@@ -27,15 +27,17 @@ export function startScreenshotWatcher(
   });
 
   watcher.on("add", (filePath) => {
-    const position = parseScreenshotFilename(filePath);
-    if (!position) return;
-    log.info({ filePath, position }, "screenshot position");
+    const parsed = parseScreenshotFilename(filePath);
+    if (!parsed) return;
+    const yaw = parsed.orientation ? quaternionToYawDegrees(parsed.orientation) : null;
+    log.info({ filePath, position: parsed.position, yaw }, "screenshot position");
     hub.broadcast({
       type: "position",
       t: Date.now(),
-      x: position.x,
-      y: position.y,
-      z: position.z,
+      x: parsed.position.x,
+      y: parsed.position.y,
+      z: parsed.position.z,
+      yaw,
     });
   });
 
