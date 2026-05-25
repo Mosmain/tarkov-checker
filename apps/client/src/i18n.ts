@@ -14,6 +14,19 @@ interface UiBundle {
   readonly labelHint: string;
   readonly settings: string;
   readonly factions: Readonly<Record<ExtractFactionFilter, string>>;
+  readonly paths: {
+    readonly heading: string;
+    readonly gameDir: string;
+    readonly screenshotsDir: string;
+    readonly logsDir: string;
+    readonly save: string;
+    readonly saved: string;
+    readonly mobileHint: string;
+    readonly source: Readonly<Record<"env" | "manual" | "detected" | "missing", string>>;
+    readonly missingTooltip: string;
+    readonly placeholderGameDir: string;
+    readonly placeholderScreenshotsDir: string;
+  };
 }
 
 const BUNDLES: Readonly<Record<ApiLang, UiBundle>> = {
@@ -33,6 +46,24 @@ const BUNDLES: Readonly<Record<ApiLang, UiBundle>> = {
       scav: "Scav",
       shared: "Shared",
     },
+    paths: {
+      heading: "Tarkov paths",
+      gameDir: "Game folder",
+      screenshotsDir: "Screenshots folder",
+      logsDir: "Logs",
+      save: "Save",
+      saved: "Saved",
+      mobileHint: "Open this page on the machine running Tarkov to configure paths.",
+      source: {
+        env: "from .env",
+        manual: "manual",
+        detected: "auto-detected",
+        missing: "not found",
+      },
+      missingTooltip: "Folder doesn't exist on disk yet.",
+      placeholderGameDir: "D:\\EFT",
+      placeholderScreenshotsDir: "Documents\\Escape from Tarkov\\Screenshots",
+    },
   },
   ru: {
     language: "Язык",
@@ -49,6 +80,24 @@ const BUNDLES: Readonly<Record<ApiLang, UiBundle>> = {
       pmc: "ЧВК",
       scav: "Дикие",
       shared: "Общие",
+    },
+    paths: {
+      heading: "Пути Tarkov",
+      gameDir: "Папка с игрой",
+      screenshotsDir: "Папка скриншотов",
+      logsDir: "Логи",
+      save: "Сохранить",
+      saved: "Сохранено",
+      mobileHint: "Открой эту страницу на машине с Tarkov, чтобы настроить пути.",
+      source: {
+        env: "из .env",
+        manual: "вручную",
+        detected: "найдено автоматически",
+        missing: "не найдено",
+      },
+      missingTooltip: "Папка пока не существует.",
+      placeholderGameDir: "D:\\EFT",
+      placeholderScreenshotsDir: "Documents\\Escape from Tarkov\\Screenshots",
     },
   },
 };

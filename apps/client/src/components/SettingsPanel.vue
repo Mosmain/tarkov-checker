@@ -3,8 +3,10 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useSettingsStore, type ExtractFactionFilter } from "../stores/settings";
 import { FACTION_COLORS, TARKOV_MAPS, type TarkovMapCode } from "@shared/maps";
+import type { ServerConfigResponse } from "@shared/config-api";
 import { useUiText } from "../i18n";
 import { fetchAllExtracts } from "../api/tarkov-dev";
+import { fetchServerConfig, putServerConfig } from "../api/server-config";
 
 const settings = useSettingsStore();
 const { apiLang, extractFactions, extractsVisible, extractLabelMode, mapCode } =
@@ -73,6 +75,119 @@ onBeforeUnmount(() => {
 });
 
 const factionLabelDisabled = computed(() => !extractsVisible.value);
+
+const SM_BREAKPOINT = 640;
+const isDesktop = ref(typeof window !== "undefined" ? window.innerWidth >= SM_BREAKPOINT : true);
+function onResize(): void {
+  isDesktop.value = window.innerWidth >= SM_BREAKPOINT;
+}
+
+const serverConfig = ref<ServerConfigResponse | null>(null);
+const gameDirInput = ref("");
+const screenshotsDirInput = ref("");
+const pathsLoading = ref(false);
+const pathsSaving = ref(false);
+const pathsError = ref<string | null>(null);
+const pathsJustSaved = ref(false);
+
+const gameDirLocked = computed(
+  () => serverConfig.value?.gameDir.source === "env",
+);
+const screenshotsDirLocked = computed(
+  () => serverConfig.value?.screenshotsDir.source === "env",
+);
+
+const gameDirDirty = computed(
+  () => (serverConfig.value?.gameDir.value ?? "") !== gameDirInput.value,
+);
+const screenshotsDirDirty = computed(
+  () => (serverConfig.value?.screenshotsDir.value ?? "") !== screenshotsDirInput.value,
+);
+const canSavePaths = computed(
+  () =>
+    isDesktop.value &&
+    !pathsSaving.value &&
+    (gameDirDirty.value || screenshotsDirDirty.value) &&
+    (!gameDirLocked.value || !screenshotsDirDirty.value || screenshotsDirInput.value !== "") &&
+    !(gameDirLocked.value && screenshotsDirLocked.value),
+);
+
+function syncInputsFromConfig(cfg: ServerConfigResponse): void {
+  gameDirInput.value = cfg.gameDir.value ?? "";
+  screenshotsDirInput.value = cfg.screenshotsDir.value ?? "";
+}
+
+async function loadPaths(): Promise<void> {
+  pathsLoading.value = true;
+  pathsError.value = null;
+  try {
+    const cfg = await fetchServerConfig();
+    serverConfig.value = cfg;
+    syncInputsFromConfig(cfg);
+  } catch (err) {
+    pathsError.value = err instanceof Error ? err.message : String(err);
+  } finally {
+    pathsLoading.value = false;
+  }
+}
+
+async function savePaths(): Promise<void> {
+  if (!canSavePaths.value) return;
+  pathsSaving.value = true;
+  pathsError.value = null;
+  try {
+    const patch = {
+      ...(gameDirLocked.value ? {} : { gameDir: gameDirInput.value.trim() || null }),
+      ...(screenshotsDirLocked.value
+        ? {}
+        : { screenshotsDir: screenshotsDirInput.value.trim() || null }),
+    };
+    const cfg = await putServerConfig(patch);
+    serverConfig.value = cfg;
+    syncInputsFromConfig(cfg);
+    pathsJustSaved.value = true;
+    setTimeout(() => {
+      pathsJustSaved.value = false;
+    }, 2_000);
+  } catch (err) {
+    pathsError.value = err instanceof Error ? err.message : String(err);
+  } finally {
+    pathsSaving.value = false;
+  }
+}
+
+watch(open, (isOpen) => {
+  if (isOpen && !serverConfig.value) void loadPaths();
+});
+
+onMounted(() => {
+  window.addEventListener("resize", onResize);
+  void loadPaths();
+});
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", onResize);
+});
+
+function sourceBadgeClass(source: "env" | "manual" | "detected" | "missing"): string {
+  switch (source) {
+    case "env":
+      return "bg-sky-500/20 text-sky-200";
+    case "manual":
+      return "bg-emerald-500/20 text-emerald-200";
+    case "detected":
+      return "bg-neutral-500/20 text-neutral-200";
+    case "missing":
+      return "bg-rose-500/20 text-rose-200";
+  }
+}
+
+function statusDotClass(slot: "gameDir" | "screenshotsDir" | "logsDir"): string {
+  const item = serverConfig.value?.[slot];
+  if (!item) return "bg-neutral-600";
+  if (item.exists) return "bg-emerald-500";
+  if (item.value) return "bg-amber-500";
+  return "bg-rose-500";
+}
 </script>
 
 <template>
@@ -141,6 +256,108 @@ const factionLabelDisabled = computed(() => !extractsVisible.value);
                 />
                 {{ opt.toUpperCase() }}
               </label>
+            </div>
+          </section>
+
+          <section>
+            <h3 class="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-400">
+              {{ t.paths.heading }}
+            </h3>
+
+            <p
+              v-if="pathsError"
+              class="mb-2 rounded-md bg-rose-900/40 px-2 py-1 text-xs text-rose-100"
+            >
+              {{ pathsError }}
+            </p>
+            <p v-if="pathsLoading && !serverConfig" class="text-xs text-neutral-400">…</p>
+
+            <div v-if="serverConfig" class="space-y-3">
+              <div>
+                <div class="mb-1 flex items-center justify-between gap-2">
+                  <label class="text-xs text-neutral-300" for="game-dir-input">
+                    {{ t.paths.gameDir }}
+                  </label>
+                  <span
+                    class="rounded px-1.5 py-0.5 text-[10px] uppercase tracking-wide"
+                    :class="sourceBadgeClass(serverConfig.gameDir.source)"
+                  >
+                    {{ t.paths.source[serverConfig.gameDir.source] }}
+                  </span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span
+                    :class="['h-2 w-2 rounded-full', statusDotClass('gameDir')]"
+                    :title="
+                      serverConfig.gameDir.exists ? '' : t.paths.missingTooltip
+                    "
+                    aria-hidden="true"
+                  ></span>
+                  <input
+                    id="game-dir-input"
+                    v-model="gameDirInput"
+                    :placeholder="t.paths.placeholderGameDir"
+                    :disabled="!isDesktop || gameDirLocked"
+                    :readonly="!isDesktop"
+                    class="w-full rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs text-neutral-100 focus:border-emerald-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+                  />
+                </div>
+                <p
+                  class="mt-1 truncate text-[10px] text-neutral-500"
+                  :title="serverConfig.logsDir.value ?? ''"
+                >
+                  {{ t.paths.logsDir }}: {{ serverConfig.logsDir.value ?? "—" }}
+                </p>
+              </div>
+
+              <div>
+                <div class="mb-1 flex items-center justify-between gap-2">
+                  <label class="text-xs text-neutral-300" for="screenshots-dir-input">
+                    {{ t.paths.screenshotsDir }}
+                  </label>
+                  <span
+                    class="rounded px-1.5 py-0.5 text-[10px] uppercase tracking-wide"
+                    :class="sourceBadgeClass(serverConfig.screenshotsDir.source)"
+                  >
+                    {{ t.paths.source[serverConfig.screenshotsDir.source] }}
+                  </span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span
+                    :class="['h-2 w-2 rounded-full', statusDotClass('screenshotsDir')]"
+                    :title="
+                      serverConfig.screenshotsDir.exists ? '' : t.paths.missingTooltip
+                    "
+                    aria-hidden="true"
+                  ></span>
+                  <input
+                    id="screenshots-dir-input"
+                    v-model="screenshotsDirInput"
+                    :placeholder="t.paths.placeholderScreenshotsDir"
+                    :disabled="!isDesktop || screenshotsDirLocked"
+                    :readonly="!isDesktop"
+                    class="w-full rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs text-neutral-100 focus:border-emerald-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+                  />
+                </div>
+              </div>
+
+              <div v-if="isDesktop" class="flex items-center justify-end gap-2">
+                <span v-if="pathsJustSaved" class="text-[10px] text-emerald-400">
+                  {{ t.paths.saved }}
+                </span>
+                <button
+                  type="button"
+                  class="rounded-md bg-emerald-600 px-3 py-1 text-xs font-medium text-emerald-50 transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-neutral-700 disabled:text-neutral-400"
+                  :disabled="!canSavePaths"
+                  @click="savePaths"
+                >
+                  {{ t.paths.save }}
+                </button>
+              </div>
+
+              <p v-else class="text-[10px] leading-relaxed text-neutral-500">
+                {{ t.paths.mobileHint }}
+              </p>
             </div>
           </section>
 
