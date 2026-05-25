@@ -168,3 +168,11 @@ export function mapDisplayName(code: string): TarkovMapName | "Unknown" {
 export function mapSvgPath(code: TarkovMapCode, basePath = "/maps"): string {
   return `${basePath}/${TARKOV_MAPS[code].svgFile}`;
 }
+
+export const FACTION_COLORS = {
+  pmc: "#22c55e",
+  scav: "#eab308",
+  shared: "#3b82f6",
+} as const satisfies Record<string, string>;
+
+export type FactionKey = keyof typeof FACTION_COLORS;
