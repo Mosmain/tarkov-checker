@@ -13,6 +13,7 @@ interface UiBundle {
   readonly labelAlways: string;
   readonly labelHint: string;
   readonly settings: string;
+  readonly floor: string;
   readonly factions: Readonly<Record<ExtractFactionFilter, string>>;
   readonly paths: {
     readonly heading: string;
@@ -49,6 +50,7 @@ const BUNDLES: Readonly<Record<ApiLang, UiBundle>> = {
     labelAlways: "Always",
     labelHint: "Always shows extract names; switch to On hover for a minimal view.",
     settings: "Settings",
+    floor: "Floor",
     factions: {
       pmc: "PMC",
       scav: "Scav",
@@ -92,6 +94,7 @@ const BUNDLES: Readonly<Record<ApiLang, UiBundle>> = {
     labelAlways: "Всегда",
     labelHint: "Подписи видны всегда; переключи на «При наведении», если хочется меньше шума.",
     settings: "Настройки",
+    floor: "Уровень",
     factions: {
       pmc: "ЧВК",
       scav: "Дикие",

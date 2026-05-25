@@ -27,9 +27,11 @@ interface UseLeafletMapResult {
   map: ShallowRef<LeafletMap | null>;
   loaded: ShallowRef<LoadedMap | null>;
   mapError: Ref<string | null>;
+  currentFloor: Ref<string | null>;
   addExtractMarkers: (extracts: readonly Extract[]) => void;
   setExtractFilter: (visibleFactions: ReadonlyArray<string>) => void;
   setLabelMode: (mode: LabelMode) => void;
+  setActiveFloor: (id: string) => void;
   setPlayerPosition: (pos: Position3D, yaw?: number | null) => void;
   clearPlayerPosition: () => void;
 }
@@ -111,7 +113,10 @@ async function fetchSvg(url: string): Promise<{
   if (!viewBoxAttr) {
     throw new Error(`SVG at ${url} has no viewBox attribute`);
   }
-  const parts = viewBoxAttr.trim().split(/[\s,]+/).map(Number);
+  const parts = viewBoxAttr
+    .trim()
+    .split(/[\s,]+/)
+    .map(Number);
   if (parts.length !== 4 || parts.some((n) => !Number.isFinite(n))) {
     throw new Error(`SVG at ${url} has malformed viewBox: ${viewBoxAttr}`);
   }
@@ -134,6 +139,7 @@ export function useLeafletMap(
   const map = shallowRef<LeafletMap | null>(null);
   const loaded = shallowRef<LoadedMap | null>(null);
   const mapError = ref<string | null>(null);
+  const currentFloor = ref<string | null>(null);
 
   const info = mapInfo(mapCode);
   const crs = buildCRS(info.transform, info.rotation);
@@ -368,10 +374,45 @@ export function useLeafletMap(
       const { svg, width, height, floors } = await fetchSvg(svgUrl);
       L.svgOverlay(svg, bounds, { interactive: false }).addTo(instance);
       loaded.value = { width, height, floors };
+      if (info.defaultFloor && info.floors.length > 0) {
+        setActiveFloor(info.defaultFloor);
+      }
     } catch (err) {
       mapError.value = err instanceof Error ? err.message : String(err);
     }
   });
+
+  function setActiveFloor(id: string): void {
+    const floorIds = info.floors.map((f) => f.id);
+    if (floorIds.length === 0) return;
+    if (!floorIds.includes(id)) return;
+    const map = loaded.value?.floors;
+    if (!map) {
+      // SVG hasn't loaded yet; remember choice and apply on load.
+      currentFloor.value = id;
+      return;
+    }
+    const ground = info.defaultFloor;
+    const groundActive = id === ground;
+    for (const fid of floorIds) {
+      const group = map.get(fid);
+      if (!group) continue;
+      if (fid === id) {
+        // The chosen floor is fully visible on top of the ground context.
+        group.style.display = "";
+        group.style.opacity = "";
+      } else if (fid === ground && !groundActive) {
+        // Ground stays dimly visible so the upper-floor interior still has
+        // street layout for context.
+        group.style.display = "";
+        group.style.opacity = "0.15";
+      } else {
+        group.style.display = "none";
+        group.style.opacity = "";
+      }
+    }
+    currentFloor.value = id;
+  }
 
   onBeforeUnmount(() => {
     extractsLayer = null;
@@ -387,9 +428,11 @@ export function useLeafletMap(
     map,
     loaded,
     mapError,
+    currentFloor,
     addExtractMarkers,
     setExtractFilter,
     setLabelMode,
+    setActiveFloor,
     setPlayerPosition,
     clearPlayerPosition,
   };

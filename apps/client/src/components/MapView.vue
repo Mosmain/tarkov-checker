@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useLeafletMap } from "../composables/useLeafletMap";
 import { fetchExtractsForMap } from "../api/tarkov-dev";
 import { mapInfo, type TarkovMapCode } from "@shared/maps";
 import type { ServerMessage } from "@shared/ws-messages";
 import { useSettingsStore } from "../stores/settings";
+import FloorSwitcher from "./FloorSwitcher.vue";
 
 const props = defineProps<{
   mapCode: TarkovMapCode;
@@ -21,17 +22,23 @@ const emit = defineEmits<{
 const settings = useSettingsStore();
 const { apiLang, extractFactions, extractLabelMode } = storeToRefs(settings);
 
+const info = mapInfo(props.mapCode);
+
 const mapContainer = ref<HTMLElement | null>(null);
 const {
   mapError,
+  currentFloor,
   addExtractMarkers,
   setExtractFilter,
   setLabelMode,
+  setActiveFloor,
   setPlayerPosition,
   clearPlayerPosition,
 } = useLeafletMap(mapContainer, props.mapCode);
 
-emit("mapName", mapInfo(props.mapCode).displayName);
+const hasFloors = computed(() => info.floors.length > 1);
+
+emit("mapName", info.displayName);
 watch(mapError, (err) => emit("mapError", err));
 
 const PLAYER_STALE_AFTER_MS = 90_000;
@@ -82,4 +89,11 @@ watch(extractLabelMode, (mode) => {
 
 <template>
   <div ref="mapContainer" class="absolute inset-0 z-0" />
+  <div v-if="hasFloors" class="absolute bottom-3 left-3 z-[1000]">
+    <FloorSwitcher
+      :floors="info.floors"
+      :current="currentFloor"
+      @select="setActiveFloor"
+    />
+  </div>
 </template>

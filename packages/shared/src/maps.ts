@@ -20,6 +20,15 @@ interface TarkovMapInfo {
    * have null.
    */
   readonly canonical: string | null;
+  /**
+   * Ordered top-to-bottom list of floors for the floor switcher. Each `id`
+   * matches a top-level <g> element in the SVG; `label` is the numeric tag
+   * shown in the UI (e.g. "-1", "0", "1"). Empty array means the map is
+   * single-level and the switcher should be hidden.
+   */
+  readonly floors: ReadonlyArray<{ readonly id: string; readonly label: string }>;
+  /** Floor id to show on first render. Null only when `floors` is empty. */
+  readonly defaultFloor: string | null;
 }
 
 export const TARKOV_MAPS = {
@@ -34,6 +43,14 @@ export const TARKOV_MAPS = {
     rotation: 180,
     svgLayer: "Ground_Level",
     canonical: null,
+    floors: [
+      { id: "Third_Floor", label: "3" },
+      { id: "Second_Floor", label: "2" },
+      { id: "First_Floor", label: "1" },
+      { id: "Ground_Level", label: "0" },
+      { id: "Underground_Level", label: "-1" },
+    ],
+    defaultFloor: "Ground_Level",
   },
   factory4_day: {
     displayName: "Factory",
@@ -46,6 +63,13 @@ export const TARKOV_MAPS = {
     rotation: 90,
     svgLayer: "Ground_Floor",
     canonical: null,
+    floors: [
+      { id: "Third_Floor", label: "2" },
+      { id: "Second_Floor", label: "1" },
+      { id: "Ground_Floor", label: "0" },
+      { id: "Basement", label: "-1" },
+    ],
+    defaultFloor: "Ground_Floor",
   },
   factory4_night: {
     displayName: "Factory (Night)",
@@ -58,6 +82,13 @@ export const TARKOV_MAPS = {
     rotation: 90,
     svgLayer: "Ground_Floor",
     canonical: "factory4_day",
+    floors: [
+      { id: "Third_Floor", label: "2" },
+      { id: "Second_Floor", label: "1" },
+      { id: "Ground_Floor", label: "0" },
+      { id: "Basement", label: "-1" },
+    ],
+    defaultFloor: "Ground_Floor",
   },
   woods: {
     displayName: "Woods",
@@ -70,6 +101,8 @@ export const TARKOV_MAPS = {
     rotation: 180,
     svgLayer: "Ground_Level",
     canonical: null,
+    floors: [],
+    defaultFloor: null,
   },
   shoreline: {
     displayName: "Shoreline",
@@ -82,6 +115,14 @@ export const TARKOV_MAPS = {
     rotation: 180,
     svgLayer: "Ground_Level",
     canonical: null,
+    floors: [
+      { id: "Third_Floor", label: "3" },
+      { id: "Second_Floor", label: "2" },
+      { id: "First_Floor", label: "1" },
+      { id: "Ground_Level", label: "0" },
+      { id: "Underground_Level", label: "-1" },
+    ],
+    defaultFloor: "Ground_Level",
   },
   rezervbase: {
     displayName: "Reserve",
@@ -94,6 +135,11 @@ export const TARKOV_MAPS = {
     rotation: 180,
     svgLayer: "Ground_Level",
     canonical: null,
+    floors: [
+      { id: "Ground_Level", label: "0" },
+      { id: "Bunkers", label: "-1" },
+    ],
+    defaultFloor: "Ground_Level",
   },
   interchange: {
     displayName: "Interchange",
@@ -106,6 +152,12 @@ export const TARKOV_MAPS = {
     rotation: 180,
     svgLayer: "Ground_Level",
     canonical: null,
+    floors: [
+      { id: "Second_Floor", label: "2" },
+      { id: "First_Floor", label: "1" },
+      { id: "Ground_Level", label: "0" },
+    ],
+    defaultFloor: "Ground_Level",
   },
   lighthouse: {
     displayName: "Lighthouse",
@@ -118,6 +170,8 @@ export const TARKOV_MAPS = {
     rotation: 180,
     svgLayer: "Ground_Level",
     canonical: null,
+    floors: [],
+    defaultFloor: null,
   },
   tarkovstreets: {
     displayName: "Streets of Tarkov",
@@ -130,6 +184,16 @@ export const TARKOV_MAPS = {
     rotation: 180,
     svgLayer: "Ground_Level",
     canonical: null,
+    floors: [
+      { id: "Fifth_Floor", label: "5" },
+      { id: "Fourth_Floor", label: "4" },
+      { id: "Third_Floor", label: "3" },
+      { id: "Second_Floor", label: "2" },
+      { id: "First_Floor", label: "1" },
+      { id: "Ground_Level", label: "0" },
+      { id: "Underground_Level", label: "-1" },
+    ],
+    defaultFloor: "Ground_Level",
   },
   laboratory: {
     displayName: "The Lab",
@@ -142,6 +206,12 @@ export const TARKOV_MAPS = {
     rotation: 270,
     svgLayer: null,
     canonical: null,
+    floors: [
+      { id: "Second_Level", label: "1" },
+      { id: "First_Level", label: "0" },
+      { id: "Technical_Level", label: "-1" },
+    ],
+    defaultFloor: "First_Level",
   },
   sandbox: {
     displayName: "Ground Zero",
@@ -154,6 +224,14 @@ export const TARKOV_MAPS = {
     rotation: 180,
     svgLayer: "Ground_Level",
     canonical: null,
+    floors: [
+      { id: "Third_Floor", label: "3" },
+      { id: "Second_Floor", label: "2" },
+      { id: "First_Floor", label: "1" },
+      { id: "Ground_Level", label: "0" },
+      { id: "Underground_Level", label: "-1" },
+    ],
+    defaultFloor: "Ground_Level",
   },
   sandbox_high: {
     displayName: "Ground Zero (High)",
@@ -166,6 +244,14 @@ export const TARKOV_MAPS = {
     rotation: 180,
     svgLayer: "Ground_Level",
     canonical: "sandbox",
+    floors: [
+      { id: "Third_Floor", label: "3" },
+      { id: "Second_Floor", label: "2" },
+      { id: "First_Floor", label: "1" },
+      { id: "Ground_Level", label: "0" },
+      { id: "Underground_Level", label: "-1" },
+    ],
+    defaultFloor: "Ground_Level",
   },
 } as const satisfies Record<string, TarkovMapInfo>;
 

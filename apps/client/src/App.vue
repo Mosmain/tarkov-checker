@@ -43,8 +43,13 @@ const badgeClass = computed(() => {
 
     <div class="pointer-events-none absolute top-3 right-3 z-[1000]">
       <span
-        class="rounded-md bg-base-300/70 px-3 py-1 text-sm font-medium text-base-content backdrop-blur"
+        class="inline-flex items-center gap-2 rounded-md bg-base-300/70 px-3 py-1 text-sm font-medium text-base-content backdrop-blur"
       >
+        <span
+          :class="['h-2 w-2 rounded-full', badgeClass]"
+          :title="'ws: ' + status"
+          aria-hidden="true"
+        />
         {{ mapDisplayName }}
       </span>
     </div>
@@ -67,14 +72,8 @@ const badgeClass = computed(() => {
       </div>
     </div>
 
-    <div class="absolute bottom-3 right-3 z-[1000] flex items-center gap-2">
+    <div class="absolute bottom-3 right-3 z-[1000]">
       <SettingsPanel />
-      <div
-        class="flex items-center gap-2 rounded-md bg-base-300/80 px-2 py-1 backdrop-blur"
-      >
-        <span :class="['h-2.5 w-2.5 rounded-full', badgeClass]" aria-hidden="true" />
-        <span class="text-xs">ws: {{ status }}</span>
-      </div>
     </div>
   </div>
 </template>
