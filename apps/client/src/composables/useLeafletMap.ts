@@ -393,28 +393,29 @@ export function useLeafletMap(
       return;
     }
     const ground = info.defaultFloor;
-    const activeFloor = info.floors.find((f) => f.id === id);
-    const groundFloor = info.floors.find((f) => f.id === ground);
-    const activeLabel = activeFloor ? Number(activeFloor.label) : NaN;
-    const groundLabel = groundFloor ? Number(groundFloor.label) : NaN;
-    // Ground stays as a dim context only when the user goes UP. For below-
-    // ground floors (Labs/Factory basement covers the same area as ground)
-    // we hide it completely so the underground view isn't masked.
-    const showGroundDim =
-      Number.isFinite(activeLabel) && Number.isFinite(groundLabel) && activeLabel > groundLabel;
     for (const fid of floorIds) {
       const group = map.get(fid);
       if (!group) continue;
       if (fid === id) {
         group.style.display = "";
         group.style.opacity = "";
-      } else if (fid === ground && showGroundDim) {
+      } else if (fid === ground) {
+        // Ground is the persistent context — always visible, dimmed when
+        // another floor sits on top.
         group.style.display = "";
         group.style.opacity = "0.15";
       } else {
         group.style.display = "none";
         group.style.opacity = "";
       }
+    }
+    // SVG draws later siblings on top of earlier ones. Move the active
+    // group to the end so it always renders above ground (and above other
+    // floors that may sit between them in the original DOM order — e.g.
+    // Labs Technical_Level is the first child, ground is the second).
+    const activeGroup = map.get(id);
+    if (activeGroup && activeGroup.parentNode) {
+      activeGroup.parentNode.appendChild(activeGroup);
     }
     currentFloor.value = id;
   }
