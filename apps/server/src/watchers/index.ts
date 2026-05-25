@@ -1,39 +1,58 @@
 import type { FastifyBaseLogger } from "fastify";
-import { resolveWatcherPaths, dirExists } from "./paths.js";
+import type { ResolvedPaths } from "./paths.js";
 import { startScreenshotWatcher, type ScreenshotWatcher } from "./screenshots.js";
 import type { Hub } from "../ws.js";
 
-export { resolveWatcherPaths } from "./paths.js";
+export { resolvePaths } from "./paths.js";
+export type { ResolvedPath, ResolvedPaths, PathSource, ManualOverrides } from "./paths.js";
+export { detectDocumentsDir, detectTarkovGameDir } from "./registry.js";
 export { parseScreenshotFilename } from "@tarkov-checker/shared";
 
-export interface RunningWatchers {
-  stopAll: () => Promise<void>;
-}
+/**
+ * Long-lived watcher process owner. Holds whatever handles are currently
+ * active and can swap them all out atomically on a config change.
+ */
+export class WatcherManager {
+  private handles: Array<{ stop: () => Promise<void> }> = [];
 
-export function startWatchers(hub: Hub, log: FastifyBaseLogger): RunningWatchers {
-  const paths = resolveWatcherPaths();
-  const handles: Array<ScreenshotWatcher> = [];
+  constructor(
+    private readonly hub: Hub,
+    private readonly log: FastifyBaseLogger,
+  ) {}
 
-  if (paths.screenshotDir && dirExists(paths.screenshotDir)) {
-    handles.push(startScreenshotWatcher(paths.screenshotDir, hub, log));
-  } else {
-    log.warn(
-      { screenshotDir: paths.screenshotDir ?? "(unset)" },
-      "TARKOV_SCREENSHOT_DIR is not set or does not exist — set it in .env to enable the player marker pipeline",
-    );
+  async apply(paths: ResolvedPaths): Promise<void> {
+    await this.stopAll();
+
+    if (paths.screenshotsDir.exists && paths.screenshotsDir.value) {
+      this.handles.push(
+        startScreenshotWatcher(paths.screenshotsDir.value, this.hub, this.log) as ScreenshotWatcher,
+      );
+    } else {
+      this.log.warn(
+        {
+          screenshotsDir: paths.screenshotsDir.value ?? "(unset)",
+          source: paths.screenshotsDir.source,
+          exists: paths.screenshotsDir.exists,
+        },
+        "screenshots dir is not usable — player marker pipeline dormant",
+      );
+    }
+
+    // TODO: log watcher uses paths.logsDir similarly.
+    if (!paths.logsDir.exists) {
+      this.log.info(
+        {
+          logsDir: paths.logsDir.value ?? "(unset)",
+          source: paths.logsDir.source,
+        },
+        "logs dir not usable (or log watcher not implemented yet) — ignoring",
+      );
+    }
   }
 
-  // TODO: log watcher (raid-start / raid-end / map detection) lands here next.
-  if (!dirExists(paths.logDir)) {
-    log.info(
-      { logDir: paths.logDir ?? "(unset)" },
-      "TARKOV_LOG_DIR is not set or does not exist — log watcher is not implemented yet either, ignore",
-    );
+  async stopAll(): Promise<void> {
+    const old = this.handles;
+    this.handles = [];
+    await Promise.all(old.map((h) => h.stop()));
   }
-
-  return {
-    stopAll: async () => {
-      await Promise.all(handles.map((h) => h.stop()));
-    },
-  };
 }

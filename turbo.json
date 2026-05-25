@@ -16,7 +16,7 @@
     "dev": {
       "cache": false,
       "persistent": true,
-      "env": ["NODE_ENV", "PORT", "HOST"]
+      "env": ["NODE_ENV", "PORT", "HOST", "SERVER_PORT"]
     }
   }
 }
