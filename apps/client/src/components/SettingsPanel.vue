@@ -171,22 +171,22 @@ onBeforeUnmount(() => {
 function sourceBadgeClass(source: "env" | "manual" | "detected" | "missing"): string {
   switch (source) {
     case "env":
-      return "bg-sky-500/20 text-sky-200";
+      return "badge-info";
     case "manual":
-      return "bg-emerald-500/20 text-emerald-200";
+      return "badge-success";
     case "detected":
-      return "bg-neutral-500/20 text-neutral-200";
+      return "badge-ghost";
     case "missing":
-      return "bg-rose-500/20 text-rose-200";
+      return "badge-error";
   }
 }
 
 function statusDotClass(slot: "gameDir" | "screenshotsDir" | "logsDir"): string {
   const item = serverConfig.value?.[slot];
-  if (!item) return "bg-neutral-600";
-  if (item.exists) return "bg-emerald-500";
-  if (item.value) return "bg-amber-500";
-  return "bg-rose-500";
+  if (!item) return "bg-base-content/30";
+  if (item.exists) return "bg-success";
+  if (item.value) return "bg-warning";
+  return "bg-error";
 }
 </script>
 
@@ -194,7 +194,7 @@ function statusDotClass(slot: "gameDir" | "screenshotsDir" | "logsDir"): string 
   <div ref="root" class="relative">
     <button
       type="button"
-      class="flex h-9 w-9 items-center justify-center rounded-md bg-black/60 text-neutral-200 backdrop-blur transition hover:bg-black/80 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
+      class="btn btn-sm btn-circle btn-ghost bg-base-300/80 hover:bg-base-300 backdrop-blur"
       :aria-expanded="open"
       :aria-label="t.settings"
       @click="toggle"
@@ -227,25 +227,21 @@ function statusDotClass(slot: "gameDir" | "screenshotsDir" | "logsDir"): string 
     >
       <div
         v-if="open"
-        class="fixed inset-x-3 bottom-16 z-[1010] rounded-xl border border-white/10 bg-neutral-900/95 p-4 text-sm text-neutral-100 shadow-2xl backdrop-blur sm:absolute sm:inset-x-auto sm:right-0 sm:bottom-full sm:mb-2 sm:w-64"
+        class="card card-compact bg-base-200/95 border border-base-300 shadow-2xl backdrop-blur fixed inset-x-3 bottom-16 z-[1010] sm:absolute sm:inset-x-auto sm:right-0 sm:bottom-full sm:mb-2 sm:w-72"
         role="dialog"
         :aria-label="t.settings"
       >
-        <div class="space-y-4">
+        <div class="card-body gap-4 max-h-[80vh] overflow-y-auto">
           <section>
-            <h3 class="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-400">
+            <h3 class="mb-2 text-xs font-semibold uppercase tracking-wider opacity-60">
               {{ t.language }}
             </h3>
-            <div class="flex gap-2">
+            <div class="join w-full">
               <label
                 v-for="opt in (['en', 'ru'] as const)"
                 :key="opt"
-                class="flex flex-1 cursor-pointer items-center justify-center rounded-md border px-3 py-1.5 text-sm transition"
-                :class="
-                  apiLang === opt
-                    ? 'border-emerald-500 bg-emerald-500/20 text-emerald-100'
-                    : 'border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10'
-                "
+                class="join-item btn btn-sm flex-1"
+                :class="apiLang === opt ? 'btn-primary' : 'btn-outline'"
               >
                 <input
                   v-model="apiLang"
@@ -260,37 +256,32 @@ function statusDotClass(slot: "gameDir" | "screenshotsDir" | "logsDir"): string 
           </section>
 
           <section>
-            <h3 class="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-400">
+            <h3 class="mb-2 text-xs font-semibold uppercase tracking-wider opacity-60">
               {{ t.paths.heading }}
             </h3>
 
-            <p
-              v-if="pathsError"
-              class="mb-2 rounded-md bg-rose-900/40 px-2 py-1 text-xs text-rose-100"
-            >
+            <div v-if="pathsError" class="alert alert-error alert-sm mb-2 text-xs">
               {{ pathsError }}
-            </p>
-            <p v-if="pathsLoading && !serverConfig" class="text-xs text-neutral-400">…</p>
+            </div>
+            <p v-if="pathsLoading && !serverConfig" class="text-xs opacity-60">…</p>
 
             <div v-if="serverConfig" class="space-y-3">
               <div>
                 <div class="mb-1 flex items-center justify-between gap-2">
-                  <label class="text-xs text-neutral-300" for="game-dir-input">
+                  <label class="text-xs opacity-70" for="game-dir-input">
                     {{ t.paths.gameDir }}
                   </label>
-                  <span
-                    class="rounded px-1.5 py-0.5 text-[10px] uppercase tracking-wide"
-                    :class="sourceBadgeClass(serverConfig.gameDir.source)"
-                  >
+                  <span class="badge badge-sm" :class="sourceBadgeClass(serverConfig.gameDir.source)">
                     {{ t.paths.source[serverConfig.gameDir.source] }}
                   </span>
                 </div>
-                <div class="flex items-center gap-2">
+                <label
+                  class="input input-sm input-bordered flex items-center gap-2"
+                  :title="serverConfig.gameDir.exists ? '' : t.paths.missingTooltip"
+                >
                   <span
-                    :class="['h-2 w-2 rounded-full', statusDotClass('gameDir')]"
-                    :title="
-                      serverConfig.gameDir.exists ? '' : t.paths.missingTooltip
-                    "
+                    class="inline-block h-2 w-2 rounded-full"
+                    :class="statusDotClass('gameDir')"
                     aria-hidden="true"
                   ></span>
                   <input
@@ -299,11 +290,11 @@ function statusDotClass(slot: "gameDir" | "screenshotsDir" | "logsDir"): string 
                     :placeholder="t.paths.placeholderGameDir"
                     :disabled="!isDesktop || gameDirLocked"
                     :readonly="!isDesktop"
-                    class="w-full rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs text-neutral-100 focus:border-emerald-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+                    class="grow text-xs"
                   />
-                </div>
+                </label>
                 <p
-                  class="mt-1 truncate text-[10px] text-neutral-500"
+                  class="mt-1 truncate text-[10px] opacity-50"
                   :title="serverConfig.logsDir.value ?? ''"
                 >
                   {{ t.paths.logsDir }}: {{ serverConfig.logsDir.value ?? "—" }}
@@ -312,22 +303,23 @@ function statusDotClass(slot: "gameDir" | "screenshotsDir" | "logsDir"): string 
 
               <div>
                 <div class="mb-1 flex items-center justify-between gap-2">
-                  <label class="text-xs text-neutral-300" for="screenshots-dir-input">
+                  <label class="text-xs opacity-70" for="screenshots-dir-input">
                     {{ t.paths.screenshotsDir }}
                   </label>
                   <span
-                    class="rounded px-1.5 py-0.5 text-[10px] uppercase tracking-wide"
+                    class="badge badge-sm"
                     :class="sourceBadgeClass(serverConfig.screenshotsDir.source)"
                   >
                     {{ t.paths.source[serverConfig.screenshotsDir.source] }}
                   </span>
                 </div>
-                <div class="flex items-center gap-2">
+                <label
+                  class="input input-sm input-bordered flex items-center gap-2"
+                  :title="serverConfig.screenshotsDir.exists ? '' : t.paths.missingTooltip"
+                >
                   <span
-                    :class="['h-2 w-2 rounded-full', statusDotClass('screenshotsDir')]"
-                    :title="
-                      serverConfig.screenshotsDir.exists ? '' : t.paths.missingTooltip
-                    "
+                    class="inline-block h-2 w-2 rounded-full"
+                    :class="statusDotClass('screenshotsDir')"
                     aria-hidden="true"
                   ></span>
                   <input
@@ -336,18 +328,18 @@ function statusDotClass(slot: "gameDir" | "screenshotsDir" | "logsDir"): string 
                     :placeholder="t.paths.placeholderScreenshotsDir"
                     :disabled="!isDesktop || screenshotsDirLocked"
                     :readonly="!isDesktop"
-                    class="w-full rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs text-neutral-100 focus:border-emerald-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+                    class="grow text-xs"
                   />
-                </div>
+                </label>
               </div>
 
               <div v-if="isDesktop" class="flex items-center justify-end gap-2">
-                <span v-if="pathsJustSaved" class="text-[10px] text-emerald-400">
+                <span v-if="pathsJustSaved" class="text-[11px] text-success">
                   {{ t.paths.saved }}
                 </span>
                 <button
                   type="button"
-                  class="rounded-md bg-emerald-600 px-3 py-1 text-xs font-medium text-emerald-50 transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-neutral-700 disabled:text-neutral-400"
+                  class="btn btn-primary btn-sm"
                   :disabled="!canSavePaths"
                   @click="savePaths"
                 >
@@ -355,20 +347,17 @@ function statusDotClass(slot: "gameDir" | "screenshotsDir" | "logsDir"): string 
                 </button>
               </div>
 
-              <p v-else class="text-[10px] leading-relaxed text-neutral-500">
+              <p v-else class="text-[10px] leading-relaxed opacity-50">
                 {{ t.paths.mobileHint }}
               </p>
             </div>
           </section>
 
           <section>
-            <h3 class="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-400">
+            <h3 class="mb-2 text-xs font-semibold uppercase tracking-wider opacity-60">
               {{ t.map }}
             </h3>
-            <select
-              v-model="mapCode"
-              class="w-full rounded-md border border-white/10 bg-white/5 px-2 py-1.5 text-sm text-neutral-100 focus:border-emerald-500 focus:outline-none"
-            >
+            <select v-model="mapCode" class="select select-bordered select-sm w-full">
               <option v-for="code in MAP_CODES" :key="code" :value="code">
                 {{ mapLabelFor(code) }}
               </option>
@@ -377,44 +366,40 @@ function statusDotClass(slot: "gameDir" | "screenshotsDir" | "logsDir"): string 
 
           <section>
             <div class="mb-2 flex items-center justify-between">
-              <h3 class="text-xs font-semibold uppercase tracking-wider text-neutral-400">
+              <h3 class="text-xs font-semibold uppercase tracking-wider opacity-60">
                 {{ t.extracts }}
               </h3>
-              <label class="inline-flex cursor-pointer items-center gap-2">
-                <span class="text-xs text-neutral-300">{{ extractsVisible ? t.on : t.off }}</span>
-                <span class="relative">
-                  <input v-model="extractsVisible" type="checkbox" class="peer sr-only" />
-                  <span
-                    class="block h-5 w-9 rounded-full bg-neutral-700 transition peer-checked:bg-emerald-600"
-                  ></span>
-                  <span
-                    class="absolute left-0.5 top-0.5 block h-4 w-4 rounded-full bg-white transition peer-checked:translate-x-4"
-                  ></span>
-                </span>
+              <label class="label cursor-pointer gap-2 py-0">
+                <span class="label-text text-xs">{{ extractsVisible ? t.on : t.off }}</span>
+                <input
+                  v-model="extractsVisible"
+                  type="checkbox"
+                  class="toggle toggle-success toggle-sm"
+                />
               </label>
             </div>
 
             <div
-              class="space-y-1.5 transition"
+              class="space-y-1 transition"
               :class="factionLabelDisabled ? 'opacity-40 pointer-events-none' : ''"
             >
               <label
                 v-for="opt in FACTION_OPTIONS"
                 :key="opt.value"
-                class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 hover:bg-white/5"
+                class="label cursor-pointer justify-start gap-3 py-1"
               >
                 <input
                   type="checkbox"
-                  class="h-4 w-4 rounded border-neutral-600 bg-neutral-800 text-emerald-500 focus:ring-emerald-500/60"
+                  class="checkbox checkbox-sm checkbox-primary"
                   :checked="extractFactions.includes(opt.value)"
                   @change="settings.toggleFaction(opt.value)"
                 />
                 <span
-                  class="h-2.5 w-2.5 rounded-full"
+                  class="inline-block h-2.5 w-2.5 rounded-full"
                   :style="{ backgroundColor: opt.color }"
                   aria-hidden="true"
                 ></span>
-                <span class="text-sm">{{ t.factions[opt.value] }}</span>
+                <span class="label-text text-sm">{{ t.factions[opt.value] }}</span>
               </label>
             </div>
 
@@ -422,17 +407,13 @@ function statusDotClass(slot: "gameDir" | "screenshotsDir" | "logsDir"): string 
               class="mt-3 transition"
               :class="factionLabelDisabled ? 'opacity-40 pointer-events-none' : ''"
             >
-              <p class="mb-1.5 text-xs text-neutral-400">{{ t.labels }}</p>
-              <div class="flex gap-2">
+              <p class="mb-1.5 text-xs opacity-60">{{ t.labels }}</p>
+              <div class="join w-full">
                 <label
-                  v-for="opt in (['hover', 'smart'] as const)"
+                  v-for="opt in (['hover', 'always'] as const)"
                   :key="opt"
-                  class="flex flex-1 cursor-pointer items-center justify-center rounded-md border px-3 py-1.5 text-xs transition"
-                  :class="
-                    extractLabelMode === opt
-                      ? 'border-emerald-500 bg-emerald-500/20 text-emerald-100'
-                      : 'border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10'
-                  "
+                  class="join-item btn btn-xs flex-1"
+                  :class="extractLabelMode === opt ? 'btn-primary' : 'btn-outline'"
                 >
                   <input
                     v-model="extractLabelMode"
@@ -444,7 +425,7 @@ function statusDotClass(slot: "gameDir" | "screenshotsDir" | "logsDir"): string 
                   {{ opt === "hover" ? t.labelHover : t.labelSmart }}
                 </label>
               </div>
-              <p class="mt-1.5 text-[10px] leading-relaxed text-neutral-500">
+              <p class="mt-1.5 text-[10px] leading-relaxed opacity-50">
                 {{ t.labelHint }}
               </p>
             </div>

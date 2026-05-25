@@ -19,19 +19,19 @@ const { status, lastMessage } = useWebSocket(wsUrl);
 const badgeClass = computed(() => {
   switch (status.value) {
     case "open":
-      return "bg-emerald-600";
+      return "bg-success";
     case "connecting":
-      return "bg-amber-500";
+      return "bg-warning";
     case "closed":
-      return "bg-rose-600";
+      return "bg-error";
     default:
-      return "bg-neutral-600";
+      return "bg-base-content/30";
   }
 });
 </script>
 
 <template>
-  <div class="relative h-screen w-screen bg-neutral-950">
+  <div class="relative h-screen w-screen bg-base-100 text-base-content">
     <MapView
       :key="mapCode"
       :map-code="mapCode"
@@ -43,7 +43,7 @@ const badgeClass = computed(() => {
 
     <div class="pointer-events-none absolute top-3 right-3 z-[1000]">
       <span
-        class="rounded-md bg-black/60 px-3 py-1 text-sm font-medium text-neutral-100 backdrop-blur"
+        class="rounded-md bg-base-300/70 px-3 py-1 text-sm font-medium text-base-content backdrop-blur"
       >
         {{ mapDisplayName }}
       </span>
@@ -53,25 +53,27 @@ const badgeClass = computed(() => {
       v-if="mapError || extractsError"
       class="pointer-events-none absolute top-14 inset-x-3 z-[1000] flex flex-col items-center gap-1"
     >
-      <span
+      <div
         v-if="mapError"
-        class="rounded-md bg-rose-900/80 px-3 py-1 text-xs text-rose-50 backdrop-blur"
+        class="alert alert-error alert-sm w-auto py-1 text-xs backdrop-blur"
       >
         Map load error: {{ mapError }}
-      </span>
-      <span
+      </div>
+      <div
         v-if="extractsError"
-        class="rounded-md bg-amber-900/80 px-3 py-1 text-xs text-amber-50 backdrop-blur"
+        class="alert alert-warning alert-sm w-auto py-1 text-xs backdrop-blur"
       >
         Extracts: {{ extractsError }}
-      </span>
+      </div>
     </div>
 
     <div class="absolute bottom-3 right-3 z-[1000] flex items-center gap-2">
       <SettingsPanel />
-      <div class="flex items-center gap-2 rounded-md bg-black/60 px-2 py-1 backdrop-blur">
+      <div
+        class="flex items-center gap-2 rounded-md bg-base-300/80 px-2 py-1 backdrop-blur"
+      >
         <span :class="['h-2.5 w-2.5 rounded-full', badgeClass]" aria-hidden="true" />
-        <span class="text-xs text-neutral-100">ws: {{ status }}</span>
+        <span class="text-xs">ws: {{ status }}</span>
       </div>
     </div>
   </div>
