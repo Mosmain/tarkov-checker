@@ -10,7 +10,8 @@ import { useSettingsStore } from "./stores/settings";
 
 // TODO: drive currentMapCode from the raid store / WS raid-start event.
 const currentMapCode: TarkovMapCode = "bigmap";
-const currentMapInfo = mapInfo(currentMapCode);
+const fallbackMapName = mapInfo(currentMapCode).displayName;
+const mapDisplayName = ref<string>(fallbackMapName);
 
 const settings = useSettingsStore();
 const { apiLang, extractFactions, extractsVisible, extractLabelMode } = storeToRefs(settings);
@@ -28,6 +29,7 @@ async function loadExtracts(): Promise<void> {
   try {
     const result = await fetchExtractsForMap(currentMapCode, apiLang.value);
     if (result) {
+      mapDisplayName.value = result.name;
       addExtractMarkers(result.extracts);
     } else {
       extractsError.value = `tarkov.dev: no map matched nameId=${currentMapCode}`;
@@ -78,7 +80,7 @@ const badgeClass = computed(() => {
       <span
         class="rounded-md bg-black/60 px-3 py-1 text-sm font-medium text-neutral-100 backdrop-blur"
       >
-        {{ currentMapInfo.displayName }}
+        {{ mapDisplayName }}
       </span>
     </div>
 

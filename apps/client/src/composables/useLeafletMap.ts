@@ -34,6 +34,10 @@ interface UseLeafletMapResult {
 const FALLBACK_COLOR = "#94a3b8";
 /** Smart labels appear once the user zooms in by this many steps past the fit-bounds zoom. */
 const SMART_LABEL_ZOOM_DELTA = 1;
+/** Markers within this many in-game units of each other are spread radially. */
+const OVERLAP_TOLERANCE = 2;
+/** Radial offset in SVG pixels between co-located markers (scaled into game units per map). */
+const OVERLAP_OFFSET_PIXELS = 7;
 
 function factionColor(faction: Extract["faction"]): string {
   const key = faction ?? "shared";
@@ -222,8 +226,41 @@ export function useLeafletMap(
       });
       entries.push({ marker, extract: ex });
     }
+    spreadOverlapping();
     applyTooltipBindings();
     applyVisibility();
+  }
+
+  function spreadOverlapping(): void {
+    // Group entries whose (x, z) coordinates are within OVERLAP_TOLERANCE.
+    // For each group of N > 1, place members around a small circle so each is visible.
+    const bucketSize = Math.max(OVERLAP_TOLERANCE, 1);
+    const groups = new Map<string, MarkerEntry[]>();
+    for (const entry of entries) {
+      const bx = Math.round(entry.extract.position.x / bucketSize);
+      const bz = Math.round(entry.extract.position.z / bucketSize);
+      const key = `${bx},${bz}`;
+      const group = groups.get(key);
+      if (group) {
+        group.push(entry);
+      } else {
+        groups.set(key, [entry]);
+      }
+    }
+    // Convert constant SVG-pixel offset into in-game units via the map's scale.
+    const offsetUnits = OVERLAP_OFFSET_PIXELS / info.transform[0];
+    for (const group of groups.values()) {
+      if (group.length <= 1) continue;
+      const step = (2 * Math.PI) / group.length;
+      for (let i = 0; i < group.length; i++) {
+        const angle = i * step - Math.PI / 2;
+        const dx = Math.cos(angle) * offsetUnits;
+        const dz = Math.sin(angle) * offsetUnits;
+        const entry = group[i]!;
+        const { x, z } = entry.extract.position;
+        entry.marker.setLatLng(inGameLatLng(x + dx, z + dz));
+      }
+    }
   }
 
   function setExtractFilter(

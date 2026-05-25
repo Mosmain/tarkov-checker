@@ -86,7 +86,7 @@ const factionLabelDisabled = computed(() => !extractsVisible.value);
     >
       <div
         v-if="open"
-        class="absolute bottom-full right-0 mb-2 w-64 rounded-lg border border-white/10 bg-neutral-900/95 p-4 text-sm text-neutral-100 shadow-2xl backdrop-blur"
+        class="fixed inset-x-3 bottom-16 z-20 rounded-xl border border-white/10 bg-neutral-900/95 p-4 text-sm text-neutral-100 shadow-2xl backdrop-blur sm:absolute sm:inset-x-auto sm:right-0 sm:bottom-full sm:mb-2 sm:w-64"
         role="dialog"
         aria-label="Settings"
       >

@@ -16,6 +16,7 @@ export const extract = z.object({
 
 export const mapExtracts = z.object({
   nameId: z.string(),
+  name: z.string(),
   extracts: z.array(extract),
 });
 

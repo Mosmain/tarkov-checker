@@ -41,7 +41,7 @@ export async function fetchAllExtracts(lang: ApiLang = "en"): Promise<MapExtract
 
   const promise = (async () => {
     const data = await gqlQuery<{ maps: unknown }>(
-      `{ maps(lang: ${lang}) { nameId extracts { name faction position { x y z } } } }`,
+      `{ maps(lang: ${lang}) { nameId name extracts { name faction position { x y z } } } }`,
     );
     const parsed = extractsResponse.parse(data);
     return parsed.maps;
