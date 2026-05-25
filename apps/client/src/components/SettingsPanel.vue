@@ -276,7 +276,7 @@ function statusDotClass(slot: "gameDir" | "screenshotsDir" | "logsDir"): string 
                   </span>
                 </div>
                 <label
-                  class="input input-sm input-bordered flex items-center gap-2"
+                  class="input input-sm input-bordered bg-base-100 flex items-center gap-2"
                   :title="serverConfig.gameDir.exists ? '' : t.paths.missingTooltip"
                 >
                   <span
@@ -314,7 +314,7 @@ function statusDotClass(slot: "gameDir" | "screenshotsDir" | "logsDir"): string 
                   </span>
                 </div>
                 <label
-                  class="input input-sm input-bordered flex items-center gap-2"
+                  class="input input-sm input-bordered bg-base-100 flex items-center gap-2"
                   :title="serverConfig.screenshotsDir.exists ? '' : t.paths.missingTooltip"
                 >
                   <span
@@ -357,7 +357,10 @@ function statusDotClass(slot: "gameDir" | "screenshotsDir" | "logsDir"): string 
             <h3 class="mb-2 text-xs font-semibold uppercase tracking-wider opacity-60">
               {{ t.map }}
             </h3>
-            <select v-model="mapCode" class="select select-bordered select-sm w-full">
+            <select
+              v-model="mapCode"
+              class="select select-bordered select-sm bg-base-100 w-full"
+            >
               <option v-for="code in MAP_CODES" :key="code" :value="code">
                 {{ mapLabelFor(code) }}
               </option>
@@ -380,13 +383,13 @@ function statusDotClass(slot: "gameDir" | "screenshotsDir" | "logsDir"): string 
             </div>
 
             <div
-              class="space-y-1 transition"
+              class="flex flex-col gap-1 transition"
               :class="factionLabelDisabled ? 'opacity-40 pointer-events-none' : ''"
             >
               <label
                 v-for="opt in FACTION_OPTIONS"
                 :key="opt.value"
-                class="label cursor-pointer justify-start gap-3 py-1"
+                class="flex cursor-pointer items-center gap-3 rounded px-1 py-1 hover:bg-base-300/50"
               >
                 <input
                   type="checkbox"
@@ -399,7 +402,7 @@ function statusDotClass(slot: "gameDir" | "screenshotsDir" | "logsDir"): string 
                   :style="{ backgroundColor: opt.color }"
                   aria-hidden="true"
                 ></span>
-                <span class="label-text text-sm">{{ t.factions[opt.value] }}</span>
+                <span class="text-sm">{{ t.factions[opt.value] }}</span>
               </label>
             </div>
 
@@ -422,7 +425,7 @@ function statusDotClass(slot: "gameDir" | "screenshotsDir" | "logsDir"): string 
                     name="label-mode"
                     class="sr-only"
                   />
-                  {{ opt === "hover" ? t.labelHover : t.labelSmart }}
+                  {{ opt === "hover" ? t.labelHover : t.labelAlways }}
                 </label>
               </div>
               <p class="mt-1.5 text-[10px] leading-relaxed opacity-50">

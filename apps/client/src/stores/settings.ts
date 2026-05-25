@@ -3,14 +3,11 @@ import { ref, watch } from "vue";
 import { z } from "zod";
 import { TARKOV_MAPS, type TarkovMapCode } from "@shared/maps";
 
-const STORAGE_KEY = "tarkov-checker:settings:v1";
+const STORAGE_KEY = "tarkov-checker:settings:v2";
 
 const apiLangSchema = z.enum(["en", "ru"]);
 const extractFactionSchema = z.enum(["pmc", "scav", "shared"]);
-// "smart" was the previous always-when-visible mode; collapse to "always".
-const labelModeSchema = z
-  .union([z.enum(["hover", "always"]), z.literal("smart").transform(() => "always" as const)])
-  .pipe(z.enum(["hover", "always"]));
+const labelModeSchema = z.enum(["hover", "always"]);
 const mapCodeSchema = z.string().refine((s): s is TarkovMapCode => s in TARKOV_MAPS);
 
 const persistedSchema = z.object({

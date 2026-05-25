@@ -10,7 +10,7 @@ interface UiBundle {
   readonly off: string;
   readonly labels: string;
   readonly labelHover: string;
-  readonly labelSmart: string;
+  readonly labelAlways: string;
   readonly labelHint: string;
   readonly settings: string;
   readonly factions: Readonly<Record<ExtractFactionFilter, string>>;
@@ -38,7 +38,7 @@ const BUNDLES: Readonly<Record<ApiLang, UiBundle>> = {
     off: "Off",
     labels: "Labels",
     labelHover: "On hover",
-    labelSmart: "Always",
+    labelAlways: "Always",
     labelHint: "Always shows extract names; switch to On hover for a minimal view.",
     settings: "Settings",
     factions: {
@@ -73,7 +73,7 @@ const BUNDLES: Readonly<Record<ApiLang, UiBundle>> = {
     off: "Выкл",
     labels: "Подписи",
     labelHover: "При наведении",
-    labelSmart: "Всегда",
+    labelAlways: "Всегда",
     labelHint: "Подписи видны всегда; переключи на «При наведении», если хочется меньше шума.",
     settings: "Настройки",
     factions: {

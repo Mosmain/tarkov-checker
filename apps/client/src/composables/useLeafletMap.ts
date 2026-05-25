@@ -176,7 +176,17 @@ export function useLeafletMap(
         ...base,
         offset: entry.tooltipOffset,
       });
+      // Permanent tooltips can get closed by stray click/focus events; reopen
+      // them on the next tick to keep them visible in `always` mode.
+      entry.marker.off("click", reopenTooltipOnAlways);
+      entry.marker.on("click", reopenTooltipOnAlways);
     }
+  }
+
+  function reopenTooltipOnAlways(e: L.LeafletEvent): void {
+    if (state.labelMode !== "always") return;
+    const target = e.target as L.Layer;
+    setTimeout(() => target.openTooltip(), 0);
   }
 
   function applyVisibility(): void {
@@ -207,6 +217,7 @@ export function useLeafletMap(
         weight: 1.5,
         fillColor: factionColor(ex.faction),
         fillOpacity: 0.9,
+        pane: "extracts",
       });
       entries.push({ marker, extract: ex, tooltipOffset: [0, -TOOLTIP_RING_RADIUS] });
     }
@@ -280,6 +291,7 @@ export function useLeafletMap(
         fill: false,
         className: "player-pulse",
         interactive: false,
+        pane: "extracts",
       }).addTo(playerLayer);
     } else {
       playerPulse.setLatLng(latLng);
@@ -301,6 +313,7 @@ export function useLeafletMap(
         keyboard: false,
         // Ensure the arrow renders on top of the pulse ring.
         zIndexOffset: 1000,
+        pane: "extracts",
       }).addTo(playerLayer);
     } else {
       playerCore.setLatLng(latLng);
@@ -338,6 +351,11 @@ export function useLeafletMap(
       maxBoundsViscosity: 1.0,
     });
     map.value = instance;
+    // Custom pane for overlay markers — sits above the default overlayPane
+    // (z 400) where L.svgOverlay lands, so markers stay visible after a map
+    // switch even though the SVG is fetched asynchronously and lands later.
+    const markersPane = instance.createPane("extracts");
+    markersPane.style.zIndex = "500";
     instance.fitBounds(bounds);
     initialZoom = instance.getZoom();
     instance.setMinZoom(initialZoom);
