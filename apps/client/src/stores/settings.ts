@@ -1,18 +1,24 @@
 import { defineStore } from "pinia";
 import { ref, watch } from "vue";
 import { z } from "zod";
+import { TARKOV_MAPS, type TarkovMapCode } from "@shared/maps";
 
 const STORAGE_KEY = "tarkov-checker:settings:v1";
 
 const apiLangSchema = z.enum(["en", "ru"]);
 const extractFactionSchema = z.enum(["pmc", "scav", "shared"]);
 const labelModeSchema = z.enum(["hover", "smart"]);
+const mapCodeSchema = z
+  .string()
+  .refine((s): s is TarkovMapCode => s in TARKOV_MAPS);
 
 const persistedSchema = z.object({
   apiLang: apiLangSchema,
   extractFactions: z.array(extractFactionSchema),
   extractsVisible: z.boolean(),
   extractLabelMode: labelModeSchema,
+  // Defaulted so users coming from older builds keep their other settings.
+  mapCode: mapCodeSchema.default("bigmap"),
 });
 
 export type ApiLang = z.infer<typeof apiLangSchema>;
@@ -24,6 +30,7 @@ const DEFAULTS = {
   extractFactions: ["pmc", "scav", "shared"] as const satisfies readonly ExtractFactionFilter[],
   extractsVisible: true,
   extractLabelMode: "smart" as const,
+  mapCode: "bigmap" as const satisfies TarkovMapCode,
 };
 
 function loadFromStorage(): z.infer<typeof persistedSchema> {
@@ -33,6 +40,7 @@ function loadFromStorage(): z.infer<typeof persistedSchema> {
       extractFactions: [...DEFAULTS.extractFactions],
       extractsVisible: DEFAULTS.extractsVisible,
       extractLabelMode: DEFAULTS.extractLabelMode,
+      mapCode: DEFAULTS.mapCode,
     };
   }
   const raw = localStorage.getItem(STORAGE_KEY);
@@ -42,6 +50,7 @@ function loadFromStorage(): z.infer<typeof persistedSchema> {
       extractFactions: [...DEFAULTS.extractFactions],
       extractsVisible: DEFAULTS.extractsVisible,
       extractLabelMode: DEFAULTS.extractLabelMode,
+      mapCode: DEFAULTS.mapCode,
     };
   }
   try {
@@ -57,6 +66,7 @@ function loadFromStorage(): z.infer<typeof persistedSchema> {
     extractFactions: [...DEFAULTS.extractFactions],
     extractsVisible: DEFAULTS.extractsVisible,
     extractLabelMode: DEFAULTS.extractLabelMode,
+    mapCode: DEFAULTS.mapCode,
   };
 }
 
@@ -67,9 +77,10 @@ export const useSettingsStore = defineStore("settings", () => {
   const extractFactions = ref<ExtractFactionFilter[]>([...initial.extractFactions]);
   const extractsVisible = ref(initial.extractsVisible);
   const extractLabelMode = ref<ExtractLabelMode>(initial.extractLabelMode);
+  const mapCode = ref<TarkovMapCode>(initial.mapCode);
 
   watch(
-    [apiLang, extractFactions, extractsVisible, extractLabelMode],
+    [apiLang, extractFactions, extractsVisible, extractLabelMode, mapCode],
     () => {
       if (typeof localStorage === "undefined") return;
       localStorage.setItem(
@@ -79,6 +90,7 @@ export const useSettingsStore = defineStore("settings", () => {
           extractFactions: extractFactions.value,
           extractsVisible: extractsVisible.value,
           extractLabelMode: extractLabelMode.value,
+          mapCode: mapCode.value,
         }),
       );
     },
@@ -105,6 +117,7 @@ export const useSettingsStore = defineStore("settings", () => {
     extractFactions,
     extractsVisible,
     extractLabelMode,
+    mapCode,
     toggleFaction,
     isFactionVisible,
   };

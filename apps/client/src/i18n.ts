@@ -4,6 +4,7 @@ import { useSettingsStore, type ApiLang, type ExtractFactionFilter } from "./sto
 
 interface UiBundle {
   readonly language: string;
+  readonly map: string;
   readonly extracts: string;
   readonly on: string;
   readonly off: string;
@@ -18,6 +19,7 @@ interface UiBundle {
 const BUNDLES: Readonly<Record<ApiLang, UiBundle>> = {
   en: {
     language: "Language",
+    map: "Map",
     extracts: "Extracts",
     on: "On",
     off: "Off",
@@ -34,6 +36,7 @@ const BUNDLES: Readonly<Record<ApiLang, UiBundle>> = {
   },
   ru: {
     language: "Язык",
+    map: "Карта",
     extracts: "Выходы",
     on: "Вкл",
     off: "Выкл",

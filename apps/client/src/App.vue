@@ -1,62 +1,20 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, ref } from "vue";
 import { storeToRefs } from "pinia";
-import { useLeafletMap } from "./composables/useLeafletMap";
-import { useWebSocket } from "./composables/useWebSocket";
-import { fetchExtractsForMap } from "./api/tarkov-dev";
+import MapView from "./components/MapView.vue";
 import SettingsPanel from "./components/SettingsPanel.vue";
-import { mapInfo, type TarkovMapCode } from "@shared/maps";
+import { useWebSocket } from "./composables/useWebSocket";
 import { useSettingsStore } from "./stores/settings";
 
-// TODO: drive currentMapCode from the raid store / WS raid-start event.
-const currentMapCode: TarkovMapCode = "bigmap";
-const fallbackMapName = mapInfo(currentMapCode).displayName;
-const mapDisplayName = ref<string>(fallbackMapName);
-
 const settings = useSettingsStore();
-const { apiLang, extractFactions, extractsVisible, extractLabelMode } = storeToRefs(settings);
+const { mapCode } = storeToRefs(settings);
 
-const mapContainer = ref<HTMLElement | null>(null);
-const { mapError, addExtractMarkers, setExtractFilter, setLabelMode } = useLeafletMap(
-  mapContainer,
-  currentMapCode,
-);
-
+const mapDisplayName = ref<string>("…");
+const mapError = ref<string | null>(null);
 const extractsError = ref<string | null>(null);
 
-async function loadExtracts(): Promise<void> {
-  extractsError.value = null;
-  try {
-    const result = await fetchExtractsForMap(currentMapCode, apiLang.value);
-    if (result) {
-      mapDisplayName.value = result.name;
-      addExtractMarkers(result.extracts);
-    } else {
-      extractsError.value = `tarkov.dev: no map matched nameId=${currentMapCode}`;
-    }
-  } catch (err) {
-    extractsError.value = err instanceof Error ? err.message : String(err);
-  }
-}
-
-// Initial settings push happens before the first fetch so newly-created
-// markers come up with the right filter/label mode immediately.
-setExtractFilter(extractFactions.value, extractsVisible.value);
-setLabelMode(extractLabelMode.value);
-void loadExtracts();
-
-watch(apiLang, () => {
-  void loadExtracts();
-});
-watch([extractFactions, extractsVisible], () => {
-  setExtractFilter(extractFactions.value, extractsVisible.value);
-});
-watch(extractLabelMode, (mode) => {
-  setLabelMode(mode);
-});
-
 const wsUrl = `ws://${window.location.hostname}:3000/ws`;
-const { status } = useWebSocket(wsUrl);
+const { status, lastMessage } = useWebSocket(wsUrl);
 
 const badgeClass = computed(() => {
   switch (status.value) {
@@ -74,7 +32,14 @@ const badgeClass = computed(() => {
 
 <template>
   <div class="relative h-screen w-screen bg-neutral-950">
-    <div ref="mapContainer" class="absolute inset-0 z-0" />
+    <MapView
+      :key="mapCode"
+      :map-code="mapCode"
+      :last-message="lastMessage"
+      @map-name="mapDisplayName = $event"
+      @map-error="mapError = $event"
+      @extracts-error="extractsError = $event"
+    />
 
     <div class="pointer-events-none absolute top-3 right-3 z-[1000]">
       <span

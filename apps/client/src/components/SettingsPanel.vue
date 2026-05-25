@@ -1,13 +1,38 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useSettingsStore, type ExtractFactionFilter } from "../stores/settings";
-import { FACTION_COLORS } from "@shared/maps";
+import { FACTION_COLORS, TARKOV_MAPS, type TarkovMapCode } from "@shared/maps";
 import { useUiText } from "../i18n";
+import { fetchAllExtracts } from "../api/tarkov-dev";
 
 const settings = useSettingsStore();
-const { apiLang, extractFactions, extractsVisible, extractLabelMode } = storeToRefs(settings);
+const { apiLang, extractFactions, extractsVisible, extractLabelMode, mapCode } =
+  storeToRefs(settings);
 const t = useUiText();
+
+const MAP_CODES = Object.keys(TARKOV_MAPS) as TarkovMapCode[];
+const localizedMapNames = ref<Partial<Record<string, string>>>({});
+
+async function loadMapNames(): Promise<void> {
+  try {
+    const all = await fetchAllExtracts(apiLang.value);
+    const byNameId: Record<string, string> = {};
+    for (const entry of all) {
+      byNameId[entry.nameId.toLowerCase()] = entry.name;
+    }
+    localizedMapNames.value = byNameId;
+  } catch {
+    // Fall back silently to TARKOV_MAPS.displayName via the helper below.
+  }
+}
+
+void loadMapNames();
+watch(apiLang, () => void loadMapNames());
+
+function mapLabelFor(code: TarkovMapCode): string {
+  return localizedMapNames.value[code.toLowerCase()] ?? TARKOV_MAPS[code].displayName;
+}
 
 const open = ref(false);
 const root = ref<HTMLElement | null>(null);
@@ -117,6 +142,20 @@ const factionLabelDisabled = computed(() => !extractsVisible.value);
                 {{ opt.toUpperCase() }}
               </label>
             </div>
+          </section>
+
+          <section>
+            <h3 class="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-400">
+              {{ t.map }}
+            </h3>
+            <select
+              v-model="mapCode"
+              class="w-full rounded-md border border-white/10 bg-white/5 px-2 py-1.5 text-sm text-neutral-100 focus:border-emerald-500 focus:outline-none"
+            >
+              <option v-for="code in MAP_CODES" :key="code" :value="code">
+                {{ mapLabelFor(code) }}
+              </option>
+            </select>
           </section>
 
           <section>

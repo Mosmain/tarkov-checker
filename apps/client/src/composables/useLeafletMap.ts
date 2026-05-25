@@ -6,7 +6,7 @@ import L, {
   type CircleMarker,
 } from "leaflet";
 import { mapInfo, mapSvgPath, FACTION_COLORS, type TarkovMapCode } from "@shared/maps";
-import type { Extract } from "@shared/tarkov-api";
+import type { Extract, Position3D } from "@shared/tarkov-api";
 
 interface LoadedMap {
   width: number;
@@ -30,6 +30,8 @@ interface UseLeafletMapResult {
   addExtractMarkers: (extracts: readonly Extract[]) => void;
   setExtractFilter: (visibleFactions: ReadonlyArray<string>, masterVisible: boolean) => void;
   setLabelMode: (mode: LabelMode) => void;
+  setPlayerPosition: (pos: Position3D) => void;
+  clearPlayerPosition: () => void;
 }
 
 const FALLBACK_COLOR = "#94a3b8";
@@ -142,6 +144,10 @@ export function useLeafletMap(
   let extractsLayer: L.LayerGroup | null = null;
   const entries: MarkerEntry[] = [];
   let initialZoom = 0;
+
+  let playerLayer: L.LayerGroup | null = null;
+  let playerCore: CircleMarker | null = null;
+  let playerPulse: CircleMarker | null = null;
 
   // Internal state, mutated by setters; addExtractMarkers re-applies when (re)creating markers.
   const state = {
@@ -285,6 +291,45 @@ export function useLeafletMap(
     }
   }
 
+  function setPlayerPosition(pos: Position3D): void {
+    if (!map.value) return;
+    const latLng = inGameLatLng(pos.x, pos.z);
+    if (!playerLayer) {
+      playerLayer = L.layerGroup().addTo(map.value);
+    }
+    if (!playerCore) {
+      playerPulse = L.circleMarker(latLng, {
+        radius: 14,
+        color: "#f43f5e",
+        weight: 2,
+        opacity: 0.9,
+        fill: false,
+        className: "player-pulse",
+        interactive: false,
+      }).addTo(playerLayer);
+      playerCore = L.circleMarker(latLng, {
+        radius: 6,
+        color: "#fff",
+        weight: 2,
+        fillColor: "#f43f5e",
+        fillOpacity: 1,
+        interactive: false,
+      }).addTo(playerLayer);
+    } else {
+      playerCore.setLatLng(latLng);
+      playerPulse?.setLatLng(latLng);
+    }
+  }
+
+  function clearPlayerPosition(): void {
+    if (playerLayer && map.value) {
+      map.value.removeLayer(playerLayer);
+    }
+    playerLayer = null;
+    playerCore = null;
+    playerPulse = null;
+  }
+
   onMounted(async () => {
     if (!containerRef.value) return;
 
@@ -318,9 +363,21 @@ export function useLeafletMap(
   onBeforeUnmount(() => {
     extractsLayer = null;
     entries.length = 0;
+    playerLayer = null;
+    playerCore = null;
+    playerPulse = null;
     map.value?.remove();
     map.value = null;
   });
 
-  return { map, loaded, mapError, addExtractMarkers, setExtractFilter, setLabelMode };
+  return {
+    map,
+    loaded,
+    mapError,
+    addExtractMarkers,
+    setExtractFilter,
+    setLabelMode,
+    setPlayerPosition,
+    clearPlayerPosition,
+  };
 }

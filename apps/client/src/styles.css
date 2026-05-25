@@ -26,3 +26,19 @@ body,
 .leaflet-tooltip.extract-tooltip::before {
   display: none;
 }
+
+.leaflet-overlay-pane path.player-pulse {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: player-pulse 1.6s ease-out infinite;
+}
+@keyframes player-pulse {
+  0% {
+    transform: scale(0.4);
+    stroke-opacity: 0.9;
+  }
+  100% {
+    transform: scale(2.2);
+    stroke-opacity: 0;
+  }
+}
