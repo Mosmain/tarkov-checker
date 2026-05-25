@@ -11,3 +11,18 @@ body,
 .leaflet-container {
   background: #0b0b0b;
 }
+
+.leaflet-tooltip.extract-tooltip {
+  background: rgba(0, 0, 0, 0.65);
+  border: none;
+  color: #f5f5f5;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+}
+.leaflet-tooltip.extract-tooltip::before {
+  display: none;
+}

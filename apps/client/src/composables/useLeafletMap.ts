@@ -4,9 +4,10 @@ import L, {
   type LatLngExpression,
   type LatLngBoundsExpression,
   type CRS,
+  type CircleMarker,
 } from "leaflet";
-import { mapInfo, mapSvgPath, type TarkovMapCode } from "@shared/maps";
-import type { Extract, ExtractFaction } from "@shared/tarkov-api";
+import { mapInfo, mapSvgPath, FACTION_COLORS, type TarkovMapCode } from "@shared/maps";
+import type { Extract } from "@shared/tarkov-api";
 
 interface LoadedMap {
   width: number;
@@ -14,19 +15,34 @@ interface LoadedMap {
   floors: Map<string, SVGGElement>;
 }
 
+interface MarkerEntry {
+  marker: CircleMarker;
+  extract: Extract;
+}
+
+export type LabelMode = "hover" | "smart";
+
 interface UseLeafletMapResult {
   map: ShallowRef<LeafletMap | null>;
   loaded: ShallowRef<LoadedMap | null>;
   mapError: Ref<string | null>;
   addExtractMarkers: (extracts: readonly Extract[]) => void;
+  setExtractFilter: (visibleFactions: ReadonlyArray<string>, masterVisible: boolean) => void;
+  setLabelMode: (mode: LabelMode) => void;
 }
 
-const FACTION_COLOR: Record<ExtractFaction | "unknown", string> = {
-  pmc: "#22c55e",
-  scav: "#eab308",
-  shared: "#3b82f6",
-  unknown: "#94a3b8",
-};
+const FALLBACK_COLOR = "#94a3b8";
+/** Smart labels appear once the user zooms in by this many steps past the fit-bounds zoom. */
+const SMART_LABEL_ZOOM_DELTA = 1;
+
+function factionColor(faction: Extract["faction"]): string {
+  const key = faction ?? "shared";
+  return FACTION_COLORS[key as keyof typeof FACTION_COLORS] ?? FALLBACK_COLOR;
+}
+
+function factionForFilter(faction: Extract["faction"]): string {
+  return faction ?? "shared";
+}
 
 function applyRotation(latLng: L.LatLng, rotationDeg: number): L.LatLng {
   if (rotationDeg === 0) return latLng;
@@ -57,15 +73,12 @@ function buildCRS(transform: readonly [number, number, number, number], rotation
 }
 
 function inGameLatLng(x: number, z: number): LatLngExpression {
-  // tarkov-dev convention: latLng = (z, x).
   return [z, x];
 }
 
 function mapBoundsLatLng(
   bounds: readonly [readonly [number, number], readonly [number, number]],
 ): LatLngBoundsExpression {
-  // tarkov-dev stores bounds as [[x1, z1], [x2, z2]] (not min/max normalized).
-  // L.latLngBounds itself normalizes once corners are in (lat, lng) order.
   const [[x1, z1], [x2, z2]] = bounds;
   return [
     [z1, x1],
@@ -122,9 +135,74 @@ export function useLeafletMap(
   const crs = buildCRS(info.transform, info.rotation);
   const bounds = mapBoundsLatLng(info.bounds);
 
-  // Layer group for extract markers; created on first add so we can clear
-  // it without affecting the svg overlay.
   let extractsLayer: L.LayerGroup | null = null;
+  const entries: MarkerEntry[] = [];
+  let initialZoom = 0;
+
+  // Internal state, mutated by setters; addExtractMarkers re-applies when (re)creating markers.
+  const state = {
+    visibleFactions: new Set<string>(["pmc", "scav", "shared"]),
+    masterVisible: true,
+    labelMode: "hover" as LabelMode,
+  };
+
+  function isEntryVisible(entry: MarkerEntry): boolean {
+    return state.masterVisible && state.visibleFactions.has(factionForFilter(entry.extract.faction));
+  }
+
+  function buildTooltipOpts(): L.TooltipOptions {
+    return {
+      direction: "auto",
+      offset: [0, -6],
+      opacity: 0.95,
+      permanent: state.labelMode === "smart",
+      sticky: state.labelMode === "hover",
+      className: "extract-tooltip",
+    };
+  }
+
+  function applyTooltipBindings(): void {
+    const opts = buildTooltipOpts();
+    for (const entry of entries) {
+      entry.marker.unbindTooltip();
+      entry.marker.bindTooltip(entry.extract.name, opts);
+    }
+  }
+
+  function refreshSmartLabels(): void {
+    if (!map.value) return;
+    if (state.labelMode !== "smart") return;
+
+    const mapBounds = map.value.getBounds();
+    const showAtZoom = map.value.getZoom() >= initialZoom + SMART_LABEL_ZOOM_DELTA;
+
+    for (const entry of entries) {
+      if (!isEntryVisible(entry)) {
+        entry.marker.closeTooltip();
+        continue;
+      }
+      const inView = mapBounds.contains(entry.marker.getLatLng());
+      if (showAtZoom && inView) {
+        entry.marker.openTooltip();
+      } else {
+        entry.marker.closeTooltip();
+      }
+    }
+  }
+
+  function applyVisibility(): void {
+    if (!map.value || !extractsLayer) return;
+    for (const entry of entries) {
+      const visible = isEntryVisible(entry);
+      const onLayer = extractsLayer.hasLayer(entry.marker);
+      if (visible && !onLayer) {
+        extractsLayer.addLayer(entry.marker);
+      } else if (!visible && onLayer) {
+        extractsLayer.removeLayer(entry.marker);
+      }
+    }
+    refreshSmartLabels();
+  }
 
   function addExtractMarkers(extracts: readonly Extract[]): void {
     if (!map.value) return;
@@ -133,17 +211,40 @@ export function useLeafletMap(
     } else {
       extractsLayer = L.layerGroup().addTo(map.value);
     }
+    entries.length = 0;
     for (const ex of extracts) {
-      const color = FACTION_COLOR[ex.faction ?? "unknown"];
-      L.circleMarker(inGameLatLng(ex.position.x, ex.position.z), {
+      const marker = L.circleMarker(inGameLatLng(ex.position.x, ex.position.z), {
         radius: 6,
         color: "#000",
         weight: 1.5,
-        fillColor: color,
+        fillColor: factionColor(ex.faction),
         fillOpacity: 0.9,
-      })
-        .bindTooltip(ex.name, { direction: "top", offset: [0, -6], opacity: 0.95 })
-        .addTo(extractsLayer);
+      });
+      entries.push({ marker, extract: ex });
+    }
+    applyTooltipBindings();
+    applyVisibility();
+  }
+
+  function setExtractFilter(
+    visibleFactions: ReadonlyArray<string>,
+    masterVisible: boolean,
+  ): void {
+    state.visibleFactions = new Set(visibleFactions);
+    state.masterVisible = masterVisible;
+    applyVisibility();
+  }
+
+  function setLabelMode(mode: LabelMode): void {
+    if (state.labelMode === mode) return;
+    state.labelMode = mode;
+    applyTooltipBindings();
+    if (mode === "smart") {
+      refreshSmartLabels();
+    } else {
+      for (const entry of entries) {
+        entry.marker.closeTooltip();
+      }
     }
   }
 
@@ -160,6 +261,9 @@ export function useLeafletMap(
     });
     map.value = instance;
     instance.fitBounds(bounds);
+    initialZoom = instance.getZoom();
+
+    instance.on("moveend zoomend", refreshSmartLabels);
 
     try {
       const svgUrl = mapSvgPath(mapCode);
@@ -173,9 +277,10 @@ export function useLeafletMap(
 
   onBeforeUnmount(() => {
     extractsLayer = null;
+    entries.length = 0;
     map.value?.remove();
     map.value = null;
   });
 
-  return { map, loaded, mapError, addExtractMarkers };
+  return { map, loaded, mapError, addExtractMarkers, setExtractFilter, setLabelMode };
 }
