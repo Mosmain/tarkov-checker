@@ -89,6 +89,25 @@ if needed.
 into the cache so refetching after a language switch is just one HTTP
 hit per language per session.
 
+## Tarkov path resolution
+
+`apps/server/src/watchers/paths.ts` resolves three paths each time the
+config changes: `gameDir`, `logsDir` (defaults to `<gameDir>/Logs`),
+and `screenshotsDir`. Priority highest-first: `.env` → manual override
+in `apps/server/data/config.json` → Windows-registry auto-detect via
+`reg query` (with `chcp 65001` first so Cyrillic Documents paths
+decode). HTTP `GET/PUT /api/config` reads/writes the manual overrides
+and the PUT re-applies the watchers atomically through
+`WatcherManager.apply()`.
+
+`SERVER_PORT` is the Fastify port (default 3000), deliberately
+distinct from `PORT` because preview/dev tooling sometimes sets
+`PORT=5173` for the whole runner. Don't read `PORT` in the server.
+
+`@fastify/cors` must whitelist `PUT` explicitly — its default methods
+list is `GET,HEAD,POST` and the preflight responds with 204 but the
+actual PUT then gets dropped silently in the browser.
+
 ## User settings
 
 `apps/client/src/stores/settings.ts` is the single Pinia store holding

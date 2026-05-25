@@ -32,22 +32,33 @@ and licensing.
 
 ## Tarkov paths
 
-The server reads two paths from a `.env` file in the repo root (loaded by
-Node's `--env-file-if-exists`). Copy the template and fill them in:
+Two paths matter:
 
-```pwsh
-Copy-Item .env.example .env
-notepad .env
-```
+- **Game folder** — where Tarkov is installed (e.g. `D:\EFT`). Logs are
+  read from `<gameFolder>\Logs`.
+- **Screenshots folder** — where the F12 overlay drops `.png` files
+  (typically `<Documents>\Escape from Tarkov\Screenshots`).
 
-```
-TARKOV_SCREENSHOT_DIR=...absolute path Tarkov writes F12 screenshots into...
-TARKOV_LOG_DIR=...absolute path Tarkov writes Logs into...
-```
+Resolution priority, highest first:
 
-Without these, the server starts but the player-marker pipeline stays
-dormant — extracts and the map still work because they come from the
-public tarkov.dev API.
+1. `.env` at the repo root (Node `--env-file-if-exists`). Keys:
+   `TARKOV_GAME_DIR`, `TARKOV_SCREENSHOT_DIR`, optional `TARKOV_LOG_DIR`.
+2. Manual override saved through the in-app Settings panel, persisted
+   to `apps/server/data/config.json` (gitignored).
+3. Auto-detect from the Windows registry: `Personal` shell folder for
+   Documents (so OneDrive-redirected Documents resolves correctly) and
+   `Battlestate Games\EFT\InstallLocation` for the game folder (BSG
+   Launcher writes this at install time).
+
+If auto-detect doesn't find the game folder (BSG Launcher didn't write
+the registry key, or you installed manually), open the app on the
+machine running Tarkov, go to Settings → Tarkov paths, fill `Game
+folder` with the install path (e.g. `D:\EFT`), and click Save. The
+server persists it and re-starts watchers immediately.
+
+From a phone in the LAN the Paths section becomes read-only with a
+note to configure on the desktop — typing `D:\EFT` on an on-screen
+keyboard is painful.
 
 ## Workspace layout
 
