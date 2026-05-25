@@ -27,6 +27,14 @@ interface UiBundle {
     readonly placeholderGameDir: string;
     readonly placeholderScreenshotsDir: string;
   };
+  readonly cache: {
+    readonly heading: string;
+    readonly lastUpdated: string;
+    readonly never: string;
+    readonly refresh: string;
+    readonly refreshing: string;
+    readonly hint: string;
+  };
 }
 
 const BUNDLES: Readonly<Record<ApiLang, UiBundle>> = {
@@ -64,6 +72,14 @@ const BUNDLES: Readonly<Record<ApiLang, UiBundle>> = {
       placeholderGameDir: "D:\\EFT",
       placeholderScreenshotsDir: "Documents\\Escape from Tarkov\\Screenshots",
     },
+    cache: {
+      heading: "Data cache",
+      lastUpdated: "Last updated",
+      never: "Never",
+      refresh: "Refresh",
+      refreshing: "Refreshing…",
+      hint: "Extract coordinates are cached locally. tarkov.dev may be blocked on some networks — fetch once, use offline.",
+    },
   },
   ru: {
     language: "Язык",
@@ -98,6 +114,14 @@ const BUNDLES: Readonly<Record<ApiLang, UiBundle>> = {
       missingTooltip: "Папка пока не существует.",
       placeholderGameDir: "D:\\EFT",
       placeholderScreenshotsDir: "Documents\\Escape from Tarkov\\Screenshots",
+    },
+    cache: {
+      heading: "Кеш данных",
+      lastUpdated: "Обновлено",
+      never: "Никогда",
+      refresh: "Обновить",
+      refreshing: "Обновляю…",
+      hint: "Координаты выходов кешируются локально. tarkov.dev иногда недоступен с RU IP — обновили один раз и пользуемся.",
     },
   },
 };

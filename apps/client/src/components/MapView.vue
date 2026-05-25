@@ -19,7 +19,7 @@ const emit = defineEmits<{
 }>();
 
 const settings = useSettingsStore();
-const { apiLang, extractFactions, extractsVisible, extractLabelMode } = storeToRefs(settings);
+const { apiLang, extractFactions, extractLabelMode } = storeToRefs(settings);
 
 const mapContainer = ref<HTMLElement | null>(null);
 const {
@@ -65,15 +65,15 @@ async function loadExtracts(): Promise<void> {
   }
 }
 
-setExtractFilter(extractFactions.value, extractsVisible.value);
+setExtractFilter(extractFactions.value);
 setLabelMode(extractLabelMode.value);
 void loadExtracts();
 
 watch(apiLang, () => {
   void loadExtracts();
 });
-watch([extractFactions, extractsVisible], () => {
-  setExtractFilter(extractFactions.value, extractsVisible.value);
+watch(extractFactions, () => {
+  setExtractFilter(extractFactions.value);
 });
 watch(extractLabelMode, (mode) => {
   setLabelMode(mode);

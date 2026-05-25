@@ -5,12 +5,15 @@ import { useSettingsStore, type ExtractFactionFilter } from "../stores/settings"
 import { FACTION_COLORS, TARKOV_MAPS, type TarkovMapCode } from "@shared/maps";
 import type { ServerConfigResponse } from "@shared/config-api";
 import { useUiText } from "../i18n";
-import { fetchAllExtracts } from "../api/tarkov-dev";
+import {
+  fetchAllExtracts,
+  getCacheTimestamp,
+  refreshExtracts,
+} from "../api/tarkov-dev";
 import { fetchServerConfig, putServerConfig } from "../api/server-config";
 
 const settings = useSettingsStore();
-const { apiLang, extractFactions, extractsVisible, extractLabelMode, mapCode } =
-  storeToRefs(settings);
+const { apiLang, extractFactions, extractLabelMode, mapCode } = storeToRefs(settings);
 const t = useUiText();
 
 const MAP_CODES = Object.keys(TARKOV_MAPS) as TarkovMapCode[];
@@ -37,7 +40,6 @@ function mapLabelFor(code: TarkovMapCode): string {
 }
 
 const open = ref(false);
-const root = ref<HTMLElement | null>(null);
 
 const FACTION_OPTIONS: ReadonlyArray<{
   value: ExtractFactionFilter;
@@ -48,33 +50,14 @@ const FACTION_OPTIONS: ReadonlyArray<{
   { value: "shared", color: FACTION_COLORS.shared },
 ];
 
-function toggle(): void {
-  open.value = !open.value;
+function close(): void {
+  open.value = false;
 }
-
-function onDocumentClick(event: MouseEvent): void {
-  if (!open.value) return;
-  if (root.value && !root.value.contains(event.target as Node)) {
-    open.value = false;
-  }
-}
-
 function onKey(event: KeyboardEvent): void {
-  if (event.key === "Escape" && open.value) {
-    open.value = false;
-  }
+  if (event.key === "Escape" && open.value) close();
 }
-
-onMounted(() => {
-  document.addEventListener("mousedown", onDocumentClick);
-  document.addEventListener("keydown", onKey);
-});
-onBeforeUnmount(() => {
-  document.removeEventListener("mousedown", onDocumentClick);
-  document.removeEventListener("keydown", onKey);
-});
-
-const factionLabelDisabled = computed(() => !extractsVisible.value);
+onMounted(() => document.addEventListener("keydown", onKey));
+onBeforeUnmount(() => document.removeEventListener("keydown", onKey));
 
 const SM_BREAKPOINT = 640;
 const isDesktop = ref(typeof window !== "undefined" ? window.innerWidth >= SM_BREAKPOINT : true);
@@ -90,13 +73,10 @@ const pathsSaving = ref(false);
 const pathsError = ref<string | null>(null);
 const pathsJustSaved = ref(false);
 
-const gameDirLocked = computed(
-  () => serverConfig.value?.gameDir.source === "env",
-);
+const gameDirLocked = computed(() => serverConfig.value?.gameDir.source === "env");
 const screenshotsDirLocked = computed(
   () => serverConfig.value?.screenshotsDir.source === "env",
 );
-
 const gameDirDirty = computed(
   () => (serverConfig.value?.gameDir.value ?? "") !== gameDirInput.value,
 );
@@ -104,12 +84,7 @@ const screenshotsDirDirty = computed(
   () => (serverConfig.value?.screenshotsDir.value ?? "") !== screenshotsDirInput.value,
 );
 const canSavePaths = computed(
-  () =>
-    isDesktop.value &&
-    !pathsSaving.value &&
-    (gameDirDirty.value || screenshotsDirDirty.value) &&
-    (!gameDirLocked.value || !screenshotsDirDirty.value || screenshotsDirInput.value !== "") &&
-    !(gameDirLocked.value && screenshotsDirLocked.value),
+  () => isDesktop.value && !pathsSaving.value && (gameDirDirty.value || screenshotsDirDirty.value),
 );
 
 function syncInputsFromConfig(cfg: ServerConfigResponse): void {
@@ -160,6 +135,42 @@ watch(open, (isOpen) => {
   if (isOpen && !serverConfig.value) void loadPaths();
 });
 
+const cacheTimestamp = ref<number | null>(null);
+const cacheRefreshing = ref(false);
+const cacheError = ref<string | null>(null);
+
+function refreshCacheTimestamp(): void {
+  cacheTimestamp.value = getCacheTimestamp(apiLang.value);
+}
+refreshCacheTimestamp();
+watch(apiLang, refreshCacheTimestamp);
+
+async function refreshCache(): Promise<void> {
+  cacheRefreshing.value = true;
+  cacheError.value = null;
+  try {
+    await refreshExtracts(apiLang.value);
+    refreshCacheTimestamp();
+  } catch (err) {
+    cacheError.value = err instanceof Error ? err.message : String(err);
+  } finally {
+    cacheRefreshing.value = false;
+  }
+}
+
+const cacheRelativeAge = computed(() => {
+  const ts = cacheTimestamp.value;
+  if (!ts) return t.value.cache.never;
+  const ms = Date.now() - ts;
+  const minutes = Math.round(ms / 60_000);
+  if (minutes < 1) return "<1m";
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.round(hours / 24);
+  return `${days}d`;
+});
+
 onMounted(() => {
   window.addEventListener("resize", onResize);
   void loadPaths();
@@ -191,78 +202,110 @@ function statusDotClass(slot: "gameDir" | "screenshotsDir" | "logsDir"): string 
 </script>
 
 <template>
-  <div ref="root" class="relative">
-    <button
-      type="button"
-      class="btn btn-sm btn-circle btn-ghost bg-base-300/80 hover:bg-base-300 backdrop-blur"
-      :aria-expanded="open"
-      :aria-label="t.settings"
-      @click="toggle"
+  <button
+    type="button"
+    class="btn btn-sm btn-circle btn-ghost bg-base-300/80 hover:bg-base-300 backdrop-blur"
+    :aria-label="t.settings"
+    :aria-expanded="open"
+    @click="open = true"
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.8"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      class="h-5 w-5"
+      aria-hidden="true"
     >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.8"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        class="h-5 w-5"
-        aria-hidden="true"
-      >
-        <path
-          d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"
-        />
-        <circle cx="12" cy="12" r="3" />
-      </svg>
-    </button>
+      <path
+        d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"
+      />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  </button>
 
+  <Teleport to="body">
     <Transition
-      enter-active-class="transition duration-100 ease-out"
-      enter-from-class="opacity-0 translate-y-1"
-      enter-to-class="opacity-100 translate-y-0"
-      leave-active-class="transition duration-75 ease-in"
-      leave-from-class="opacity-100 translate-y-0"
-      leave-to-class="opacity-0 translate-y-1"
+      enter-active-class="transition duration-150 ease-out"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition duration-100 ease-in"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
     >
       <div
         v-if="open"
-        class="card card-compact bg-base-200/95 border border-base-300 shadow-2xl backdrop-blur fixed inset-x-3 bottom-16 z-[1010] sm:absolute sm:inset-x-auto sm:right-0 sm:bottom-full sm:mb-2 sm:w-72"
+        aria-hidden="true"
+        class="fixed inset-0 z-[2000] bg-black/40 backdrop-blur-sm"
+        @click="close"
+      />
+    </Transition>
+
+    <Transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="translate-x-full"
+      enter-to-class="translate-x-0"
+      leave-active-class="transition duration-150 ease-in"
+      leave-from-class="translate-x-0"
+      leave-to-class="translate-x-full"
+    >
+      <aside
+        v-if="open"
+        class="fixed inset-y-0 right-0 z-[2010] w-full sm:w-96 max-w-full bg-base-200 shadow-2xl overflow-y-auto"
         role="dialog"
         :aria-label="t.settings"
       >
-        <div class="card-body gap-4 max-h-[80vh] overflow-y-auto">
-          <section>
-            <h3 class="mb-2 text-xs font-semibold uppercase tracking-wider opacity-60">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-base-300">
+          <h2 class="text-sm font-semibold uppercase tracking-wider opacity-70">
+            {{ t.settings }}
+          </h2>
+          <button
+            type="button"
+            class="btn btn-sm btn-ghost btn-circle"
+            :aria-label="'Close'"
+            @click="close"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              class="h-4 w-4"
+              aria-hidden="true"
+            >
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="space-y-4 p-4">
+          <fieldset class="fieldset bg-base-100 border border-base-300 rounded-box p-3">
+            <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider">
               {{ t.language }}
-            </h3>
+            </legend>
             <div class="join w-full">
               <label
                 v-for="opt in (['en', 'ru'] as const)"
                 :key="opt"
-                class="join-item btn btn-sm flex-1"
+                class="join-item btn btn-sm flex-1 shadow-none"
                 :class="apiLang === opt ? 'btn-primary' : 'btn-outline'"
               >
-                <input
-                  v-model="apiLang"
-                  type="radio"
-                  :value="opt"
-                  name="api-lang"
-                  class="sr-only"
-                />
+                <input v-model="apiLang" type="radio" :value="opt" name="api-lang" class="sr-only" />
                 {{ opt.toUpperCase() }}
               </label>
             </div>
-          </section>
+          </fieldset>
 
-          <section>
-            <h3 class="mb-2 text-xs font-semibold uppercase tracking-wider opacity-60">
+          <fieldset class="fieldset bg-base-100 border border-base-300 rounded-box p-3 space-y-3">
+            <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider">
               {{ t.paths.heading }}
-            </h3>
+            </legend>
 
-            <div v-if="pathsError" class="alert alert-error alert-sm mb-2 text-xs">
-              {{ pathsError }}
-            </div>
+            <div v-if="pathsError" class="alert alert-error alert-sm text-xs">{{ pathsError }}</div>
             <p v-if="pathsLoading && !serverConfig" class="text-xs opacity-60">…</p>
 
             <div v-if="serverConfig" class="space-y-3">
@@ -276,7 +319,7 @@ function statusDotClass(slot: "gameDir" | "screenshotsDir" | "logsDir"): string 
                   </span>
                 </div>
                 <label
-                  class="input input-sm input-bordered bg-base-100 flex items-center gap-2"
+                  class="input input-sm input-bordered bg-base-200 flex items-center gap-2"
                   :title="serverConfig.gameDir.exists ? '' : t.paths.missingTooltip"
                 >
                   <span
@@ -314,7 +357,7 @@ function statusDotClass(slot: "gameDir" | "screenshotsDir" | "logsDir"): string 
                   </span>
                 </div>
                 <label
-                  class="input input-sm input-bordered bg-base-100 flex items-center gap-2"
+                  class="input input-sm input-bordered bg-base-200 flex items-center gap-2"
                   :title="serverConfig.screenshotsDir.exists ? '' : t.paths.missingTooltip"
                 >
                   <span
@@ -339,7 +382,7 @@ function statusDotClass(slot: "gameDir" | "screenshotsDir" | "logsDir"): string 
                 </span>
                 <button
                   type="button"
-                  class="btn btn-primary btn-sm"
+                  class="btn btn-primary btn-sm shadow-none"
                   :disabled="!canSavePaths"
                   @click="savePaths"
                 >
@@ -347,49 +390,31 @@ function statusDotClass(slot: "gameDir" | "screenshotsDir" | "logsDir"): string 
                 </button>
               </div>
 
-              <p v-else class="text-[10px] leading-relaxed opacity-50">
-                {{ t.paths.mobileHint }}
-              </p>
+              <p v-else class="text-[10px] leading-relaxed opacity-50">{{ t.paths.mobileHint }}</p>
             </div>
-          </section>
+          </fieldset>
 
-          <section>
-            <h3 class="mb-2 text-xs font-semibold uppercase tracking-wider opacity-60">
+          <fieldset class="fieldset bg-base-100 border border-base-300 rounded-box p-3">
+            <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider">
               {{ t.map }}
-            </h3>
-            <select
-              v-model="mapCode"
-              class="select select-bordered select-sm bg-base-100 w-full"
-            >
+            </legend>
+            <select v-model="mapCode" class="select select-bordered select-sm bg-base-200 w-full">
               <option v-for="code in MAP_CODES" :key="code" :value="code">
                 {{ mapLabelFor(code) }}
               </option>
             </select>
-          </section>
+          </fieldset>
 
-          <section>
-            <div class="mb-2 flex items-center justify-between">
-              <h3 class="text-xs font-semibold uppercase tracking-wider opacity-60">
-                {{ t.extracts }}
-              </h3>
-              <label class="label cursor-pointer gap-2 py-0">
-                <span class="label-text text-xs">{{ extractsVisible ? t.on : t.off }}</span>
-                <input
-                  v-model="extractsVisible"
-                  type="checkbox"
-                  class="toggle toggle-success toggle-sm"
-                />
-              </label>
-            </div>
+          <fieldset class="fieldset bg-base-100 border border-base-300 rounded-box p-3 space-y-3">
+            <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider">
+              {{ t.extracts }}
+            </legend>
 
-            <div
-              class="flex flex-col gap-1 transition"
-              :class="factionLabelDisabled ? 'opacity-40 pointer-events-none' : ''"
-            >
+            <div class="flex flex-col gap-1">
               <label
                 v-for="opt in FACTION_OPTIONS"
                 :key="opt.value"
-                class="flex cursor-pointer items-center gap-3 rounded px-1 py-1 hover:bg-base-300/50"
+                class="flex cursor-pointer items-center gap-3 rounded px-1 py-1 hover:bg-base-200"
               >
                 <input
                   type="checkbox"
@@ -406,16 +431,13 @@ function statusDotClass(slot: "gameDir" | "screenshotsDir" | "logsDir"): string 
               </label>
             </div>
 
-            <div
-              class="mt-3 transition"
-              :class="factionLabelDisabled ? 'opacity-40 pointer-events-none' : ''"
-            >
+            <div>
               <p class="mb-1.5 text-xs opacity-60">{{ t.labels }}</p>
               <div class="join w-full">
                 <label
                   v-for="opt in (['hover', 'always'] as const)"
                   :key="opt"
-                  class="join-item btn btn-xs flex-1"
+                  class="join-item btn btn-xs flex-1 shadow-none"
                   :class="extractLabelMode === opt ? 'btn-primary' : 'btn-outline'"
                 >
                   <input
@@ -428,13 +450,33 @@ function statusDotClass(slot: "gameDir" | "screenshotsDir" | "logsDir"): string 
                   {{ opt === "hover" ? t.labelHover : t.labelAlways }}
                 </label>
               </div>
-              <p class="mt-1.5 text-[10px] leading-relaxed opacity-50">
-                {{ t.labelHint }}
-              </p>
+              <p class="mt-1.5 text-[10px] leading-relaxed opacity-50">{{ t.labelHint }}</p>
             </div>
-          </section>
+          </fieldset>
+
+          <fieldset class="fieldset bg-base-100 border border-base-300 rounded-box p-3 space-y-2">
+            <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider">
+              {{ t.cache.heading }}
+            </legend>
+            <div class="flex items-center justify-between gap-2">
+              <div class="text-xs opacity-70">
+                {{ t.cache.lastUpdated }}: <span class="opacity-100">{{ cacheRelativeAge }}</span>
+              </div>
+              <button
+                type="button"
+                class="btn btn-sm shadow-none"
+                :class="cacheRefreshing ? 'btn-disabled' : 'btn-outline'"
+                :disabled="cacheRefreshing"
+                @click="refreshCache"
+              >
+                {{ cacheRefreshing ? t.cache.refreshing : t.cache.refresh }}
+              </button>
+            </div>
+            <div v-if="cacheError" class="alert alert-error alert-sm text-xs">{{ cacheError }}</div>
+            <p class="text-[10px] leading-relaxed opacity-50">{{ t.cache.hint }}</p>
+          </fieldset>
         </div>
-      </div>
+      </aside>
     </Transition>
-  </div>
+  </Teleport>
 </template>

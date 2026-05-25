@@ -28,7 +28,7 @@ interface UseLeafletMapResult {
   loaded: ShallowRef<LoadedMap | null>;
   mapError: Ref<string | null>;
   addExtractMarkers: (extracts: readonly Extract[]) => void;
-  setExtractFilter: (visibleFactions: ReadonlyArray<string>, masterVisible: boolean) => void;
+  setExtractFilter: (visibleFactions: ReadonlyArray<string>) => void;
   setLabelMode: (mode: LabelMode) => void;
   setPlayerPosition: (pos: Position3D, yaw?: number | null) => void;
   clearPlayerPosition: () => void;
@@ -150,12 +150,11 @@ export function useLeafletMap(
   // Internal state, mutated by setters; addExtractMarkers re-applies when (re)creating markers.
   const state = {
     visibleFactions: new Set<string>(["pmc", "scav", "shared"]),
-    masterVisible: true,
     labelMode: "hover" as LabelMode,
   };
 
   function isEntryVisible(entry: MarkerEntry): boolean {
-    return state.masterVisible && state.visibleFactions.has(factionForFilter(entry.extract.faction));
+    return state.visibleFactions.has(factionForFilter(entry.extract.faction));
   }
 
   function buildTooltipOpts(): Omit<L.TooltipOptions, "offset"> {
@@ -256,12 +255,8 @@ export function useLeafletMap(
     }
   }
 
-  function setExtractFilter(
-    visibleFactions: ReadonlyArray<string>,
-    masterVisible: boolean,
-  ): void {
+  function setExtractFilter(visibleFactions: ReadonlyArray<string>): void {
     state.visibleFactions = new Set(visibleFactions);
-    state.masterVisible = masterVisible;
     applyVisibility();
   }
 

@@ -3,7 +3,7 @@ import { ref, watch } from "vue";
 import { z } from "zod";
 import { TARKOV_MAPS, type TarkovMapCode } from "@shared/maps";
 
-const STORAGE_KEY = "tarkov-checker:settings:v2";
+const STORAGE_KEY = "tarkov-checker:settings:v3";
 
 const apiLangSchema = z.enum(["en", "ru"]);
 const extractFactionSchema = z.enum(["pmc", "scav", "shared"]);
@@ -13,9 +13,7 @@ const mapCodeSchema = z.string().refine((s): s is TarkovMapCode => s in TARKOV_M
 const persistedSchema = z.object({
   apiLang: apiLangSchema,
   extractFactions: z.array(extractFactionSchema),
-  extractsVisible: z.boolean(),
   extractLabelMode: labelModeSchema,
-  // Defaulted so users coming from older builds keep their other settings.
   mapCode: mapCodeSchema.default("bigmap"),
 });
 
@@ -26,46 +24,30 @@ export type ExtractLabelMode = z.infer<typeof labelModeSchema>;
 const DEFAULTS = {
   apiLang: "en" as const,
   extractFactions: ["pmc", "scav", "shared"] as const satisfies readonly ExtractFactionFilter[],
-  extractsVisible: true,
   extractLabelMode: "always" as const,
   mapCode: "bigmap" as const satisfies TarkovMapCode,
 };
 
-function loadFromStorage(): z.infer<typeof persistedSchema> {
-  if (typeof localStorage === "undefined") {
-    return {
-      apiLang: DEFAULTS.apiLang,
-      extractFactions: [...DEFAULTS.extractFactions],
-      extractsVisible: DEFAULTS.extractsVisible,
-      extractLabelMode: DEFAULTS.extractLabelMode,
-      mapCode: DEFAULTS.mapCode,
-    };
-  }
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) {
-    return {
-      apiLang: DEFAULTS.apiLang,
-      extractFactions: [...DEFAULTS.extractFactions],
-      extractsVisible: DEFAULTS.extractsVisible,
-      extractLabelMode: DEFAULTS.extractLabelMode,
-      mapCode: DEFAULTS.mapCode,
-    };
-  }
-  try {
-    const parsed = persistedSchema.safeParse(JSON.parse(raw));
-    if (parsed.success) {
-      return parsed.data;
-    }
-  } catch {
-    // fall through to defaults
-  }
+function defaultState(): z.infer<typeof persistedSchema> {
   return {
     apiLang: DEFAULTS.apiLang,
     extractFactions: [...DEFAULTS.extractFactions],
-    extractsVisible: DEFAULTS.extractsVisible,
     extractLabelMode: DEFAULTS.extractLabelMode,
     mapCode: DEFAULTS.mapCode,
   };
+}
+
+function loadFromStorage(): z.infer<typeof persistedSchema> {
+  if (typeof localStorage === "undefined") return defaultState();
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return defaultState();
+  try {
+    const parsed = persistedSchema.safeParse(JSON.parse(raw));
+    if (parsed.success) return parsed.data;
+  } catch {
+    // fall through to defaults
+  }
+  return defaultState();
 }
 
 export const useSettingsStore = defineStore("settings", () => {
@@ -73,12 +55,11 @@ export const useSettingsStore = defineStore("settings", () => {
 
   const apiLang = ref<ApiLang>(initial.apiLang);
   const extractFactions = ref<ExtractFactionFilter[]>([...initial.extractFactions]);
-  const extractsVisible = ref(initial.extractsVisible);
   const extractLabelMode = ref<ExtractLabelMode>(initial.extractLabelMode);
   const mapCode = ref<TarkovMapCode>(initial.mapCode);
 
   watch(
-    [apiLang, extractFactions, extractsVisible, extractLabelMode, mapCode],
+    [apiLang, extractFactions, extractLabelMode, mapCode],
     () => {
       if (typeof localStorage === "undefined") return;
       localStorage.setItem(
@@ -86,7 +67,6 @@ export const useSettingsStore = defineStore("settings", () => {
         JSON.stringify({
           apiLang: apiLang.value,
           extractFactions: extractFactions.value,
-          extractsVisible: extractsVisible.value,
           extractLabelMode: extractLabelMode.value,
           mapCode: mapCode.value,
         }),
@@ -105,7 +85,6 @@ export const useSettingsStore = defineStore("settings", () => {
   }
 
   function isFactionVisible(faction: ExtractFactionFilter | null): boolean {
-    // Treat null faction as "shared" for filtering purposes.
     const f = faction ?? "shared";
     return extractFactions.value.includes(f);
   }
@@ -113,7 +92,6 @@ export const useSettingsStore = defineStore("settings", () => {
   return {
     apiLang,
     extractFactions,
-    extractsVisible,
     extractLabelMode,
     mapCode,
     toggleFaction,
