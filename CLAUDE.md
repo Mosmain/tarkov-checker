@@ -78,14 +78,34 @@ switcher UI must consult a per-map allowlist of which group IDs are
 ## tarkov.dev API client
 
 `apps/client/src/api/tarkov-dev.ts` is a thin GraphQL client (plain
-`fetch`, module-level promise cache, zod-validated payloads — no Apollo/
+`fetch`, per-language promise cache, zod-validated payloads — no Apollo/
 urql for a handful of queries). Schemas live in
 `packages/shared/src/tarkov-api.ts` so the server can reuse them later
 if needed.
 
 `Map.nameId` from the API matches our raw Tarkov codes (`bigmap`,
 `factory4_day`, `RezervBase`, ...) case-insensitively — see
-`fetchExtractsForMap` for the lookup.
+`fetchExtractsForMap` for the lookup. The `lang` argument is keyed
+into the cache so refetching after a language switch is just one HTTP
+hit per language per session.
+
+## User settings
+
+`apps/client/src/stores/settings.ts` is the single Pinia store holding
+`apiLang` / `extractFactions` / `extractsVisible` / `extractLabelMode`.
+Persists to `localStorage` under a versioned key via a deep `watch`,
+validates on load with a zod schema (corrupt data → silent fallback to
+defaults). UI lives in `components/SettingsPanel.vue` — gear icon in
+the bottom-right, popover above. `App.vue` wires three watchers that
+push the relevant settings into the Leaflet composable (no setting
+needs a full reload).
+
+Smart labels (`extractLabelMode === "smart"`) show extract names only
+for markers whose latLng is inside `map.getBounds()` AND whose zoom is
+at least `initialZoom + SMART_LABEL_ZOOM_DELTA`. The threshold lives
+as a constant in `useLeafletMap.ts` — tune there, not in settings.
+Faction colours come from `FACTION_COLORS` in `packages/shared/src/
+maps.ts` so map markers and the legend in the popover never drift.
 
 ## Environment quirks hit during bootstrap
 

@@ -1,22 +1,32 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, ref, watch } from "vue";
+import { storeToRefs } from "pinia";
 import { useLeafletMap } from "./composables/useLeafletMap";
 import { useWebSocket } from "./composables/useWebSocket";
 import { fetchExtractsForMap } from "./api/tarkov-dev";
+import SettingsPanel from "./components/SettingsPanel.vue";
 import { mapInfo, type TarkovMapCode } from "@shared/maps";
+import { useSettingsStore } from "./stores/settings";
 
 // TODO: drive currentMapCode from the raid store / WS raid-start event.
 const currentMapCode: TarkovMapCode = "bigmap";
 const currentMapInfo = mapInfo(currentMapCode);
 
+const settings = useSettingsStore();
+const { apiLang, extractFactions, extractsVisible, extractLabelMode } = storeToRefs(settings);
+
 const mapContainer = ref<HTMLElement | null>(null);
-const { mapError, addExtractMarkers } = useLeafletMap(mapContainer, currentMapCode);
+const { mapError, addExtractMarkers, setExtractFilter, setLabelMode } = useLeafletMap(
+  mapContainer,
+  currentMapCode,
+);
 
 const extractsError = ref<string | null>(null);
 
-onMounted(async () => {
+async function loadExtracts(): Promise<void> {
+  extractsError.value = null;
   try {
-    const result = await fetchExtractsForMap(currentMapCode);
+    const result = await fetchExtractsForMap(currentMapCode, apiLang.value);
     if (result) {
       addExtractMarkers(result.extracts);
     } else {
@@ -25,6 +35,22 @@ onMounted(async () => {
   } catch (err) {
     extractsError.value = err instanceof Error ? err.message : String(err);
   }
+}
+
+// Initial settings push happens before the first fetch so newly-created
+// markers come up with the right filter/label mode immediately.
+setExtractFilter(extractFactions.value, extractsVisible.value);
+setLabelMode(extractLabelMode.value);
+void loadExtracts();
+
+watch(apiLang, () => {
+  void loadExtracts();
+});
+watch([extractFactions, extractsVisible], () => {
+  setExtractFilter(extractFactions.value, extractsVisible.value);
+});
+watch(extractLabelMode, (mode) => {
+  setLabelMode(mode);
 });
 
 const wsUrl = `ws://${window.location.hostname}:3000/ws`;
@@ -75,10 +101,11 @@ const badgeClass = computed(() => {
     </div>
 
     <div class="absolute bottom-3 right-3 z-10 flex items-center gap-2">
-      <span :class="['h-2.5 w-2.5 rounded-full', badgeClass]" aria-hidden="true" />
-      <span class="rounded-md bg-black/60 px-2 py-1 text-xs text-neutral-100 backdrop-blur">
-        ws: {{ status }}
-      </span>
+      <SettingsPanel />
+      <div class="flex items-center gap-2 rounded-md bg-black/60 px-2 py-1 backdrop-blur">
+        <span :class="['h-2.5 w-2.5 rounded-full', badgeClass]" aria-hidden="true" />
+        <span class="text-xs text-neutral-100">ws: {{ status }}</span>
+      </div>
     </div>
   </div>
 </template>
