@@ -175,17 +175,23 @@ export function useLeafletMap(
         ...base,
         offset: entry.tooltipOffset,
       });
-      // Permanent tooltips can get closed by stray click/focus events; reopen
-      // them on the next tick to keep them visible in `always` mode.
-      entry.marker.off("click", reopenTooltipOnAlways);
-      entry.marker.on("click", reopenTooltipOnAlways);
+      entry.marker.off("click", reopenAllPermanentTooltips);
+      entry.marker.on("click", reopenAllPermanentTooltips);
     }
   }
 
-  function reopenTooltipOnAlways(e: L.LeafletEvent): void {
+  /**
+   * In `always` mode a stray click — either on a marker or on the empty map —
+   * closes the permanent tooltip Leaflet just rendered. Re-open every visible
+   * marker's tooltip after each click so they stay parked.
+   */
+  function reopenAllPermanentTooltips(): void {
     if (state.labelMode !== "always") return;
-    const target = e.target as L.Layer;
-    setTimeout(() => target.openTooltip(), 0);
+    setTimeout(() => {
+      for (const entry of entries) {
+        if (isEntryVisible(entry)) entry.marker.openTooltip();
+      }
+    }, 0);
   }
 
   function applyVisibility(): void {
@@ -355,6 +361,7 @@ export function useLeafletMap(
     initialZoom = instance.getZoom();
     instance.setMinZoom(initialZoom);
     instance.setMaxBounds(bounds.pad(PAN_PAD));
+    instance.on("click", reopenAllPermanentTooltips);
 
     try {
       const svgUrl = mapSvgPath(mapCode);
