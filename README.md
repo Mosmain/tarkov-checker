@@ -30,6 +30,25 @@ The `--recurse-submodules` step pulls the SVG maps repo into
 `apps/client/public/maps/`. See [CREDITS.md](CREDITS.md) for attribution
 and licensing.
 
+## Tarkov paths
+
+The server reads two paths from a `.env` file in the repo root (loaded by
+Node's `--env-file-if-exists`). Copy the template and fill them in:
+
+```pwsh
+Copy-Item .env.example .env
+notepad .env
+```
+
+```
+TARKOV_SCREENSHOT_DIR=...absolute path Tarkov writes F12 screenshots into...
+TARKOV_LOG_DIR=...absolute path Tarkov writes Logs into...
+```
+
+Without these, the server starts but the player-marker pipeline stays
+dormant — extracts and the map still work because they come from the
+public tarkov.dev API.
+
 ## Workspace layout
 
 ```

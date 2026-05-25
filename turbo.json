@@ -16,17 +16,7 @@
     "dev": {
       "cache": false,
       "persistent": true,
-      "env": [
-        "NODE_ENV",
-        "PORT",
-        "HOST",
-        "TARKOV_LOG_DIR",
-        "TARKOV_SCREENSHOT_DIR",
-        "LOCALAPPDATA",
-        "USERPROFILE",
-        "OneDrive",
-        "HOME"
-      ]
+      "env": ["NODE_ENV", "PORT", "HOST"]
     }
   }
 }
