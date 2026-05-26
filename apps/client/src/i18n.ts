@@ -12,7 +12,14 @@ interface UiBundle {
   readonly labelHover: string;
   readonly labelAlways: string;
   readonly labelHint: string;
+  readonly labelSize: string;
+  readonly labelSizes: Readonly<Record<"sm" | "md" | "lg", string>>;
+  readonly player: string;
+  readonly playerFollow: string;
+  readonly playerFollowHint: string;
+  readonly playerFollowOptions: Readonly<Record<"off" | "sm" | "md" | "lg", string>>;
   readonly settings: string;
+  readonly systemSection: string;
   readonly floor: string;
   readonly factions: Readonly<Record<ExtractFactionFilter, string>>;
   readonly paths: {
@@ -49,7 +56,14 @@ const BUNDLES: Readonly<Record<ApiLang, UiBundle>> = {
     labelHover: "On hover",
     labelAlways: "Always",
     labelHint: "Always shows extract names; switch to On hover for a minimal view.",
+    labelSize: "Label size",
+    labelSizes: { sm: "S", md: "M", lg: "L" },
+    player: "Player",
+    playerFollow: "Auto-follow",
+    playerFollowHint: "Recenter and zoom the map on every new position update.",
+    playerFollowOptions: { off: "Off", sm: "S", md: "M", lg: "L" },
     settings: "Settings",
+    systemSection: "System",
     floor: "Floor",
     factions: {
       pmc: "PMC",
@@ -93,7 +107,14 @@ const BUNDLES: Readonly<Record<ApiLang, UiBundle>> = {
     labelHover: "При наведении",
     labelAlways: "Всегда",
     labelHint: "Подписи видны всегда; переключи на «При наведении», если хочется меньше шума.",
+    labelSize: "Размер подписей",
+    labelSizes: { sm: "S", md: "M", lg: "L" },
+    player: "Игрок",
+    playerFollow: "Авто-следование",
+    playerFollowHint: "Центрируем и приближаем карту при каждом новом обновлении позиции.",
+    playerFollowOptions: { off: "Выкл", sm: "S", md: "M", lg: "L" },
     settings: "Настройки",
+    systemSection: "Системные",
     floor: "Уровень",
     factions: {
       pmc: "ЧВК",

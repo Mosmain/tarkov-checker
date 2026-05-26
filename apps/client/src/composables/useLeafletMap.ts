@@ -3,9 +3,9 @@ import L, {
   type Map as LeafletMap,
   type LatLngExpression,
   type CRS,
-  type CircleMarker,
+  type Marker,
 } from "leaflet";
-import { mapInfo, mapSvgPath, FACTION_COLORS, type TarkovMapCode } from "@shared/maps";
+import { mapInfo, mapSvgPath, type TarkovMapCode } from "@shared/maps";
 import type { Extract, Position3D } from "@shared/tarkov-api";
 
 interface LoadedMap {
@@ -15,13 +15,15 @@ interface LoadedMap {
 }
 
 interface MarkerEntry {
-  marker: CircleMarker;
+  marker: Marker;
   extract: Extract;
   /** Tooltip offset in screen pixels relative to the marker centre. */
   tooltipOffset: [number, number];
 }
 
 export type LabelMode = "hover" | "always";
+export type LabelSize = "sm" | "md" | "lg";
+export type PlayerFollow = "off" | "sm" | "md" | "lg";
 
 interface UseLeafletMapResult {
   map: ShallowRef<LeafletMap | null>;
@@ -31,23 +33,59 @@ interface UseLeafletMapResult {
   addExtractMarkers: (extracts: readonly Extract[]) => void;
   setExtractFilter: (visibleFactions: ReadonlyArray<string>) => void;
   setLabelMode: (mode: LabelMode) => void;
+  setLabelSize: (size: LabelSize) => void;
+  setPlayerFollow: (mode: PlayerFollow) => void;
   setActiveFloor: (id: string) => void;
   setPlayerPosition: (pos: Position3D, yaw?: number | null) => void;
   clearPlayerPosition: () => void;
 }
 
-const FALLBACK_COLOR = "#94a3b8";
+const LABEL_SIZE_PX: Readonly<Record<LabelSize, string>> = {
+  sm: "9px",
+  md: "11px",
+  lg: "14px",
+};
+
+/** Zoom levels (delta from initialZoom) for each follow mode; clamped to maxZoom. */
+const FOLLOW_ZOOM_DELTA: Readonly<Record<Exclude<PlayerFollow, "off">, number>> = {
+  sm: 1.5,
+  md: 3,
+  lg: 6,
+};
+
+const EXTRACT_ICON_SIZE = 26;
+const EXTRACT_ICONS: Readonly<Record<"pmc" | "scav" | "shared", L.Icon>> = {
+  pmc: L.icon({
+    iconUrl: "/icons/extracts/extract_pmc.png",
+    iconSize: [EXTRACT_ICON_SIZE, EXTRACT_ICON_SIZE],
+    iconAnchor: [EXTRACT_ICON_SIZE / 2, EXTRACT_ICON_SIZE / 2],
+    tooltipAnchor: [0, 0],
+  }),
+  scav: L.icon({
+    iconUrl: "/icons/extracts/extract_scav.png",
+    iconSize: [EXTRACT_ICON_SIZE, EXTRACT_ICON_SIZE],
+    iconAnchor: [EXTRACT_ICON_SIZE / 2, EXTRACT_ICON_SIZE / 2],
+    tooltipAnchor: [0, 0],
+  }),
+  shared: L.icon({
+    iconUrl: "/icons/extracts/extract_shared.png",
+    iconSize: [EXTRACT_ICON_SIZE, EXTRACT_ICON_SIZE],
+    iconAnchor: [EXTRACT_ICON_SIZE / 2, EXTRACT_ICON_SIZE / 2],
+    tooltipAnchor: [0, 0],
+  }),
+};
+
+function extractIcon(faction: Extract["faction"]): L.Icon {
+  const key = (faction ?? "shared") as keyof typeof EXTRACT_ICONS;
+  return EXTRACT_ICONS[key] ?? EXTRACT_ICONS.shared;
+}
+
 /** Extracts within this many in-game units of each other share a tooltip ring. */
 const COLOCATION_TOLERANCE = 2;
 /** Radial distance from marker centre to the centre of its tooltip, in screen pixels. */
-const TOOLTIP_RING_RADIUS = 22;
+const TOOLTIP_RING_RADIUS = 28;
 /** How much of the map bounds the user is allowed to pan past (0.15 = 15%). */
 const PAN_PAD = 0.15;
-
-function factionColor(faction: Extract["faction"]): string {
-  const key = faction ?? "shared";
-  return FACTION_COLORS[key as keyof typeof FACTION_COLORS] ?? FALLBACK_COLOR;
-}
 
 function factionForFilter(faction: Extract["faction"]): string {
   return faction ?? "shared";
@@ -151,25 +189,27 @@ export function useLeafletMap(
 
   let playerLayer: L.LayerGroup | null = null;
   let playerCore: L.Marker | null = null;
-  let playerPulse: CircleMarker | null = null;
 
   // Internal state, mutated by setters; addExtractMarkers re-applies when (re)creating markers.
   const state = {
     visibleFactions: new Set<string>(["pmc", "scav", "shared"]),
     labelMode: "hover" as LabelMode,
+    playerFollow: "off" as PlayerFollow,
   };
+  let lastFollowedX = Number.NaN;
+  let lastFollowedZ = Number.NaN;
+  let lastFollowedYaw: number | null = Number.NaN;
 
   function isEntryVisible(entry: MarkerEntry): boolean {
     return state.visibleFactions.has(factionForFilter(entry.extract.faction));
   }
 
-  function buildTooltipOpts(): Omit<L.TooltipOptions, "offset"> {
+  function buildTooltipOpts(): Omit<L.TooltipOptions, "offset" | "className"> {
     return {
       direction: "center",
       opacity: 0.95,
       permanent: state.labelMode === "always",
       sticky: state.labelMode === "hover",
-      className: "extract-tooltip",
     };
   }
 
@@ -177,9 +217,11 @@ export function useLeafletMap(
     const base = buildTooltipOpts();
     for (const entry of entries) {
       entry.marker.unbindTooltip();
+      const factionClass = factionForFilter(entry.extract.faction);
       entry.marker.bindTooltip(entry.extract.name, {
         ...base,
         offset: entry.tooltipOffset,
+        className: `extract-tooltip extract-tooltip--${factionClass}`,
       });
       entry.marker.off("click", reopenAllPermanentTooltips);
       entry.marker.on("click", reopenAllPermanentTooltips);
@@ -222,12 +264,8 @@ export function useLeafletMap(
     }
     entries.length = 0;
     for (const ex of extracts) {
-      const marker = L.circleMarker(inGameLatLng(ex.position.x, ex.position.z), {
-        radius: 6,
-        color: "#000",
-        weight: 1.5,
-        fillColor: factionColor(ex.faction),
-        fillOpacity: 0.9,
+      const marker = L.marker(inGameLatLng(ex.position.x, ex.position.z), {
+        icon: extractIcon(ex.faction),
         pane: "extracts",
       });
       entries.push({ marker, extract: ex, tooltipOffset: [0, -TOOLTIP_RING_RADIUS] });
@@ -272,6 +310,14 @@ export function useLeafletMap(
     applyVisibility();
   }
 
+  function setLabelSize(size: LabelSize): void {
+    document.documentElement.style.setProperty("--extract-label-size", LABEL_SIZE_PX[size]);
+  }
+
+  function setPlayerFollow(mode: PlayerFollow): void {
+    state.playerFollow = mode;
+  }
+
   function setLabelMode(mode: LabelMode): void {
     if (state.labelMode === mode) return;
     state.labelMode = mode;
@@ -289,20 +335,6 @@ export function useLeafletMap(
     if (!playerLayer) {
       playerLayer = L.layerGroup().addTo(map.value);
     }
-    if (!playerPulse) {
-      playerPulse = L.circleMarker(latLng, {
-        radius: 12,
-        color: "#f43f5e",
-        weight: 2,
-        opacity: 0.7,
-        fill: false,
-        className: "player-pulse",
-        interactive: false,
-        pane: "extracts",
-      }).addTo(playerLayer);
-    } else {
-      playerPulse.setLatLng(latLng);
-    }
     // The in-game yaw must be rotated by the map's own coordinateRotation
     // so the arrow points where the player is looking in the rendered view.
     const displayYaw = yaw === null ? null : yaw + info.rotation;
@@ -310,15 +342,14 @@ export function useLeafletMap(
     const icon = L.divIcon({
       html: iconHtml,
       className: "player-icon-wrapper",
-      iconSize: [32, 32],
-      iconAnchor: [16, 16],
+      iconSize: [36, 36],
+      iconAnchor: [18, 18],
     });
     if (!playerCore) {
       playerCore = L.marker(latLng, {
         icon,
         interactive: false,
         keyboard: false,
-        // Ensure the arrow renders on top of the pulse ring.
         zIndexOffset: 1000,
         pane: "extracts",
       }).addTo(playerLayer);
@@ -326,14 +357,27 @@ export function useLeafletMap(
       playerCore.setLatLng(latLng);
       playerCore.setIcon(icon);
     }
+
+    const changed = pos.x !== lastFollowedX || pos.z !== lastFollowedZ || yaw !== lastFollowedYaw;
+    if (changed && state.playerFollow !== "off") {
+      const targetZoom = Math.min(
+        initialZoom + FOLLOW_ZOOM_DELTA[state.playerFollow],
+        map.value.getMaxZoom(),
+      );
+      map.value.setView(latLng, targetZoom, { animate: true, duration: 0.4 });
+    }
+    if (changed) {
+      lastFollowedX = pos.x;
+      lastFollowedZ = pos.z;
+      lastFollowedYaw = yaw;
+    }
   }
 
   function buildPlayerIconHtml(displayYaw: number | null): string {
-    const cone =
-      displayYaw === null
-        ? ""
-        : `<polygon class="player-cone" points="0,-14 6,-2 -6,-2" transform="rotate(${displayYaw})" />`;
-    return `<svg viewBox="-16 -16 32 32" xmlns="http://www.w3.org/2000/svg">${cone}<circle class="player-dot" cx="0" cy="0" r="5" /></svg>`;
+    if (displayYaw === null) {
+      return `<svg viewBox="-18 -18 36 36" xmlns="http://www.w3.org/2000/svg"><circle class="player-marker" cx="0" cy="0" r="7" /></svg>`;
+    }
+    return `<svg viewBox="-18 -18 36 36" xmlns="http://www.w3.org/2000/svg"><path class="player-marker" d="M 0,-13 L 9,9 L 0,4 L -9,9 Z" transform="rotate(${displayYaw})" /></svg>`;
   }
 
   function clearPlayerPosition(): void {
@@ -342,7 +386,6 @@ export function useLeafletMap(
     }
     playerLayer = null;
     playerCore = null;
-    playerPulse = null;
   }
 
   onMounted(async () => {
@@ -425,7 +468,6 @@ export function useLeafletMap(
     entries.length = 0;
     playerLayer = null;
     playerCore = null;
-    playerPulse = null;
     map.value?.remove();
     map.value = null;
   });
@@ -438,6 +480,8 @@ export function useLeafletMap(
     addExtractMarkers,
     setExtractFilter,
     setLabelMode,
+    setLabelSize,
+    setPlayerFollow,
     setActiveFloor,
     setPlayerPosition,
     clearPlayerPosition,

@@ -20,7 +20,8 @@ const emit = defineEmits<{
 }>();
 
 const settings = useSettingsStore();
-const { apiLang, extractFactions, extractLabelMode } = storeToRefs(settings);
+const { apiLang, extractFactions, extractLabelMode, extractLabelSize, playerFollow } =
+  storeToRefs(settings);
 
 const info = mapInfo(props.mapCode);
 
@@ -31,9 +32,10 @@ const {
   addExtractMarkers,
   setExtractFilter,
   setLabelMode,
+  setLabelSize,
+  setPlayerFollow,
   setActiveFloor,
   setPlayerPosition,
-  clearPlayerPosition,
 } = useLeafletMap(mapContainer, props.mapCode);
 
 const hasFloors = computed(() => info.floors.length > 1);
@@ -41,19 +43,11 @@ const hasFloors = computed(() => info.floors.length > 1);
 emit("mapName", info.displayName);
 watch(mapError, (err) => emit("mapError", err));
 
-const PLAYER_STALE_AFTER_MS = 90_000;
-let playerStaleTimer: ReturnType<typeof setTimeout> | null = null;
-
 watch(
   () => props.lastMessage,
   (msg) => {
     if (!msg || msg.type !== "position") return;
     setPlayerPosition({ x: msg.x, y: msg.y, z: msg.z }, msg.yaw ?? null);
-    if (playerStaleTimer !== null) clearTimeout(playerStaleTimer);
-    playerStaleTimer = setTimeout(() => {
-      clearPlayerPosition();
-      playerStaleTimer = null;
-    }, PLAYER_STALE_AFTER_MS);
   },
 );
 
@@ -74,6 +68,8 @@ async function loadExtracts(): Promise<void> {
 
 setExtractFilter(extractFactions.value);
 setLabelMode(extractLabelMode.value);
+setLabelSize(extractLabelSize.value);
+setPlayerFollow(playerFollow.value);
 void loadExtracts();
 
 watch(apiLang, () => {
@@ -84,6 +80,12 @@ watch(extractFactions, () => {
 });
 watch(extractLabelMode, (mode) => {
   setLabelMode(mode);
+});
+watch(extractLabelSize, (size) => {
+  setLabelSize(size);
+});
+watch(playerFollow, (mode) => {
+  setPlayerFollow(mode);
 });
 </script>
 

@@ -8,23 +8,31 @@ const STORAGE_KEY = "tarkov-checker:settings:v3";
 const apiLangSchema = z.enum(["en", "ru"]);
 const extractFactionSchema = z.enum(["pmc", "scav", "shared"]);
 const labelModeSchema = z.enum(["hover", "always"]);
+const labelSizeSchema = z.enum(["sm", "md", "lg"]);
+const playerFollowSchema = z.enum(["off", "sm", "md", "lg"]);
 const mapCodeSchema = z.string().refine((s): s is TarkovMapCode => s in TARKOV_MAPS);
 
 const persistedSchema = z.object({
   apiLang: apiLangSchema,
   extractFactions: z.array(extractFactionSchema),
   extractLabelMode: labelModeSchema,
+  extractLabelSize: labelSizeSchema.default("md"),
+  playerFollow: playerFollowSchema.default("off"),
   mapCode: mapCodeSchema.default("bigmap"),
 });
 
 export type ApiLang = z.infer<typeof apiLangSchema>;
 export type ExtractFactionFilter = z.infer<typeof extractFactionSchema>;
 export type ExtractLabelMode = z.infer<typeof labelModeSchema>;
+export type ExtractLabelSize = z.infer<typeof labelSizeSchema>;
+export type PlayerFollow = z.infer<typeof playerFollowSchema>;
 
 const DEFAULTS = {
   apiLang: "en" as const,
   extractFactions: ["pmc", "scav", "shared"] as const satisfies readonly ExtractFactionFilter[],
   extractLabelMode: "always" as const,
+  extractLabelSize: "md" as const,
+  playerFollow: "off" as const,
   mapCode: "bigmap" as const satisfies TarkovMapCode,
 };
 
@@ -33,6 +41,8 @@ function defaultState(): z.infer<typeof persistedSchema> {
     apiLang: DEFAULTS.apiLang,
     extractFactions: [...DEFAULTS.extractFactions],
     extractLabelMode: DEFAULTS.extractLabelMode,
+    extractLabelSize: DEFAULTS.extractLabelSize,
+    playerFollow: DEFAULTS.playerFollow,
     mapCode: DEFAULTS.mapCode,
   };
 }
@@ -56,10 +66,12 @@ export const useSettingsStore = defineStore("settings", () => {
   const apiLang = ref<ApiLang>(initial.apiLang);
   const extractFactions = ref<ExtractFactionFilter[]>([...initial.extractFactions]);
   const extractLabelMode = ref<ExtractLabelMode>(initial.extractLabelMode);
+  const extractLabelSize = ref<ExtractLabelSize>(initial.extractLabelSize);
+  const playerFollow = ref<PlayerFollow>(initial.playerFollow);
   const mapCode = ref<TarkovMapCode>(initial.mapCode);
 
   watch(
-    [apiLang, extractFactions, extractLabelMode, mapCode],
+    [apiLang, extractFactions, extractLabelMode, extractLabelSize, playerFollow, mapCode],
     () => {
       if (typeof localStorage === "undefined") return;
       localStorage.setItem(
@@ -68,6 +80,8 @@ export const useSettingsStore = defineStore("settings", () => {
           apiLang: apiLang.value,
           extractFactions: extractFactions.value,
           extractLabelMode: extractLabelMode.value,
+          extractLabelSize: extractLabelSize.value,
+          playerFollow: playerFollow.value,
           mapCode: mapCode.value,
         }),
       );
@@ -93,6 +107,8 @@ export const useSettingsStore = defineStore("settings", () => {
     apiLang,
     extractFactions,
     extractLabelMode,
+    extractLabelSize,
+    playerFollow,
     mapCode,
     toggleFaction,
     isFactionVisible,

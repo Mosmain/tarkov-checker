@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { storeToRefs } from "pinia";
+import Message from "primevue/message";
 import MapView from "./components/MapView.vue";
 import SettingsPanel from "./components/SettingsPanel.vue";
 import { useWebSocket } from "./composables/useWebSocket";
@@ -16,22 +17,22 @@ const extractsError = ref<string | null>(null);
 const wsUrl = `ws://${window.location.hostname}:3000/ws`;
 const { status, lastMessage } = useWebSocket(wsUrl);
 
-const badgeClass = computed(() => {
+const statusIconClass = computed(() => {
   switch (status.value) {
     case "open":
-      return "bg-success";
+      return "pi pi-circle-fill text-green-500";
     case "connecting":
-      return "bg-warning";
+      return "pi pi-circle-fill text-amber-400 animate-pulse";
     case "closed":
-      return "bg-error";
+      return "pi pi-times-circle text-red-500";
     default:
-      return "bg-base-content/30";
+      return "pi pi-circle text-surface-500";
   }
 });
 </script>
 
 <template>
-  <div class="relative h-screen w-screen bg-base-100 text-base-content">
+  <div class="relative h-screen w-screen bg-surface-950 text-surface-0">
     <MapView
       :key="mapCode"
       :map-code="mapCode"
@@ -41,39 +42,30 @@ const badgeClass = computed(() => {
       @extracts-error="extractsError = $event"
     />
 
-    <div class="pointer-events-none absolute top-3 right-3 z-[1000]">
+    <div class="absolute top-3 right-3 z-[1000] flex items-center gap-2">
       <span
-        class="inline-flex items-center gap-2 rounded-md bg-base-300/70 px-3 py-1 text-sm font-medium text-base-content backdrop-blur"
+        class="pointer-events-none inline-flex items-center gap-2 rounded-md bg-surface-800/70 px-3 py-1 text-sm font-medium text-surface-0 backdrop-blur"
       >
-        <span
-          :class="['h-2 w-2 rounded-full', badgeClass]"
+        <i
+          :class="['text-[10px]', statusIconClass]"
           :title="'ws: ' + status"
           aria-hidden="true"
         />
         {{ mapDisplayName }}
       </span>
+      <SettingsPanel />
     </div>
 
     <div
       v-if="mapError || extractsError"
       class="pointer-events-none absolute top-14 inset-x-3 z-[1000] flex flex-col items-center gap-1"
     >
-      <div
-        v-if="mapError"
-        class="alert alert-error alert-sm w-auto py-1 text-xs backdrop-blur"
-      >
+      <Message v-if="mapError" severity="error" size="small" :closable="false">
         Map load error: {{ mapError }}
-      </div>
-      <div
-        v-if="extractsError"
-        class="alert alert-warning alert-sm w-auto py-1 text-xs backdrop-blur"
-      >
+      </Message>
+      <Message v-if="extractsError" severity="warn" size="small" :closable="false">
         Extracts: {{ extractsError }}
-      </div>
-    </div>
-
-    <div class="absolute bottom-3 right-3 z-[1000]">
-      <SettingsPanel />
+      </Message>
     </div>
   </div>
 </template>

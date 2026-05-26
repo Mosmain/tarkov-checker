@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import Button from "primevue/button";
 import { useUiText } from "../i18n";
 
 interface Floor {
@@ -63,29 +64,29 @@ onBeforeUnmount(() => {
       leave-to-class="opacity-0 translate-y-1"
     >
       <div v-if="open" class="absolute bottom-12 left-0 flex flex-col gap-1.5">
-        <button
+        <Button
           v-for="floor in floors"
           :key="floor.id"
-          type="button"
-          class="btn btn-sm btn-circle shadow-none"
-          :class="floor.id === current ? 'btn-primary' : 'btn-neutral'"
+          rounded
+          size="small"
+          :severity="floor.id === current ? 'primary' : 'secondary'"
+          :label="floor.label"
           :aria-pressed="floor.id === current"
           :aria-label="'Floor ' + floor.label"
           @click="select(floor.id)"
-        >
-          {{ floor.label }}
-        </button>
+        />
       </div>
     </Transition>
 
-    <button
-      type="button"
-      class="btn btn-sm bg-base-300/80 hover:bg-base-300 backdrop-blur border border-base-content/20 shadow-none"
+    <Button
+      size="small"
+      severity="secondary"
+      class="!bg-surface-800/80 hover:!bg-surface-800 !border-surface-700 backdrop-blur"
       :aria-expanded="open"
       :aria-label="t.floor"
       @click="toggle"
     >
       {{ t.floor }}: {{ currentLabel }}
-    </button>
+    </Button>
   </div>
 </template>

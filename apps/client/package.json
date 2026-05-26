@@ -13,9 +13,13 @@
     "lint": "eslint src --max-warnings=0"
   },
   "dependencies": {
+    "@primeuix/themes": "^2.0.3",
     "@tarkov-checker/shared": "workspace:*",
     "leaflet": "^1.9.4",
     "pinia": "^2.3.0",
+    "primeicons": "^7.0.0",
+    "primevue": "^4.5.5",
+    "tailwindcss-primeui": "^0.6.1",
     "vue": "^3.5.13",
     "zod": "^3.24.1"
   },
@@ -25,7 +29,6 @@
     "@types/node": "^22.10.2",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vue/tsconfig": "^0.7.0",
-    "daisyui": "^5.5.20",
     "jsdom": "^25.0.1",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.7.2",
