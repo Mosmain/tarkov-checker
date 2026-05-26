@@ -38,6 +38,10 @@ interface UseLeafletMapResult {
   setActiveFloor: (id: string) => void;
   setPlayerPosition: (pos: Position3D, yaw?: number | null) => void;
   clearPlayerPosition: () => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
+  nextFloor: () => void;
+  prevFloor: () => void;
 }
 
 const LABEL_SIZE_PX: Readonly<Record<LabelSize, string>> = {
@@ -394,7 +398,7 @@ export function useLeafletMap(
     const instance = L.map(containerRef.value, {
       crs,
       attributionControl: false,
-      zoomControl: true,
+      zoomControl: false,
       minZoom: -5,
       maxZoom: 4,
       zoomSnap: 0.25,
@@ -424,6 +428,33 @@ export function useLeafletMap(
       mapError.value = err instanceof Error ? err.message : String(err);
     }
   });
+
+  function zoomIn(): void {
+    map.value?.zoomIn();
+  }
+
+  function zoomOut(): void {
+    map.value?.zoomOut();
+  }
+
+  function shiftFloor(delta: 1 | -1): void {
+    const floorIds = info.floors.map((f) => f.id);
+    if (floorIds.length <= 1) return;
+    const active = currentFloor.value ?? info.defaultFloor;
+    // No usable anchor — neither a current nor default floor — bail.
+    if (active === null) return;
+    const idx = floorIds.indexOf(active);
+    // Wrap around so repeated presses cycle the list.
+    const nextIdx = (idx + delta + floorIds.length) % floorIds.length;
+    const next = floorIds[nextIdx];
+    if (next) setActiveFloor(next);
+  }
+  function nextFloor(): void {
+    shiftFloor(1);
+  }
+  function prevFloor(): void {
+    shiftFloor(-1);
+  }
 
   function setActiveFloor(id: string): void {
     const floorIds = info.floors.map((f) => f.id);
@@ -485,5 +516,9 @@ export function useLeafletMap(
     setActiveFloor,
     setPlayerPosition,
     clearPlayerPosition,
+    zoomIn,
+    zoomOut,
+    nextFloor,
+    prevFloor,
   };
 }

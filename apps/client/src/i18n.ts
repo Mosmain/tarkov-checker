@@ -43,6 +43,43 @@ interface UiBundle {
     readonly refreshing: string;
     readonly hint: string;
   };
+  readonly overlay: {
+    readonly heading: string;
+    readonly alwaysOnTop: string;
+    readonly clickThrough: string;
+    readonly clickThroughWarning: string;
+    readonly opacity: string;
+    readonly mapOpacity: string;
+    readonly mapOpacityHint: string;
+    readonly zoom: string;
+    readonly quickMenuTitle: string;
+  };
+  readonly hotkeys: {
+    readonly heading: string;
+    readonly lock: string;
+    readonly lockHint: string;
+    readonly zoomIn: string;
+    readonly zoomOut: string;
+    readonly floorUp: string;
+    readonly floorDown: string;
+    readonly record: string;
+    readonly recording: string;
+    readonly recordingPrompt: string;
+    readonly invalid: string;
+    readonly conflict: string;
+  };
+  readonly closeConfirm: {
+    readonly title: string;
+    readonly message: string;
+    readonly accept: string;
+    readonly reject: string;
+  };
+  readonly tray: {
+    readonly toggleLock: string;
+    readonly showWindow: string;
+    readonly quit: string;
+    readonly tooltip: string;
+  };
 }
 
 const BUNDLES: Readonly<Record<ApiLang, UiBundle>> = {
@@ -96,6 +133,43 @@ const BUNDLES: Readonly<Record<ApiLang, UiBundle>> = {
       refreshing: "Refreshing…",
       hint: "Extract coordinates are cached locally. tarkov.dev may be blocked on some networks — fetch once, use offline.",
     },
+    overlay: {
+      heading: "Overlay",
+      alwaysOnTop: "Always on top",
+      clickThrough: "Click-through",
+      clickThroughWarning: "Once enabled, you can't click the window. Restart the app to re-enable interaction.",
+      opacity: "Opacity",
+      mapOpacity: "Map opacity",
+      mapOpacityHint: "Available when overall opacity is below 100%.",
+      zoom: "Zoom",
+      quickMenuTitle: "Transparency",
+    },
+    hotkeys: {
+      heading: "Hotkeys",
+      lock: "Toggle lock",
+      lockHint: "Pressed globally to toggle click-through. F1–F24 work without a modifier; everything else needs Ctrl/Alt/Shift.",
+      zoomIn: "Zoom in",
+      zoomOut: "Zoom out",
+      floorUp: "Next floor",
+      floorDown: "Previous floor",
+      record: "Change",
+      recording: "Recording…",
+      recordingPrompt: "Press the new combination (Esc to cancel)",
+      invalid: "Need a modifier (Ctrl/Alt/Shift) — or a bare F-key.",
+      conflict: "This combination is taken by another app. Try another.",
+    },
+    closeConfirm: {
+      title: "Close the app?",
+      message: "The window will be closed.",
+      accept: "Close",
+      reject: "Cancel",
+    },
+    tray: {
+      toggleLock: "Toggle lock",
+      showWindow: "Show window",
+      quit: "Quit",
+      tooltip: "tarkov-checker",
+    },
   },
   ru: {
     language: "Язык",
@@ -146,6 +220,43 @@ const BUNDLES: Readonly<Record<ApiLang, UiBundle>> = {
       refresh: "Обновить",
       refreshing: "Обновляю…",
       hint: "Координаты выходов кешируются локально. tarkov.dev иногда недоступен с RU IP — обновили один раз и пользуемся.",
+    },
+    overlay: {
+      heading: "Оверлей",
+      alwaysOnTop: "Поверх всех окон",
+      clickThrough: "Прозрачное для кликов",
+      clickThroughWarning: "После включения окно перестанет реагировать на мышь. Чтобы вернуть взаимодействие — перезапусти приложение.",
+      opacity: "Прозрачность",
+      mapOpacity: "Прозрачность карты",
+      mapOpacityHint: "Доступно когда общая прозрачность ниже 100%.",
+      zoom: "Масштаб",
+      quickMenuTitle: "Прозрачность",
+    },
+    hotkeys: {
+      heading: "Хоткеи",
+      lock: "Переключить блокировку",
+      lockHint: "Глобально переключает click-through. F1–F24 работают без модификатора; всем остальным нужен Ctrl/Alt/Shift.",
+      zoomIn: "Приблизить",
+      zoomOut: "Отдалить",
+      floorUp: "Следующий этаж",
+      floorDown: "Предыдущий этаж",
+      record: "Изменить",
+      recording: "Запись…",
+      recordingPrompt: "Нажми новое сочетание (Esc — отмена)",
+      invalid: "Нужен модификатор (Ctrl/Alt/Shift) — или F-клавиша без него.",
+      conflict: "Это сочетание уже занято другим приложением. Попробуй другое.",
+    },
+    closeConfirm: {
+      title: "Закрыть приложение?",
+      message: "Окно будет закрыто.",
+      accept: "Закрыть",
+      reject: "Отмена",
+    },
+    tray: {
+      toggleLock: "Переключить блокировку",
+      showWindow: "Показать окно",
+      quit: "Выход",
+      tooltip: "tarkov-checker",
     },
   },
 };

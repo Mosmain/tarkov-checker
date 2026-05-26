@@ -36,9 +36,17 @@ const {
   setPlayerFollow,
   setActiveFloor,
   setPlayerPosition,
+  zoomIn,
+  zoomOut,
+  nextFloor,
+  prevFloor,
 } = useLeafletMap(mapContainer, props.mapCode);
 
 const hasFloors = computed(() => info.floors.length > 1);
+
+// Expose imperative actions to the parent (App.vue) so global hotkeys can
+// drive the map without prop-drilling.
+defineExpose({ zoomIn, zoomOut, nextFloor, prevFloor });
 
 emit("mapName", info.displayName);
 watch(mapError, (err) => emit("mapError", err));

@@ -14,11 +14,16 @@
       {
         "title": "tarkov-checker",
         "label": "main",
-        "width": 800,
-        "height": 600,
+        "width": 360,
+        "height": 360,
+        "minWidth": 200,
+        "minHeight": 200,
         "resizable": true,
-        "decorations": true,
-        "fullscreen": false
+        "decorations": false,
+        "fullscreen": false,
+        "alwaysOnTop": false,
+        "transparent": true,
+        "shadow": false
       }
     ],
     "security": {

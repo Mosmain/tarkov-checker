@@ -79,10 +79,23 @@ body,
 #app {
   height: 100%;
   margin: 0;
+  background: transparent;
+}
+
+/* Tauri overlay mode: round the painted area for a softer overlay shape.
+   The class is added by App.vue once when running inside Tauri. `clip-path`
+   is used instead of `overflow: hidden + border-radius` because `overflow`
+   doesn't clip descendants with `position: absolute/fixed` that escape
+   <body>'s containing block (e.g. Leaflet's absolutely-positioned container
+   and PrimeVue Drawer teleported with `appendTo="body"`). */
+html.overlay-window body {
+  clip-path: inset(0 round 12px);
 }
 
 .leaflet-container {
+  /* Fallback for older engines that don't grok relative-color syntax. */
   background: var(--p-surface-950);
+  background: rgb(from var(--p-surface-950) r g b / var(--map-bg-alpha, 1));
 }
 
 .leaflet-extracts-pane img.leaflet-marker-icon {

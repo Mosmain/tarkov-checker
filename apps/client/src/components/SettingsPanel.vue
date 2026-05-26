@@ -11,10 +11,14 @@ import InputIcon from "primevue/inputicon";
 import Checkbox from "primevue/checkbox";
 import Message from "primevue/message";
 import SelectButton from "primevue/selectbutton";
+import ToggleSwitch from "primevue/toggleswitch";
+import Slider from "primevue/slider";
+import HotkeyRecorder from "./HotkeyRecorder.vue";
 import { useSettingsStore, type ExtractFactionFilter } from "../stores/settings";
 import { FACTION_COLORS, TARKOV_MAPS, VISIBLE_MAP_CODES, type TarkovMapCode } from "@shared/maps";
 import type { ServerConfigResponse } from "@shared/config-api";
 import { useUiText } from "../i18n";
+import { useTauriOverlay } from "../composables/useTauriOverlay";
 import {
   fetchAllExtracts,
   getCacheTimestamp,
@@ -23,9 +27,26 @@ import {
 import { fetchServerConfig, putServerConfig } from "../api/server-config";
 
 const settings = useSettingsStore();
-const { apiLang, extractFactions, extractLabelMode, extractLabelSize, playerFollow, mapCode } =
-  storeToRefs(settings);
+const {
+  apiLang,
+  extractFactions,
+  extractLabelMode,
+  extractLabelSize,
+  playerFollow,
+  mapCode,
+  overlayAlwaysOnTop,
+  overlayOpacity,
+  overlayMapOpacity,
+  overlayZoom,
+  lockHotkey,
+  zoomInHotkey,
+  zoomOutHotkey,
+  floorUpHotkey,
+  floorDownHotkey,
+} = storeToRefs(settings);
 const t = useUiText();
+
+const overlay = useTauriOverlay();
 
 const MAP_CODES = VISIBLE_MAP_CODES;
 const localizedMapNames = ref<Partial<Record<string, string>>>({});
@@ -68,6 +89,67 @@ const langOptions = computed(() => [
   { label: "RU", value: "ru" as const },
 ]);
 
+const overlayZoomOptions = computed(() => [
+  { label: "75%", value: "75" as const },
+  { label: "100%", value: "100" as const },
+  { label: "125%", value: "125" as const },
+  { label: "150%", value: "150" as const },
+]);
+
+// Slider works in 30-100 range (integer %); convert to/from 0.3-1.0 float.
+const opacityPercent = computed<number>({
+  get: () => Math.round(overlayOpacity.value * 100),
+  set: (pct) => {
+    overlayOpacity.value = Math.max(30, Math.min(100, pct)) / 100;
+  },
+});
+
+// Map-background opacity goes all the way to 0 — the user can disable the
+// solid surface behind the map entirely and see only the SVG + markers.
+const mapOpacityPercent = computed<number>({
+  get: () => Math.round(overlayMapOpacity.value * 100),
+  set: (pct) => {
+    overlayMapOpacity.value = Math.max(0, Math.min(100, pct)) / 100;
+  },
+});
+
+// Slider is disabled at full overlay opacity — a transparent map background
+// behind a fully opaque overlay would just look like a hole in the UI, not
+// the intended "see desktop through the app" effect.
+const mapOpacityDisabled = computed(() => overlayOpacity.value >= 1);
+
+// The CSS variable on <html> drives `.leaflet-container`'s alpha channel.
+// When the overall opacity is at 100% we force the map back to fully opaque
+// regardless of the stored value — keeps the visual model consistent with
+// the disabled-slider hint.
+function applyMapBgAlpha(): void {
+  const effective = overlayOpacity.value < 1 ? overlayMapOpacity.value : 1;
+  document.documentElement.style.setProperty("--map-bg-alpha", String(effective));
+}
+applyMapBgAlpha();
+watch([overlayOpacity, overlayMapOpacity], applyMapBgAlpha);
+
+// Apply current overlay settings to the Tauri window on mount + on every change.
+// Click-through state is owned by App.vue (driven by lock button + global hotkey),
+// not by this drawer, so we don't touch it here.
+function syncOverlay(): void {
+  if (!overlay.isTauri) return;
+  void overlay.setAlwaysOnTop(overlayAlwaysOnTop.value);
+  void overlay.setOpacity(overlayOpacity.value);
+  void overlay.setZoom(Number(overlayZoom.value) / 100);
+}
+
+if (overlay.isTauri) {
+  syncOverlay();
+  watch(overlayAlwaysOnTop, (v) => void overlay.setAlwaysOnTop(v));
+  watch(overlayOpacity, (v) => void overlay.setOpacity(v));
+  watch(overlayZoom, (v) => void overlay.setZoom(Number(v) / 100));
+}
+
+// Hotkey recording UI lives in <HotkeyRecorder>; each instance binds to its
+// own store ref. App.vue picks up changes via useGlobalShortcut composables
+// and re-registers with Tauri accordingly.
+
 const labelModeOptions = computed(() => [
   { label: t.value.labelHover, value: "hover" as const },
   { label: t.value.labelAlways, value: "always" as const },
@@ -96,6 +178,11 @@ function onResize(): void {
   isDesktop.value = window.innerWidth >= SM_BREAKPOINT;
 }
 
+// Tarkov paths are unreachable from a phone connected over LAN (the browser
+// can't see `C:\EFT`), but the Tauri overlay runs on the same machine as
+// Tarkov regardless of how narrow the window is — always allow editing there.
+const canEditPaths = computed(() => overlay.isTauri || isDesktop.value);
+
 const serverConfig = ref<ServerConfigResponse | null>(null);
 const gameDirInput = ref("");
 const screenshotsDirInput = ref("");
@@ -115,7 +202,7 @@ const screenshotsDirDirty = computed(
   () => (serverConfig.value?.screenshotsDir.value ?? "") !== screenshotsDirInput.value,
 );
 const canSavePaths = computed(
-  () => isDesktop.value && !pathsSaving.value && (gameDirDirty.value || screenshotsDirDirty.value),
+  () => canEditPaths.value && !pathsSaving.value && (gameDirDirty.value || screenshotsDirDirty.value),
 );
 
 function syncInputsFromConfig(cfg: ServerConfigResponse): void {
@@ -328,6 +415,78 @@ function statusIconClass(slot: "gameDir" | "screenshotsDir" | "logsDir"): string
         <p class="mt-1.5 text-[10px] leading-relaxed opacity-50">{{ t.playerFollowHint }}</p>
       </Fieldset>
 
+      <Fieldset v-if="overlay.isTauri" :legend="t.overlay.heading">
+        <div class="space-y-3">
+          <div class="flex items-center justify-between gap-3">
+            <label class="text-sm" for="overlay-always-on-top">{{ t.overlay.alwaysOnTop }}</label>
+            <ToggleSwitch v-model="overlayAlwaysOnTop" input-id="overlay-always-on-top" />
+          </div>
+
+          <div>
+            <div class="mb-1.5 flex items-center justify-between gap-3">
+              <label class="text-xs opacity-70" for="overlay-opacity">{{ t.overlay.opacity }}</label>
+              <span class="text-xs tabular-nums opacity-70">{{ opacityPercent }}%</span>
+            </div>
+            <Slider
+              v-model="opacityPercent"
+              :min="30"
+              :max="100"
+              :step="5"
+              input-id="overlay-opacity"
+              class="w-full"
+            />
+          </div>
+
+          <div :class="mapOpacityDisabled ? 'opacity-50' : ''">
+            <div class="mb-1.5 flex items-center justify-between gap-3">
+              <label class="text-xs opacity-70" for="overlay-map-opacity">
+                {{ t.overlay.mapOpacity }}
+              </label>
+              <span class="text-xs tabular-nums opacity-70">{{ mapOpacityPercent }}%</span>
+            </div>
+            <Slider
+              v-model="mapOpacityPercent"
+              :min="0"
+              :max="100"
+              :step="5"
+              :disabled="mapOpacityDisabled"
+              input-id="overlay-map-opacity"
+              class="w-full"
+            />
+            <p
+              v-if="mapOpacityDisabled"
+              class="mt-1.5 text-[10px] leading-relaxed opacity-50"
+            >
+              {{ t.overlay.mapOpacityHint }}
+            </p>
+          </div>
+
+          <div>
+            <p class="mb-1.5 text-xs opacity-60">{{ t.overlay.zoom }}</p>
+            <SelectButton
+              v-model="overlayZoom"
+              :options="overlayZoomOptions"
+              option-label="label"
+              option-value="value"
+              :allow-empty="false"
+              size="small"
+              class="w-full"
+            />
+          </div>
+        </div>
+      </Fieldset>
+
+      <Fieldset v-if="overlay.isTauri" :legend="t.hotkeys.heading">
+        <div class="space-y-3">
+          <HotkeyRecorder v-model="lockHotkey" :label="t.hotkeys.lock" />
+          <HotkeyRecorder v-model="zoomInHotkey" :label="t.hotkeys.zoomIn" />
+          <HotkeyRecorder v-model="zoomOutHotkey" :label="t.hotkeys.zoomOut" />
+          <HotkeyRecorder v-model="floorUpHotkey" :label="t.hotkeys.floorUp" />
+          <HotkeyRecorder v-model="floorDownHotkey" :label="t.hotkeys.floorDown" />
+          <p class="text-[10px] leading-relaxed opacity-50">{{ t.hotkeys.lockHint }}</p>
+        </div>
+      </Fieldset>
+
       <Fieldset :legend="t.cache.heading">
         <div class="flex items-center justify-between gap-2">
           <div class="text-xs opacity-70">
@@ -384,8 +543,8 @@ function statusIconClass(slot: "gameDir" | "screenshotsDir" | "logsDir"): string
                     id="game-dir-input"
                     v-model="gameDirInput"
                     :placeholder="t.paths.placeholderGameDir"
-                    :disabled="!isDesktop || gameDirLocked"
-                    :readonly="!isDesktop"
+                    :disabled="!canEditPaths || gameDirLocked"
+                    :readonly="!canEditPaths"
                     size="small"
                     fluid
                   />
@@ -410,15 +569,15 @@ function statusIconClass(slot: "gameDir" | "screenshotsDir" | "logsDir"): string
                     id="screenshots-dir-input"
                     v-model="screenshotsDirInput"
                     :placeholder="t.paths.placeholderScreenshotsDir"
-                    :disabled="!isDesktop || screenshotsDirLocked"
-                    :readonly="!isDesktop"
+                    :disabled="!canEditPaths || screenshotsDirLocked"
+                    :readonly="!canEditPaths"
                     size="small"
                     fluid
                   />
                 </IconField>
               </div>
 
-              <div v-if="isDesktop" class="flex items-center justify-end gap-2">
+              <div v-if="canEditPaths" class="flex items-center justify-end gap-2">
                 <span v-if="pathsJustSaved" class="text-[11px] text-green-400">
                   {{ t.paths.saved }}
                 </span>
