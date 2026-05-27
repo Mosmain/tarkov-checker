@@ -1,10 +1,5 @@
 import { onMounted, onBeforeUnmount, ref, shallowRef, type Ref, type ShallowRef } from "vue";
-import L, {
-  type Map as LeafletMap,
-  type LatLngExpression,
-  type CRS,
-  type Marker,
-} from "leaflet";
+import L, { type Map as LeafletMap, type LatLngExpression, type CRS, type Marker } from "leaflet";
 import { mapInfo, mapSvgPath, type TarkovMapCode } from "@shared/maps";
 import type { Extract, Position3D } from "@shared/tarkov-api";
 
@@ -52,9 +47,9 @@ const LABEL_SIZE_PX: Readonly<Record<LabelSize, string>> = {
 
 /** Zoom levels (delta from initialZoom) for each follow mode; clamped to maxZoom. */
 const FOLLOW_ZOOM_DELTA: Readonly<Record<Exclude<PlayerFollow, "off">, number>> = {
-  sm: 1.5,
-  md: 3,
-  lg: 6,
+  sm: 1,
+  md: 2,
+  lg: 3,
 };
 
 const EXTRACT_ICON_SIZE = 26;
