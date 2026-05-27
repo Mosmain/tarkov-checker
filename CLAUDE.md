@@ -395,6 +395,48 @@ Fixing each one separately got the Tauri build green:
    128×128@2x are also referenced in `tauri.conf.json` and ship today
    as solid purple squares — replace before any release.
 
+## CI & releases
+
+Single workflow at `.github/workflows/build-overlay.yml`, runs on
+`windows-latest`. Three triggers, three distinct behaviours:
+
+| Trigger                  | CI runs | Artifact (30 d) | GitHub Release |
+| ------------------------ | :-----: | :-------------: | :------------: |
+| `workflow_dispatch`      |   ✅    |       ✅        |       ❌       |
+| `push` to `master`       |   ✅    |       ✅        |       ❌       |
+| `push` of `v*` tag       |   ✅    |       ✅        |       ✅       |
+
+Master pushes are CI-gate-only on purpose — not every merge is a
+release, and auto-publishing would spam the Releases tab.
+
+Cutting a release (maintainer-only):
+
+```pwsh
+git tag -a v0.1.0 -m "First public build"
+git push origin v0.1.0
+```
+
+Pushing the tag triggers a fresh CI run from the tagged commit
+(~3-5 min warm cache, ~8-12 cold). On success `softprops/action-gh-release@v2`
+publishes a GitHub Release named `v0.1.0` with `tarkov-checker-desktop.exe`
+attached and marked as **Latest**. End users grab it from the Releases
+tab; the .exe lives there indefinitely.
+
+Workflow artifacts (the 30-day ones on the run page) and the rust-cache
+are unrelated to the Releases storage — see the "Что может произойти с
+тайм-аутами" discussion if the two ever get conflated.
+
+`pnpm/action-setup@v4` reads the pnpm version from `packageManager`
+in root `package.json`. Don't also pass `version:` in the action input
+— v4 errors out on the conflict (`ERR_PNPM_BAD_PM_VERSION`).
+
+Trying to fix flaky local builds via Smart App Control / Tamper
+Protection / Defender exclusions / HVCI off / VBS-disable etc. has
+been exhausted previously — the local-build path on this machine
+genuinely requires retries even with everything documented in
+"Windows build quirks" applied. CI sidesteps all of it. **If you find
+yourself debugging local rustc crashes again, push a tag instead.**
+
 ## Other environment quirks
 
 - Bash on Windows (msys2 inside Git for Windows) occasionally fails to
