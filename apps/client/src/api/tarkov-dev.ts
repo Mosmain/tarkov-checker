@@ -6,6 +6,8 @@ import {
 
 export type ApiLang = "en" | "ru" | "de" | "fr" | "es" | "it" | "ja" | "pl" | "pt" | "zh";
 
+const isTauri = "__TAURI_INTERNALS__" in window;
+
 function apiBase(): string {
   return `http://${window.location.hostname}:3000`;
 }
@@ -14,6 +16,11 @@ const fetchedAtByLang = new Map<string, number>();
 const inFlight = new Map<string, Promise<MapExtracts[]>>();
 
 async function requestExtracts(lang: ApiLang, refresh: boolean): Promise<ExtractsCacheResponse> {
+  if (isTauri) {
+    const { invoke } = await import("@tauri-apps/api/core");
+    const data = await invoke<unknown>("get_extracts", { lang, refresh });
+    return extractsCacheResponse.parse(data);
+  }
   const params = new URLSearchParams({ lang });
   if (refresh) params.set("refresh", "1");
   const r = await fetch(`${apiBase()}/api/extracts?${params.toString()}`);

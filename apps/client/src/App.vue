@@ -8,7 +8,7 @@ import { useConfirm } from "primevue/useconfirm";
 import MapView from "./components/MapView.vue";
 import MapQuickMenu from "./components/MapQuickMenu.vue";
 import SettingsPanel from "./components/SettingsPanel.vue";
-import { useWebSocket } from "./composables/useWebSocket";
+import { useServerTransport } from "./composables/useServerTransport";
 import { useSettingsStore } from "./stores/settings";
 import { useTauriOverlay } from "./composables/useTauriOverlay";
 import { useGlobalShortcut } from "./composables/useGlobalShortcut";
@@ -31,8 +31,10 @@ const mapDisplayName = ref<string>("…");
 const mapError = ref<string | null>(null);
 const extractsError = ref<string | null>(null);
 
+// Browser/PWA mode talks to the LAN Node server on :3000; Tauri mode
+// shortcuts the WS layer and listens for Rust-emitted events directly.
 const wsUrl = `ws://${window.location.hostname}:3000/ws`;
-const { status, lastMessage } = useWebSocket(wsUrl);
+const { status, lastMessage } = useServerTransport(wsUrl);
 const overlay = useTauriOverlay();
 const { isTauri } = overlay;
 const t = useUiText();

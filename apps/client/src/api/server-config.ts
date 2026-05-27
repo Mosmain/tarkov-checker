@@ -4,14 +4,23 @@ import {
   type ServerConfigUpdate,
 } from "@shared/config-api";
 
+const isTauri = "__TAURI_INTERNALS__" in window;
+
 function apiBase(): string {
-  // In dev Vite is on 5173 and the Fastify server on 3000; in prod Fastify
-  // serves the bundle at /, so a same-origin path works. We just always go
-  // to <hostname>:3000 right now since the bundle isn't served yet.
   return `http://${window.location.hostname}:3000`;
 }
 
+async function tauriInvoke<T>(name: string, args?: Record<string, unknown>): Promise<T> {
+  // Lazy-import so the chunk only loads when actually running inside Tauri.
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<T>(name, args);
+}
+
 export async function fetchServerConfig(): Promise<ServerConfigResponse> {
+  if (isTauri) {
+    const data = await tauriInvoke<unknown>("get_config");
+    return serverConfigResponseSchema.parse(data);
+  }
   const r = await fetch(`${apiBase()}/api/config`);
   if (!r.ok) throw new Error(`GET /api/config failed: HTTP ${r.status}`);
   return serverConfigResponseSchema.parse(await r.json());
@@ -20,6 +29,10 @@ export async function fetchServerConfig(): Promise<ServerConfigResponse> {
 export async function putServerConfig(
   patch: ServerConfigUpdate,
 ): Promise<ServerConfigResponse> {
+  if (isTauri) {
+    const data = await tauriInvoke<unknown>("update_config", { patch });
+    return serverConfigResponseSchema.parse(data);
+  }
   const r = await fetch(`${apiBase()}/api/config`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
