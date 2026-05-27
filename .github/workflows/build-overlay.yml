@@ -10,14 +10,14 @@ on:
   workflow_dispatch:
   push:
     branches: [master]
-    tags: ['v*']
+    tags: ["v*"]
 
 jobs:
   build:
     runs-on: windows-latest
     timeout-minutes: 30
     permissions:
-      contents: write   # needed by softprops/action-gh-release to create Releases
+      contents: write # needed by softprops/action-gh-release to create Releases
 
     steps:
       - uses: actions/checkout@v4
@@ -28,8 +28,6 @@ jobs:
           submodules: recursive
 
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
       - uses: actions/setup-node@v4
         with:
