@@ -1,11 +1,13 @@
 name: Build overlay
 
 # Triggers:
-# - Manual (`workflow_dispatch`): for PR-stage testing. Pick the branch
-#   in the GitHub UI; .exe ends up as an Actions artifact on the run page.
-# - Push to master: auto-builds and publishes a rolling prerelease
-#   `master-build-<N>` to the Releases tab. Doesn't override "Latest".
-# - Push of a v* tag: stable release, marked as Latest.
+# - Manual (`workflow_dispatch`): PR-stage testing. Pick the branch in
+#   the GitHub UI; .exe ends up as an Actions artifact on the run page.
+# - Push to master: CI sanity check — builds + uploads artifact, but
+#   does NOT publish a GitHub Release. Master gets touched often, every
+#   merge isn't a release.
+# - Push of a v* tag: stable release, marked as Latest. This is the
+#   only path that creates entries in the Releases tab.
 on:
   workflow_dispatch:
   push:
@@ -58,19 +60,13 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
-      # Auto-publish a GitHub Release on push events only.
-      # Manual dispatch (workflow_dispatch) is artifact-only, no release.
+      # Only v* tag pushes publish to the Releases tab. Master pushes
+      # and manual runs stop at the artifact-upload step above.
       - name: Publish release
-        if: github.event_name == 'push'
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: apps/desktop/src-tauri/target/release/tarkov-checker-desktop.exe
-          # Tag push → use the actual tag (v1.2.3). Master push → synthesize
-          # `master-build-<run-number>` so each successful build gets its
-          # own entry in the Releases tab.
-          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('master-build-{0}', github.run_number) }}
-          name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('Master build {0}', github.run_number) }}
-          # Only v* tags are full releases; master rolls a prerelease so the
-          # "Latest release" badge stays on the most recent v* tag.
-          prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
           generate_release_notes: true
