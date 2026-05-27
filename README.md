@@ -1,34 +1,60 @@
 # tarkov-checker
 
-Live in-raid map for Escape from Tarkov. A Node backend watches the game's log
-and screenshot folders and broadcasts events over WebSocket; a Vue client
-renders the map with Leaflet. The same client is consumed two ways:
+Live in-raid map for Escape from Tarkov. Watches Tarkov's screenshot
+folder, parses player position from F12-overlay filenames, and renders
+the result on a Leaflet map with the community SVG layers.
 
-1. On a phone (iPod touch 7) as a PWA over LAN.
-2. On the desktop as a Tauri overlay window (later: transparent + always-on-top).
+Two consumption modes share the same Vue client:
 
-## Prerequisites
+1. **Desktop overlay** (primary): a single Tauri 2 `.exe` that includes
+   the screenshot watcher, registry probe, and tarkov.dev fetch+cache
+   natively in Rust. Frameless transparent always-on-top window with
+   click-through lock, global hotkeys, and a system-tray fallback.
+2. **LAN / phone PWA** (optional): a Node/Fastify server on the PC and
+   the same Vue client as a Progressive Web App on the phone. The
+   phone hits the PC over WebSocket+HTTP on the local network. This
+   path requires running `pnpm dev` on the PC — the overlay `.exe`
+   does **not** expose a LAN endpoint.
 
-- Node.js 20+ (see `.nvmrc`)
-- pnpm 10+
-- For `apps/desktop` only: Rust stable (via [rustup](https://rustup.rs/))
-  plus Tauri 2 [system prerequisites](https://v2.tauri.app/start/prerequisites/)
-  — on Windows that means the Visual Studio "Desktop development with C++"
-  workload. WebView2 ships with Windows 11.
+## Quick start — using a pre-built binary
 
-## Install
+Grab `tarkov-checker-desktop.exe` from the latest [Release](../../releases),
+drop it anywhere on disk (Desktop, a flash drive, wherever), double-click.
+First launch auto-detects your Tarkov install via the registry; if the
+launcher didn't write the registry key you can set paths manually in
+Settings → Tarkov paths. State lives in `%APPDATA%/tarkov-checker/`
+(`config.json` for path overrides, `extracts-cache.json` for the
+tarkov.dev extract data).
+
+The overlay is fully portable — no installer, no admin rights, no
+service. Close = exit; no background process lingers.
+
+## Quick start — building from source
 
 ```pwsh
 git clone --recurse-submodules https://github.com/Mosmain/tarkov-checker.git
-# or, if already cloned:
-git submodule update --init --recursive
-
+cd tarkov-checker
 pnpm install
 ```
 
-The `--recurse-submodules` step pulls the SVG maps repo into
+`--recurse-submodules` pulls the SVG maps repo into
 `apps/client/public/maps/`. See [CREDITS.md](CREDITS.md) for attribution
-and licensing.
+and licensing of those.
+
+### Prerequisites
+
+- Node.js 20+ (pinned via `.nvmrc`)
+- pnpm 10+ (pinned via `packageManager` in root `package.json`)
+- For `apps/desktop` only: Rust stable (via [rustup](https://rustup.rs/))
+  plus the Tauri 2 [Windows prerequisites](https://v2.tauri.app/start/prerequisites/)
+  — concretely the Visual Studio "Desktop development with C++"
+  workload. WebView2 ships with Windows 11.
+
+Locally building the overlay on Windows has well-known footguns (HVCI,
+Defender, MSVC spawn quirks) — see [CLAUDE.md § Windows build quirks](CLAUDE.md).
+Releases are built in CI on a clean `windows-latest` runner — if you
+don't want to fight the local toolchain, grab the .exe from the
+[latest Release](../../releases) instead.
 
 ## Tarkov paths
 
@@ -41,22 +67,22 @@ Two paths matter:
 
 Resolution priority, highest first:
 
-1. `.env` at the repo root (Node `--env-file-if-exists`). Keys:
-   `TARKOV_GAME_DIR`, `TARKOV_SCREENSHOT_DIR`, optional `TARKOV_LOG_DIR`.
-2. Manual override saved through the in-app Settings panel, persisted
-   to `apps/server/data/config.json` (gitignored).
-3. Auto-detect from the Windows registry: `Personal` shell folder for
-   Documents (so OneDrive-redirected Documents resolves correctly) and
-   `Battlestate Games\EFT\InstallLocation` for the game folder (BSG
-   Launcher writes this at install time).
+1. Environment variables: `TARKOV_GAME_DIR`, `TARKOV_SCREENSHOT_DIR`,
+   optional `TARKOV_LOG_DIR`. In dev these can come from a `.env` at
+   the repo root (Node `--env-file-if-exists`).
+2. Manual override saved through the in-app Settings panel:
+   - **Overlay (Tauri):** `%APPDATA%/tarkov-checker/config.json`
+   - **Node server (LAN mode):** `apps/server/data/config.json` (gitignored)
+3. Auto-detect from the Windows registry: the `Personal` shell folder
+   for Documents (so OneDrive-redirected Documents resolves correctly),
+   and `Battlestate Games\EFT\InstallLocation` for the game folder
+   (BSG Launcher writes this at install time).
 
-If auto-detect doesn't find the game folder (BSG Launcher didn't write
-the registry key, or you installed manually), open the app on the
-machine running Tarkov, go to Settings → Tarkov paths, fill `Game
-folder` with the install path (e.g. `D:\EFT`), and click Save. The
-server persists it and re-starts watchers immediately.
+If auto-detect doesn't find the game folder, open Settings → Tarkov
+paths, fill `Game folder` with the install path, and click Save. The
+watcher re-applies the new paths immediately without restart.
 
-From a phone in the LAN the Paths section becomes read-only with a
+From a phone in LAN mode the Paths section becomes read-only with a
 note to configure on the desktop — typing `D:\EFT` on an on-screen
 keyboard is painful.
 
@@ -64,43 +90,75 @@ keyboard is painful.
 
 ```
 apps/
-  server/    Fastify + chokidar + WebSocket
-  client/    Vue 3 + Vite + Tailwind v4 + Leaflet + PWA
-  desktop/   Tauri 2 wrapper around apps/client
+  desktop/   Tauri 2 wrapper. The single shipped .exe.
+             Hosts the Rust port of the server pipeline under
+             src-tauri/src/server/ (paths, config, screenshots,
+             extracts) plus the IPC commands the webview calls.
+  server/    LAN-only Node/Fastify backend. Fastify HTTP + WS at /ws,
+             chokidar watching the screenshots folder. Only used for
+             the phone/PWA scenario; not bundled into the overlay.
+  client/    Vue 3 + Vite + Tailwind v4 + Leaflet + PrimeVue. Same
+             code runs inside Tauri and as a plain browser PWA. The
+             transport layer branches on `__TAURI_INTERNALS__` in
+             window: Tauri → `invoke` + `listen`; browser → fetch + WS.
 packages/
-  shared/    WS payload schemas (zod) + map name table
+  shared/    WS payload schemas (zod) + map name table + screenshot
+             filename parser. Consumed by the client and the Node
+             server. The Rust port in apps/desktop redeclares the
+             same shapes natively — keep them in sync by hand.
 ```
 
 ## Dev workflow
 
-```pwsh
-pnpm dev          # turbo: starts server (3000) and client (5173) in parallel
-```
+Two independent scenarios:
 
-| Port | Service                      |
-| ---- | ---------------------------- |
-| 3000 | Fastify HTTP + WS at `/ws`   |
-| 5173 | Vite dev server (host 0.0.0) |
-
-Open `http://localhost:5173` on desktop, or `http://<lan-ip>:5173` on the phone
-(install via "Add to Home Screen" in Safari to get the PWA shell).
-
-For the Tauri window, run **in a second terminal** (Vite must already be up):
+### Desktop overlay (primary)
 
 ```pwsh
+# Terminal 1 — Vite dev server (provides the webview content):
+pnpm --filter @tarkov-checker/client dev
+
+# Terminal 2 — Tauri shell:
 pnpm --filter @tarkov-checker/desktop tauri:dev
 ```
 
-## Build
+`beforeDevCommand` in `tauri.conf.json` is intentionally empty so Vite
+isn't double-spawned. In dev the Rust-side server logic doesn't spawn
+the watcher (`cfg!(debug_assertions)` guard) — start `apps/server`
+separately if you want events flowing through during desktop dev.
+
+### LAN / phone
 
 ```pwsh
-pnpm build                                       # all packages
-pnpm --filter @tarkov-checker/client build       # just the Vue bundle
-pnpm --filter @tarkov-checker/desktop tauri:build  # desktop installer
+pnpm dev    # turbo: Fastify (3000) + Vite (5173, host 0.0.0.0) in parallel
 ```
 
-In production, Fastify also serves the built client at `/`, so the phone only
-needs port 3000.
+Open `http://localhost:5173` on desktop or `http://<lan-ip>:5173` on
+the phone (Safari → Add to Home Screen for the PWA shell).
+
+| Port | Service                       |
+| ---- | ----------------------------- |
+| 3000 | Fastify HTTP + WS at `/ws`    |
+| 5173 | Vite dev server, host 0.0.0.0 |
+
+## Building the overlay locally
+
+```pwsh
+pnpm overlay:build
+```
+
+Chains: shared → client (Vite build) → desktop (Tauri release build).
+Output: `apps/desktop/src-tauri/target/release/tarkov-checker-desktop.exe`
+(~6-8 MB, single file, no MSI/NSIS — `bundle.active: false` in
+`tauri.conf.json`).
+
+On Windows you'll likely need 5-10 retries to get a clean compile due
+to MSVC/rustc CreateProcess flakiness; see [CLAUDE.md § Windows build quirks](CLAUDE.md)
+for the full diagnosis story. Cargo is incremental, so each retry
+resumes from the last finished crate.
+
+If you don't want to fight the local toolchain, just push to master
+or tag — see below.
 
 ## Lint / typecheck / test
 
@@ -114,10 +172,16 @@ pnpm --filter @tarkov-checker/client test
 
 - TypeScript strict everywhere. No `any` — use `unknown` and narrow.
 - ESM (`"type": "module"`) in every Node package.
-- Path alias `@shared/*` → `packages/shared/src/*`.
-- Server logs through pino; never `console.log` in committed code.
-- Validate all parsed external strings (filenames, log lines, WS payloads) with
-  the zod schemas in `@tarkov-checker/shared`.
+- Path alias `@shared/*` → `packages/shared/src/*` (declared in
+  `tsconfig.base.json` and re-declared in `apps/client/{vite,vitest}.config.ts`).
+- Validate all parsed external strings (filenames, log lines, WS
+  payloads, tarkov.dev responses) with the zod schemas in
+  `@tarkov-checker/shared`.
+- The Rust server port in `apps/desktop/src-tauri/src/server/` mirrors
+  the Node server in `apps/server/src/` 1:1. **Touch one, touch the
+  other** — they don't share types via codegen, parity is hand-kept.
+- Server-side logs go through pino (Node) or `eprintln!` (Rust). No
+  `console.log` in client code.
 - Files kebab-case, Vue components PascalCase, identifiers camelCase.
 
 ## License
