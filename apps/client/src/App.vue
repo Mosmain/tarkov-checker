@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import Button from "primevue/button";
 import ConfirmDialog from "primevue/confirmdialog";
@@ -7,7 +7,11 @@ import Message from "primevue/message";
 import { useConfirm } from "primevue/useconfirm";
 import MapView from "./components/MapView.vue";
 import MapQuickMenu from "./components/MapQuickMenu.vue";
-import SettingsPanel from "./components/SettingsPanel.vue";
+
+// SettingsPanel pulls in ~11 PrimeVue components (Drawer, Select, MultiSelect,
+// Slider, ToggleSwitch, ...) plus the tarkov.dev fetch logic. None of it is
+// needed for first paint — defer it to its own chunk so the map renders sooner.
+const SettingsPanel = defineAsyncComponent(() => import("./components/SettingsPanel.vue"));
 import { useServerTransport } from "./composables/useServerTransport";
 import { useSettingsStore } from "./stores/settings";
 import { useTauriOverlay } from "./composables/useTauriOverlay";
