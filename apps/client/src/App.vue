@@ -182,9 +182,12 @@ function confirmClose(): void {
 const quickMenu = ref<InstanceType<typeof MapQuickMenu> | null>(null);
 
 // Open the quick transparency panel when the user right-clicks anywhere on
-// the map area. Buttons, the drag pill, drawer, and lock cluster naturally
-// fall outside `.leaflet-container`, so they're excluded automatically.
+// the map area. Tauri-only — in the browser we let the native context menu
+// behave normally (the panel controls are overlay-specific anyway).
+// Buttons, the drag pill, drawer, and lock cluster naturally fall outside
+// `.leaflet-container`, so they're excluded automatically.
 function onMapContextMenu(event: MouseEvent): void {
+  if (!isTauri) return;
   const target = event.target as HTMLElement | null;
   if (!target?.closest(".leaflet-container")) return;
   event.preventDefault();
