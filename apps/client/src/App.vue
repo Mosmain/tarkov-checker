@@ -246,9 +246,9 @@ const statusIconClass = computed(() => {
         />
         <span class="pointer-events-none">{{ mapDisplayName }}</span>
       </span>
-      <SettingsPanel />
+      <SettingsPanel v-if="!overlayClickThrough" />
       <Button
-        v-if="isTauri"
+        v-if="isTauri && !overlayClickThrough"
         rounded
         severity="secondary"
         class="!bg-surface-800/80 hover:!bg-red-900 !border-surface-700 backdrop-blur"
