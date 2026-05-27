@@ -1,0 +1,78 @@
+name: Build overlay
+
+# Triggers:
+# - Manual (`workflow_dispatch`): for PR-stage testing. Pick the branch
+#   in the GitHub UI; .exe ends up as an Actions artifact on the run page.
+# - Push to master: auto-builds and publishes a rolling prerelease
+#   `master-build-<N>` to the Releases tab. Doesn't override "Latest".
+# - Push of a v* tag: stable release, marked as Latest.
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    tags: ['v*']
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write   # needed by softprops/action-gh-release to create Releases
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # apps/client/public/maps is a git submodule (the SVG maps).
+          # Vite bundles them as static assets — without the submodule
+          # the build "succeeds" but the overlay ships a broken map.
+          submodules: recursive
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      # MSVC + Rust stable are preinstalled on windows-latest; this just
+      # nails the channel and exposes `rustup` to subsequent steps.
+      - uses: dtolnay/rust-toolchain@stable
+
+      # Caches ~/.cargo/registry + the project's target/ keyed on Cargo.lock.
+      # First run is slow (full compile, ~8-12 min); subsequent runs reuse
+      # everything not touched by the lockfile change (~3-5 min).
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri -> target
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm overlay:build
+
+      # Always upload as workflow artifact — lets manual/PR runs grab the
+      # .exe from the run page without going through Releases.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tarkov-checker-desktop
+          path: apps/desktop/src-tauri/target/release/tarkov-checker-desktop.exe
+          retention-days: 30
+          if-no-files-found: error
+
+      # Auto-publish a GitHub Release on push events only.
+      # Manual dispatch (workflow_dispatch) is artifact-only, no release.
+      - name: Publish release
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: apps/desktop/src-tauri/target/release/tarkov-checker-desktop.exe
+          # Tag push → use the actual tag (v1.2.3). Master push → synthesize
+          # `master-build-<run-number>` so each successful build gets its
+          # own entry in the Releases tab.
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('master-build-{0}', github.run_number) }}
+          name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('Master build {0}', github.run_number) }}
+          # Only v* tags are full releases; master rolls a prerelease so the
+          # "Latest release" badge stays on the most recent v* tag.
+          prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
+          generate_release_notes: true

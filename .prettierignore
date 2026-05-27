@@ -1,0 +1,10 @@
+**/dist/**
+**/node_modules/**
+**/.turbo/**
+**/coverage/**
+**/pnpm-lock.yaml
+apps/desktop/src-tauri/target/**
+apps/desktop/src-tauri/gen/**
+apps/desktop/src-tauri/Cargo.lock
+apps/client/dev-dist/**
+**/.vite/**

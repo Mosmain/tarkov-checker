@@ -1,10 +1,22 @@
 {
-  "pipeline": {
+  "$schema": "https://turborepo.com/schema.json",
+  "ui": "stream",
+  "tasks": {
     "build": {
-      "dependsOn": []
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"]
+    },
+    "lint": {},
+    "test": {
+      "dependsOn": ["^build"]
     },
     "dev": {
-      "cache": false
+      "cache": false,
+      "persistent": true,
+      "env": ["NODE_ENV", "PORT", "HOST", "SERVER_PORT"]
     }
   }
 }
