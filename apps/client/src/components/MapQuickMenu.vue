@@ -5,6 +5,7 @@ import { onClickOutside, useEventListener } from "@vueuse/core";
 import Slider from "primevue/slider";
 import { useSettingsStore } from "../stores/settings";
 import { useUiText } from "../i18n";
+import { opacityPercentBinding } from "../utils/opacity";
 
 const settings = useSettingsStore();
 const { overlayOpacity, overlayMapOpacity } = storeToRefs(settings);
@@ -13,21 +14,8 @@ const t = useUiText();
 const position = ref<{ x: number; y: number } | null>(null);
 const panelRef = ref<HTMLElement | null>(null);
 
-// Slider %-bindings reuse the same conversion as SettingsPanel.
-const opacityPercent = computed<number>({
-  get: () => Math.round(overlayOpacity.value * 100),
-  set: (pct) => {
-    overlayOpacity.value = Math.max(30, Math.min(100, pct)) / 100;
-  },
-});
-
-const mapOpacityPercent = computed<number>({
-  get: () => Math.round(overlayMapOpacity.value * 100),
-  set: (pct) => {
-    overlayMapOpacity.value = Math.max(0, Math.min(100, pct)) / 100;
-  },
-});
-
+const opacityPercent = opacityPercentBinding(overlayOpacity, 30, 100);
+const mapOpacityPercent = opacityPercentBinding(overlayMapOpacity, 0, 100);
 const mapOpacityDisabled = computed(() => overlayOpacity.value >= 1);
 
 /** Panel dimensions used to clamp the opening position to the viewport. The

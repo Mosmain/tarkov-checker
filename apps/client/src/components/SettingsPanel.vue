@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
+import { useMediaQuery } from "@vueuse/core";
 import Drawer from "primevue/drawer";
 import Button from "primevue/button";
 import Fieldset from "primevue/fieldset";
@@ -15,16 +16,12 @@ import ToggleSwitch from "primevue/toggleswitch";
 import Slider from "primevue/slider";
 import HotkeyRecorder from "./HotkeyRecorder.vue";
 import { useSettingsStore, type ExtractFactionFilter } from "../stores/settings";
-import { FACTION_COLORS, TARKOV_MAPS, VISIBLE_MAP_CODES, type TarkovMapCode } from "@shared/maps";
-import type { ServerConfigResponse } from "@shared/config-api";
+import { FACTION_COLORS, VISIBLE_MAP_CODES } from "@shared/maps";
 import { useUiText } from "../i18n";
 import { useTauriOverlay } from "../composables/useTauriOverlay";
-import {
-  fetchAllExtracts,
-  getCacheTimestamp,
-  refreshExtracts,
-} from "../api/tarkov-dev";
-import { fetchServerConfig, putServerConfig } from "../api/server-config";
+import { useServerPaths } from "../composables/useServerPaths";
+import { useExtractsCacheControl } from "../composables/useExtractsCacheControl";
+import { useOverlaySync } from "../composables/useOverlaySync";
 
 const settings = useSettingsStore();
 const {
@@ -35,8 +32,6 @@ const {
   playerFollow,
   mapCode,
   overlayAlwaysOnTop,
-  overlayOpacity,
-  overlayMapOpacity,
   overlayZoom,
   lockHotkey,
   zoomInHotkey,
@@ -45,35 +40,41 @@ const {
   floorDownHotkey,
 } = storeToRefs(settings);
 const t = useUiText();
-
 const overlay = useTauriOverlay();
 
-const MAP_CODES = VISIBLE_MAP_CODES;
-const localizedMapNames = ref<Partial<Record<string, string>>>({});
-
-async function loadMapNames(): Promise<void> {
-  try {
-    const all = await fetchAllExtracts(apiLang.value);
-    const byNameId: Record<string, string> = {};
-    for (const entry of all) {
-      byNameId[entry.nameId.toLowerCase()] = entry.name;
-    }
-    localizedMapNames.value = byNameId;
-  } catch {
-    // Fall back silently to TARKOV_MAPS.displayName via the helper below.
-  } finally {
-    refreshCacheTimestamp();
-  }
-}
-
-void loadMapNames();
-watch(apiLang, () => void loadMapNames());
-
-function mapLabelFor(code: TarkovMapCode): string {
-  return localizedMapNames.value[code.toLowerCase()] ?? TARKOV_MAPS[code].displayName;
-}
+// Tarkov paths are unreachable from a phone over LAN (the browser can't see
+// C:\EFT), but the Tauri overlay always runs on the same machine as Tarkov.
+const isDesktop = useMediaQuery("(min-width: 640px)");
+const canEditPaths = computed(() => overlay.isTauri || isDesktop.value);
 
 const open = ref(false);
+
+const {
+  serverConfig,
+  gameDirInput,
+  screenshotsDirInput,
+  pathsLoading,
+  pathsSaving,
+  pathsError,
+  pathsJustSaved,
+  gameDirLocked,
+  screenshotsDirLocked,
+  canSavePaths,
+  loadPaths,
+  savePaths,
+  statusIconClass,
+} = useServerPaths(canEditPaths);
+
+const { mapLabelFor, cacheRefreshing, cacheError, cacheRelativeAge, refreshCache } =
+  useExtractsCacheControl();
+
+const { opacityPercent, mapOpacityPercent, mapOpacityDisabled } = useOverlaySync();
+
+// Lazy fallback: if the eager load inside useServerPaths failed, retry the
+// first time the drawer opens.
+watch(open, (isOpen) => {
+  if (isOpen && !serverConfig.value) void loadPaths();
+});
 
 const FACTION_OPTIONS: ReadonlyArray<{
   value: ExtractFactionFilter;
@@ -96,60 +97,6 @@ const overlayZoomOptions = computed(() => [
   { label: "150%", value: "150" as const },
 ]);
 
-// Slider works in 30-100 range (integer %); convert to/from 0.3-1.0 float.
-const opacityPercent = computed<number>({
-  get: () => Math.round(overlayOpacity.value * 100),
-  set: (pct) => {
-    overlayOpacity.value = Math.max(30, Math.min(100, pct)) / 100;
-  },
-});
-
-// Map-background opacity goes all the way to 0 — the user can disable the
-// solid surface behind the map entirely and see only the SVG + markers.
-const mapOpacityPercent = computed<number>({
-  get: () => Math.round(overlayMapOpacity.value * 100),
-  set: (pct) => {
-    overlayMapOpacity.value = Math.max(0, Math.min(100, pct)) / 100;
-  },
-});
-
-// Slider is disabled at full overlay opacity — a transparent map background
-// behind a fully opaque overlay would just look like a hole in the UI, not
-// the intended "see desktop through the app" effect.
-const mapOpacityDisabled = computed(() => overlayOpacity.value >= 1);
-
-// The CSS variable on <html> drives `.leaflet-container`'s alpha channel.
-// When the overall opacity is at 100% we force the map back to fully opaque
-// regardless of the stored value — keeps the visual model consistent with
-// the disabled-slider hint.
-function applyMapBgAlpha(): void {
-  const effective = overlayOpacity.value < 1 ? overlayMapOpacity.value : 1;
-  document.documentElement.style.setProperty("--map-bg-alpha", String(effective));
-}
-applyMapBgAlpha();
-watch([overlayOpacity, overlayMapOpacity], applyMapBgAlpha);
-
-// Apply current overlay settings to the Tauri window on mount + on every change.
-// Click-through state is owned by App.vue (driven by lock button + global hotkey),
-// not by this drawer, so we don't touch it here.
-function syncOverlay(): void {
-  if (!overlay.isTauri) return;
-  void overlay.setAlwaysOnTop(overlayAlwaysOnTop.value);
-  void overlay.setOpacity(overlayOpacity.value);
-  void overlay.setZoom(Number(overlayZoom.value) / 100);
-}
-
-if (overlay.isTauri) {
-  syncOverlay();
-  watch(overlayAlwaysOnTop, (v) => void overlay.setAlwaysOnTop(v));
-  watch(overlayOpacity, (v) => void overlay.setOpacity(v));
-  watch(overlayZoom, (v) => void overlay.setZoom(Number(v) / 100));
-}
-
-// Hotkey recording UI lives in <HotkeyRecorder>; each instance binds to its
-// own store ref. App.vue picks up changes via useGlobalShortcut composables
-// and re-registers with Tauri accordingly.
-
 const labelModeOptions = computed(() => [
   { label: t.value.labelHover, value: "hover" as const },
   { label: t.value.labelAlways, value: "always" as const },
@@ -169,141 +116,8 @@ const playerFollowOptions = computed(() => [
 ]);
 
 const mapOptions = computed(() =>
-  MAP_CODES.map((code) => ({ value: code, label: mapLabelFor(code) })),
+  VISIBLE_MAP_CODES.map((code) => ({ value: code, label: mapLabelFor(code) })),
 );
-
-const SM_BREAKPOINT = 640;
-const isDesktop = ref(typeof window !== "undefined" ? window.innerWidth >= SM_BREAKPOINT : true);
-function onResize(): void {
-  isDesktop.value = window.innerWidth >= SM_BREAKPOINT;
-}
-
-// Tarkov paths are unreachable from a phone connected over LAN (the browser
-// can't see `C:\EFT`), but the Tauri overlay runs on the same machine as
-// Tarkov regardless of how narrow the window is — always allow editing there.
-const canEditPaths = computed(() => overlay.isTauri || isDesktop.value);
-
-const serverConfig = ref<ServerConfigResponse | null>(null);
-const gameDirInput = ref("");
-const screenshotsDirInput = ref("");
-const pathsLoading = ref(false);
-const pathsSaving = ref(false);
-const pathsError = ref<string | null>(null);
-const pathsJustSaved = ref(false);
-
-const gameDirLocked = computed(() => serverConfig.value?.gameDir.source === "env");
-const screenshotsDirLocked = computed(
-  () => serverConfig.value?.screenshotsDir.source === "env",
-);
-const gameDirDirty = computed(
-  () => (serverConfig.value?.gameDir.value ?? "") !== gameDirInput.value,
-);
-const screenshotsDirDirty = computed(
-  () => (serverConfig.value?.screenshotsDir.value ?? "") !== screenshotsDirInput.value,
-);
-const canSavePaths = computed(
-  () => canEditPaths.value && !pathsSaving.value && (gameDirDirty.value || screenshotsDirDirty.value),
-);
-
-function syncInputsFromConfig(cfg: ServerConfigResponse): void {
-  gameDirInput.value = cfg.gameDir.value ?? "";
-  screenshotsDirInput.value = cfg.screenshotsDir.value ?? "";
-}
-
-async function loadPaths(): Promise<void> {
-  pathsLoading.value = true;
-  pathsError.value = null;
-  try {
-    const cfg = await fetchServerConfig();
-    serverConfig.value = cfg;
-    syncInputsFromConfig(cfg);
-  } catch (err) {
-    pathsError.value = err instanceof Error ? err.message : String(err);
-  } finally {
-    pathsLoading.value = false;
-  }
-}
-
-async function savePaths(): Promise<void> {
-  if (!canSavePaths.value) return;
-  pathsSaving.value = true;
-  pathsError.value = null;
-  try {
-    const patch = {
-      ...(gameDirLocked.value ? {} : { gameDir: gameDirInput.value.trim() || null }),
-      ...(screenshotsDirLocked.value
-        ? {}
-        : { screenshotsDir: screenshotsDirInput.value.trim() || null }),
-    };
-    const cfg = await putServerConfig(patch);
-    serverConfig.value = cfg;
-    syncInputsFromConfig(cfg);
-    pathsJustSaved.value = true;
-    setTimeout(() => {
-      pathsJustSaved.value = false;
-    }, 2_000);
-  } catch (err) {
-    pathsError.value = err instanceof Error ? err.message : String(err);
-  } finally {
-    pathsSaving.value = false;
-  }
-}
-
-watch(open, (isOpen) => {
-  if (isOpen && !serverConfig.value) void loadPaths();
-});
-
-const cacheTimestamp = ref<number | null>(null);
-const cacheRefreshing = ref(false);
-const cacheError = ref<string | null>(null);
-
-function refreshCacheTimestamp(): void {
-  cacheTimestamp.value = getCacheTimestamp(apiLang.value);
-}
-refreshCacheTimestamp();
-watch(apiLang, refreshCacheTimestamp);
-
-async function refreshCache(): Promise<void> {
-  cacheRefreshing.value = true;
-  cacheError.value = null;
-  try {
-    await refreshExtracts(apiLang.value);
-    refreshCacheTimestamp();
-  } catch (err) {
-    cacheError.value = err instanceof Error ? err.message : String(err);
-  } finally {
-    cacheRefreshing.value = false;
-  }
-}
-
-const cacheRelativeAge = computed(() => {
-  const ts = cacheTimestamp.value;
-  if (!ts) return t.value.cache.never;
-  const ms = Date.now() - ts;
-  const minutes = Math.round(ms / 60_000);
-  if (minutes < 1) return "<1m";
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  const days = Math.round(hours / 24);
-  return `${days}d`;
-});
-
-onMounted(() => {
-  window.addEventListener("resize", onResize);
-  void loadPaths();
-});
-onBeforeUnmount(() => {
-  window.removeEventListener("resize", onResize);
-});
-
-function statusIconClass(slot: "gameDir" | "screenshotsDir" | "logsDir"): string {
-  const item = serverConfig.value?.[slot];
-  if (!item) return "pi pi-circle text-surface-500";
-  if (item.exists) return "pi pi-check-circle text-green-500";
-  if (item.value) return "pi pi-exclamation-circle text-amber-400";
-  return "pi pi-times-circle text-red-500";
-}
 </script>
 
 <template>

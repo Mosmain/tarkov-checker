@@ -1,5 +1,5 @@
 import { ref, onMounted, onBeforeUnmount, type Ref } from "vue";
-import type { ServerMessage } from "@shared/ws-messages";
+import type { PositionMessage, ServerMessage } from "@shared/ws-messages";
 import { useWebSocket } from "./useWebSocket";
 
 export type TransportStatus = "connecting" | "open" | "closed";
@@ -11,13 +11,10 @@ export interface UseServerTransport {
 
 const isTauri = "__TAURI_INTERNALS__" in window;
 
-interface PositionPayload {
-  t: number;
-  x: number;
-  y: number;
-  z: number;
-  yaw: number | null;
-}
+// The Rust side emits the position payload without the discriminator — the
+// event channel name ("position") already carries that information, so the
+// payload shape is PositionMessage minus the literal `type` field.
+type PositionPayload = Omit<PositionMessage, "type">;
 
 /**
  * Single entry point for "server-pushed" messages.
@@ -39,15 +36,7 @@ export function useServerTransport(wsUrl: string): UseServerTransport {
   onMounted(async () => {
     const { listen } = await import("@tauri-apps/api/event");
     const handle = await listen<PositionPayload>("position", (event) => {
-      const p = event.payload;
-      lastMessage.value = {
-        type: "position",
-        t: p.t,
-        x: p.x,
-        y: p.y,
-        z: p.z,
-        yaw: p.yaw,
-      };
+      lastMessage.value = { type: "position", ...event.payload };
     });
     unlisten = handle;
     status.value = "open";

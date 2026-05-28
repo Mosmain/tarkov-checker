@@ -3,34 +3,21 @@ import {
   type ExtractsCacheResponse,
   type MapExtracts,
 } from "@shared/tarkov-api";
+import { callBackend } from "./transport";
 
 export type ApiLang = "en" | "ru" | "de" | "fr" | "es" | "it" | "ja" | "pl" | "pt" | "zh";
-
-const isTauri = "__TAURI_INTERNALS__" in window;
-
-function apiBase(): string {
-  return `http://${window.location.hostname}:3000`;
-}
 
 const fetchedAtByLang = new Map<string, number>();
 const inFlight = new Map<string, Promise<MapExtracts[]>>();
 
-async function requestExtracts(lang: ApiLang, refresh: boolean): Promise<ExtractsCacheResponse> {
-  if (isTauri) {
-    const { invoke } = await import("@tauri-apps/api/core");
-    const data = await invoke<unknown>("get_extracts", { lang, refresh });
-    return extractsCacheResponse.parse(data);
-  }
-  const params = new URLSearchParams({ lang });
-  if (refresh) params.set("refresh", "1");
-  const r = await fetch(`${apiBase()}/api/extracts?${params.toString()}`);
-  if (!r.ok) {
-    const body: unknown = await r.json().catch(() => ({}));
-    const detail =
-      typeof body === "object" && body !== null && "error" in body ? body.error : body;
-    throw new Error(`/api/extracts failed: HTTP ${r.status} — ${JSON.stringify(detail)}`);
-  }
-  return extractsCacheResponse.parse(await r.json());
+function requestExtracts(lang: ApiLang, refresh: boolean): Promise<ExtractsCacheResponse> {
+  const query: Record<string, string> = { lang };
+  if (refresh) query.refresh = "1";
+  return callBackend({
+    tauri: { cmd: "get_extracts", args: { lang, refresh } },
+    http: { method: "GET", path: "/api/extracts", query },
+    parse: (d) => extractsCacheResponse.parse(d),
+  });
 }
 
 /**
