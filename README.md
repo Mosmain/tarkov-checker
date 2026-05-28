@@ -1,125 +1,174 @@
 # tarkov-checker
 
-Live in-raid map for Escape from Tarkov. A Node backend watches the game's log
-and screenshot folders and broadcasts events over WebSocket; a Vue client
-renders the map with Leaflet. The same client is consumed two ways:
+*English below · [Русский ниже](#tarkov-checker-русская-версия)*
 
-1. On a phone (iPod touch 7) as a PWA over LAN.
-2. On the desktop as a Tauri overlay window (later: transparent + always-on-top).
+Live in-raid map for Escape from Tarkov. Watches Tarkov's screenshot
+folder, parses your position from F12-overlay filenames, and renders
+it on a Leaflet map with the community SVG layers.
 
-## Prerequisites
+Two ways to use it:
 
-- Node.js 20+ (see `.nvmrc`)
-- pnpm 10+
-- For `apps/desktop` only: Rust stable (via [rustup](https://rustup.rs/))
-  plus Tauri 2 [system prerequisites](https://v2.tauri.app/start/prerequisites/)
-  — on Windows that means the Visual Studio "Desktop development with C++"
-  workload. WebView2 ships with Windows 11.
+1. **Desktop overlay** (primary): a single `.exe` that opens a
+   frameless transparent always-on-top window over the game. Includes
+   click-through lock, global hotkeys, and a system-tray fallback.
+2. **LAN / phone PWA** (optional, for power users): a Node server on
+   the PC plus the same map as a PWA on your phone over Wi-Fi. See
+   [Hacking on this](#hacking-on-this) below.
 
-## Install
+## Quick start
 
-```pwsh
-git clone --recurse-submodules https://github.com/Mosmain/tarkov-checker.git
-# or, if already cloned:
-git submodule update --init --recursive
+1. Download `tarkov-checker-desktop.exe` from the
+   [latest Release](../../releases).
+2. Drop it anywhere on disk — Desktop, USB stick, wherever. Fully
+   portable, no installer, no admin rights, no background service.
+3. Double-click. First launch auto-detects your Tarkov install via
+   the Windows registry. If that didn't work, set the paths manually
+   in Settings → Tarkov paths.
+4. In Tarkov, hit **F12** during a raid. The screenshot drops into
+   your Tarkov screenshots folder; the overlay reads its filename
+   and moves your marker on the map.
 
-pnpm install
-```
-
-The `--recurse-submodules` step pulls the SVG maps repo into
-`apps/client/public/maps/`. See [CREDITS.md](CREDITS.md) for attribution
-and licensing.
+State (path overrides, tarkov.dev extract cache) lives in
+`%APPDATA%/tarkov-checker/`. Close the window to exit — nothing
+lingers in Task Manager.
 
 ## Tarkov paths
 
 Two paths matter:
 
-- **Game folder** — where Tarkov is installed (e.g. `D:\EFT`). Logs are
-  read from `<gameFolder>\Logs`.
-- **Screenshots folder** — where the F12 overlay drops `.png` files
-  (typically `<Documents>\Escape from Tarkov\Screenshots`).
+- **Game folder** — where Tarkov is installed (e.g. `D:\EFT`). Logs
+  are read from `<gameFolder>\Logs`.
+- **Screenshots folder** — where F12 screenshots end up. Default is
+  `<Documents>\Escape from Tarkov\Screenshots`, but Documents may be
+  redirected to OneDrive on Windows 11.
 
-Resolution priority, highest first:
+The overlay resolves them in this order (highest priority first):
 
-1. `.env` at the repo root (Node `--env-file-if-exists`). Keys:
-   `TARKOV_GAME_DIR`, `TARKOV_SCREENSHOT_DIR`, optional `TARKOV_LOG_DIR`.
-2. Manual override saved through the in-app Settings panel, persisted
-   to `apps/server/data/config.json` (gitignored).
-3. Auto-detect from the Windows registry: `Personal` shell folder for
-   Documents (so OneDrive-redirected Documents resolves correctly) and
-   `Battlestate Games\EFT\InstallLocation` for the game folder (BSG
-   Launcher writes this at install time).
+1. Environment variables: `TARKOV_GAME_DIR`, `TARKOV_SCREENSHOT_DIR`,
+   `TARKOV_LOG_DIR`. Optional; useful for non-standard installs.
+2. Manual override saved through Settings → Tarkov paths, persisted
+   to `%APPDATA%/tarkov-checker/config.json`.
+3. Auto-detect from the Windows registry — the BSG launcher writes
+   the install location there, and Windows tracks the real Documents
+   path even when redirected to OneDrive.
 
-If auto-detect doesn't find the game folder (BSG Launcher didn't write
-the registry key, or you installed manually), open the app on the
-machine running Tarkov, go to Settings → Tarkov paths, fill `Game
-folder` with the install path (e.g. `D:\EFT`), and click Save. The
-server persists it and re-starts watchers immediately.
+If auto-detect fails (you installed manually, or BSG didn't write
+the key), fill `Game folder` in Settings and click Save. Watchers
+re-apply immediately, no restart needed.
 
-From a phone in the LAN the Paths section becomes read-only with a
-note to configure on the desktop — typing `D:\EFT` on an on-screen
-keyboard is painful.
+## Hacking on this
 
-## Workspace layout
+Engineering notes, dev workflow, build/CI procedures, and Windows
+toolchain gotchas live in [CLAUDE.md](CLAUDE.md).
 
-```
-apps/
-  server/    Fastify + chokidar + WebSocket
-  client/    Vue 3 + Vite + Tailwind v4 + Leaflet + PWA
-  desktop/   Tauri 2 wrapper around apps/client
-packages/
-  shared/    WS payload schemas (zod) + map name table
-```
-
-## Dev workflow
+TL;DR for a dev clone:
 
 ```pwsh
-pnpm dev          # turbo: starts server (3000) and client (5173) in parallel
+git clone --recurse-submodules https://github.com/Mosmain/tarkov-checker.git
+cd tarkov-checker
+pnpm install
+pnpm --filter @tarkov-checker/client dev      # in one terminal
+pnpm --filter @tarkov-checker/desktop tauri:dev   # in another
 ```
 
-| Port | Service                      |
-| ---- | ---------------------------- |
-| 3000 | Fastify HTTP + WS at `/ws`   |
-| 5173 | Vite dev server (host 0.0.0) |
+## Credits
 
-Open `http://localhost:5173` on desktop, or `http://<lan-ip>:5173` on the phone
-(install via "Add to Home Screen" in Safari to get the PWA shell).
-
-For the Tauri window, run **in a second terminal** (Vite must already be up):
-
-```pwsh
-pnpm --filter @tarkov-checker/desktop tauri:dev
-```
-
-## Build
-
-```pwsh
-pnpm build                                       # all packages
-pnpm --filter @tarkov-checker/client build       # just the Vue bundle
-pnpm --filter @tarkov-checker/desktop tauri:build  # desktop installer
-```
-
-In production, Fastify also serves the built client at `/`, so the phone only
-needs port 3000.
-
-## Lint / typecheck / test
-
-```pwsh
-pnpm lint
-pnpm typecheck
-pnpm --filter @tarkov-checker/client test
-```
-
-## Conventions
-
-- TypeScript strict everywhere. No `any` — use `unknown` and narrow.
-- ESM (`"type": "module"`) in every Node package.
-- Path alias `@shared/*` → `packages/shared/src/*`.
-- Server logs through pino; never `console.log` in committed code.
-- Validate all parsed external strings (filenames, log lines, WS payloads) with
-  the zod schemas in `@tarkov-checker/shared`.
-- Files kebab-case, Vue components PascalCase, identifiers camelCase.
+SVG maps from [the-hideout/tarkov-dev-svg-maps](https://github.com/the-hideout/tarkov-dev-svg-maps)
+(CC BY-NC-SA 4.0) — vendored as a git submodule under
+`apps/client/public/maps/`. Map calibration values (the in-game →
+SVG-pixel affine transforms) are ported from
+[the-hideout/tarkov-dev](https://github.com/the-hideout/tarkov-dev)
+(MIT). See [CREDITS.md](CREDITS.md) for full attribution.
 
 ## License
 
 See [LICENSE](./LICENSE).
+
+---
+
+# tarkov-checker (русская версия)
+
+Лайв-карта для рейдов в Escape from Tarkov. Следит за папкой
+скриншотов Tarkov, парсит твою позицию из имён F12-скриншотов и
+рисует её на Leaflet-карте с SVG-слоями от сообщества.
+
+Два способа использовать:
+
+1. **Десктоп-оверлей** (основной): один `.exe`, открывает безрамочное
+   прозрачное окно поверх игры. С блокировкой click-through (когда
+   мышь проходит сквозь окно в Tarkov), глобальными хоткеями и
+   системным треем как запасной выход.
+2. **LAN / PWA на телефоне** (опционально, для энтузиастов):
+   Node-сервер на ПК плюс та же карта как PWA на телефоне по Wi-Fi.
+   Смотри секцию [Разработка](#разработка) ниже.
+
+## Быстрый старт
+
+1. Скачай `tarkov-checker-desktop.exe` из [последнего релиза](../../releases).
+2. Положи куда удобно — на Рабочий стол, флешку, в любую папку.
+   Полностью portable, без установщика, без админских прав, без
+   фоновых сервисов.
+3. Запусти двойным кликом. При первом запуске путь до Tarkov
+   ищется в реестре Windows автоматически. Если не нашёлся —
+   укажи руками в Settings → Tarkov paths.
+4. В Tarkov жми **F12** в рейде. Скриншот падает в папку
+   скриншотов Tarkov, оверлей читает имя файла и двигает маркер
+   игрока на карте.
+
+Состояние (переопределения путей, кэш экстрактов с tarkov.dev)
+живёт в `%APPDATA%/tarkov-checker/`. Закрыл окно — приложение
+полностью вышло, ничего не висит в Диспетчере задач.
+
+## Пути Tarkov
+
+Два пути имеют значение:
+
+- **Папка игры** — где установлен Tarkov (например, `D:\EFT`).
+  Логи читаются из `<папка игры>\Logs`.
+- **Папка скриншотов** — куда падают F12-скриншоты. По умолчанию
+  `<Документы>\Escape from Tarkov\Screenshots`, но на Windows 11
+  Документы часто перенаправлены в OneDrive.
+
+Оверлей резолвит их по такому порядку (от высшего приоритета к
+низшему):
+
+1. Переменные окружения: `TARKOV_GAME_DIR`, `TARKOV_SCREENSHOT_DIR`,
+   `TARKOV_LOG_DIR`. Опционально; полезно для нестандартных
+   установок.
+2. Ручное переопределение через Settings → Tarkov paths,
+   сохраняется в `%APPDATA%/tarkov-checker/config.json`.
+3. Автодетект из реестра Windows — лаунчер BSG пишет путь
+   установки туда, а Windows знает реальное расположение Документов
+   даже когда они перенаправлены в OneDrive.
+
+Если автодетект не сработал (установил вручную или лаунчер не
+прописал ключ) — заполни «Game folder» в Settings и нажми Save.
+Слежение перезапустится сразу, без рестарта приложения.
+
+## Разработка
+
+Инженерные заметки, dev workflow, процедуры сборки/CI и подводные
+камни Windows-тулчейна лежат в [CLAUDE.md](CLAUDE.md).
+
+TL;DR для dev-клона:
+
+```pwsh
+git clone --recurse-submodules https://github.com/Mosmain/tarkov-checker.git
+cd tarkov-checker
+pnpm install
+pnpm --filter @tarkov-checker/client dev          # в одном терминале
+pnpm --filter @tarkov-checker/desktop tauri:dev   # в другом
+```
+
+## Благодарности
+
+SVG-карты из [the-hideout/tarkov-dev-svg-maps](https://github.com/the-hideout/tarkov-dev-svg-maps)
+(CC BY-NC-SA 4.0) — подключены как git-сабмодуль в
+`apps/client/public/maps/`. Калибровка карт (аффинные трансформации
+in-game координат в SVG-пиксели) портирована из
+[the-hideout/tarkov-dev](https://github.com/the-hideout/tarkov-dev)
+(MIT). Полная справка по атрибуции — в [CREDITS.md](CREDITS.md).
+
+## Лицензия
+
+См. [LICENSE](./LICENSE).

@@ -1,6 +1,9 @@
+import type { TrayIcon } from "@tauri-apps/api/tray";
+import type { Menu } from "@tauri-apps/api/menu";
 import { useI18nStore } from "@/features/i18n/store";
 
-type TrayHandle = Awaited<ReturnType<typeof import("@tauri-apps/api/tray").TrayIcon.new>>;
+type TrayHandle = Awaited<ReturnType<typeof TrayIcon.new>>;
+type TrayMenu = Awaited<ReturnType<typeof Menu.new>>;
 
 const TRAY_ID = "tarkov-checker-tray";
 
@@ -16,9 +19,7 @@ export function useTrayIcon(isTauri: boolean, overlayClickThrough: Ref<boolean>)
   const { apiLang } = storeToRefs(useI18nStore());
   let trayRef: TrayHandle | null = null;
 
-  async function buildTrayMenu(): Promise<
-    Awaited<ReturnType<typeof import("@tauri-apps/api/menu").Menu.new>>
-  > {
+  async function buildTrayMenu(): Promise<TrayMenu> {
     const [{ Menu }, { getCurrentWindow }] = await Promise.all([
       import("@tauri-apps/api/menu"),
       import("@tauri-apps/api/window"),
