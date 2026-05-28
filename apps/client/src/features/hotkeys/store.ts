@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { persistedRef } from "../../shared/persisted-store";
+import { persistedRef } from "@/shared/persisted-store";
 
 // Validates a Tauri global-shortcut accelerator string. Either:
 //   * one+ modifier(s) followed by any non-empty main-key token, OR

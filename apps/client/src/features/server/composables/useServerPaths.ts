@@ -1,5 +1,5 @@
 import type { ServerConfigResponse } from "@shared/config-api";
-import { fetchServerConfig, putServerConfig } from "../api/server-config";
+import { fetchServerConfig, putServerConfig } from "@/features/server/api/server-config";
 
 export type PathSlot = "gameDir" | "screenshotsDir" | "logsDir";
 

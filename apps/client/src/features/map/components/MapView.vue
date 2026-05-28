@@ -3,8 +3,8 @@ import { useLeafletMap } from "../composables/useLeafletMap";
 import { fetchExtractsForMap } from "../api/tarkov-dev";
 import { mapInfo, type TarkovMapCode } from "@shared/maps";
 import { useMapSettingsStore } from "../store";
-import { useI18nStore } from "../../i18n/store";
-import { useServerEvent } from "../../server/composables/useServerEvents";
+import { useI18nStore } from "@/features/i18n/store";
+import { useServerEvent } from "@/features/server/composables/useServerEvents";
 import { provideMapController } from "../composables/useMapController";
 import FloorSwitcher from "./FloorSwitcher.vue";
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useTauriOverlay } from "../../overlay/composables/useTauriOverlay";
-import { useServerPaths } from "../../server/composables/useServerPaths";
+import { useTauriOverlay } from "@/features/overlay/composables/useTauriOverlay";
+import { useServerPaths } from "@/features/server/composables/useServerPaths";
 
 const props = defineProps<{
   /** Toggled by the parent drawer. Used as a retry trigger when the eager

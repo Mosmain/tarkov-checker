@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useMapSettingsStore } from "../../map/store";
+import { useMapSettingsStore } from "@/features/map/store";
 
 const { playerFollow } = storeToRefs(useMapSettingsStore());
 const { t } = useI18n();

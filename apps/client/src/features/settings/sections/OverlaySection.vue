@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useOverlayStore } from "../../overlay/store";
-import { useOverlaySync } from "../../overlay/composables/useOverlaySync";
+import { useOverlayStore } from "@/features/overlay/store";
+import { useOverlaySync } from "@/features/overlay/composables/useOverlaySync";
 
 const { alwaysOnTop: overlayAlwaysOnTop, zoom: overlayZoom } = storeToRefs(useOverlayStore());
 const { opacityPercent, mapOpacityPercent, mapOpacityDisabled } = useOverlaySync();

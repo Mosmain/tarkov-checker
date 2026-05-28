@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { formatHotkeyParts } from "../../hotkeys/lib/hotkey";
+import { formatHotkeyParts } from "@/features/hotkeys/lib/hotkey";
 
 interface Props {
   lockHotkey: string;

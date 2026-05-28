@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useExtractsCacheControl } from "../../server/composables/useExtractsCacheControl";
+import { useExtractsCacheControl } from "@/features/server/composables/useExtractsCacheControl";
 
 const { cacheRefreshing, cacheError, cacheRelativeAge, refreshCache } =
   useExtractsCacheControl();

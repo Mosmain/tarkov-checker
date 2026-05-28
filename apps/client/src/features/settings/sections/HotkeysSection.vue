@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import HotkeyRecorder from "../../hotkeys/components/HotkeyRecorder.vue";
-import { useHotkeysStore } from "../../hotkeys/store";
+import HotkeyRecorder from "@/features/hotkeys/components/HotkeyRecorder.vue";
+import { useHotkeysStore } from "@/features/hotkeys/store";
 
 const { lockHotkey, zoomInHotkey, zoomOutHotkey, floorUpHotkey, floorDownHotkey } =
   storeToRefs(useHotkeysStore());

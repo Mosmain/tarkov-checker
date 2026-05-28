@@ -3,7 +3,7 @@ import {
   type ExtractsCacheResponse,
   type MapExtracts,
 } from "@shared/tarkov-api";
-import { callBackend } from "../../server/api/transport";
+import { callBackend } from "@/features/server/api/transport";
 
 export type ApiLang = "en" | "ru" | "de" | "fr" | "es" | "it" | "ja" | "pl" | "pt" | "zh";
 

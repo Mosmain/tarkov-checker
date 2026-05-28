@@ -1,4 +1,4 @@
-import { useI18nStore } from "../../i18n/store";
+import { useI18nStore } from "@/features/i18n/store";
 
 type TrayHandle = Awaited<ReturnType<typeof import("@tauri-apps/api/tray").TrayIcon.new>>;
 

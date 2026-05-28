@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { FACTION_COLORS } from "@shared/maps";
-import { useMapSettingsStore, type ExtractFactionFilter } from "../../map/store";
+import { useMapSettingsStore, type ExtractFactionFilter } from "@/features/map/store";
 
 const { extractFactions, extractLabelMode, extractLabelSize } = storeToRefs(
   useMapSettingsStore(),

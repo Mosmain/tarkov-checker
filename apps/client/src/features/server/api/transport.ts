@@ -10,7 +10,7 @@
  * so callers get a validated, typed result either way.
  */
 
-import { apiBase } from "../../../shared/config";
+import { apiBase } from "@/shared/config";
 import type { IpcContract } from "./ipc-contract";
 
 const isTauri = "__TAURI_INTERNALS__" in window;

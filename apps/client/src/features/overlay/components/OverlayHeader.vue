@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import SettingsPanel from "../../settings/SettingsPanel.vue";
-import type { TransportStatus } from "../../server/composables/useServerTransport";
+import SettingsPanel from "@/features/settings/SettingsPanel.vue";
+import type { TransportStatus } from "@/features/server/composables/useServerTransport";
 
 interface Props {
   mapDisplayName: string;

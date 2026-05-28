@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useTauriOverlay } from "../overlay/composables/useTauriOverlay";
+import { useTauriOverlay } from "@/features/overlay/composables/useTauriOverlay";
 import MapSection from "./sections/MapSection.vue";
 import ExtractsSection from "./sections/ExtractsSection.vue";
 import PlayerSection from "./sections/PlayerSection.vue";

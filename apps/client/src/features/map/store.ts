@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TARKOV_MAPS, type TarkovMapCode } from "@shared/maps";
-import { persistedRef } from "../../shared/persisted-store";
+import { persistedRef } from "@/shared/persisted-store";
 import type { PlayerFollow } from "./composables/usePlayerMarker";
 
 const extractFactionSchema = z.enum(["pmc", "scav", "shared"]);

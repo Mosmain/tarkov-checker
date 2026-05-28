@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { VISIBLE_MAP_CODES } from "@shared/maps";
-import { useMapSettingsStore } from "../../map/store";
-import { useExtractsCacheControl } from "../../server/composables/useExtractsCacheControl";
+import { useMapSettingsStore } from "@/features/map/store";
+import { useExtractsCacheControl } from "@/features/server/composables/useExtractsCacheControl";
 
 const { mapCode } = storeToRefs(useMapSettingsStore());
 const { mapLabelFor } = useExtractsCacheControl();

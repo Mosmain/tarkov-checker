@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import MapView from "../features/map/components/MapView.vue";
-import OverlayHeader from "../features/overlay/components/OverlayHeader.vue";
-import OverlayLockIndicator from "../features/overlay/components/OverlayLockIndicator.vue";
-import OverlayErrors from "../features/overlay/components/OverlayErrors.vue";
-import { useMapSettingsStore } from "../features/map/store";
-import { useOverlayStore } from "../features/overlay/store";
-import { useHotkeysStore } from "../features/hotkeys/store";
-import { useTauriOverlay } from "../features/overlay/composables/useTauriOverlay";
-import { useTransportStatus } from "../features/server/composables/useTransportStatus";
-import { useGlobalShortcut } from "../features/hotkeys/composables/useGlobalShortcut";
-import { useMapController } from "../features/map/composables/useMapController";
-import { useCloseConfirm } from "../features/overlay/composables/useCloseConfirm";
+import MapView from "@/features/map/components/MapView.vue";
+import OverlayHeader from "@/features/overlay/components/OverlayHeader.vue";
+import OverlayLockIndicator from "@/features/overlay/components/OverlayLockIndicator.vue";
+import OverlayErrors from "@/features/overlay/components/OverlayErrors.vue";
+import { useMapSettingsStore } from "@/features/map/store";
+import { useOverlayStore } from "@/features/overlay/store";
+import { useHotkeysStore } from "@/features/hotkeys/store";
+import { useTauriOverlay } from "@/features/overlay/composables/useTauriOverlay";
+import { useTransportStatus } from "@/features/server/composables/useTransportStatus";
+import { useGlobalShortcut } from "@/features/hotkeys/composables/useGlobalShortcut";
+import { useMapController } from "@/features/map/composables/useMapController";
+import { useCloseConfirm } from "@/features/overlay/composables/useCloseConfirm";
 
 const { mapCode } = storeToRefs(useMapSettingsStore());
 const { clickThrough: overlayClickThrough } = storeToRefs(useOverlayStore());

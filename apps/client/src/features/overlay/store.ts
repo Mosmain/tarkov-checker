@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { persistedRef } from "../../shared/persisted-store";
+import { persistedRef } from "@/shared/persisted-store";
 
 const overlayZoomSchema = z.enum(["75", "100", "125", "150"]);
 export type OverlayZoom = z.infer<typeof overlayZoomSchema>;

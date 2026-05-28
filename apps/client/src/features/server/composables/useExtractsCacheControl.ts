@@ -1,5 +1,5 @@
-import { fetchAllExtracts, getCacheTimestamp, refreshExtracts } from "../../map/api/tarkov-dev";
-import { useI18nStore } from "../../i18n/store";
+import { fetchAllExtracts, getCacheTimestamp, refreshExtracts } from "@/features/map/api/tarkov-dev";
+import { useI18nStore } from "@/features/i18n/store";
 import { TARKOV_MAPS, type TarkovMapCode } from "@shared/maps";
 
 export interface UseExtractsCacheControl {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useI18nStore } from "../../i18n/store";
+import { useI18nStore } from "@/features/i18n/store";
 
 const { apiLang } = storeToRefs(useI18nStore());
 const { t } = useI18n();

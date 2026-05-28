@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { persistedRef } from "../../shared/persisted-store";
+import { persistedRef } from "@/shared/persisted-store";
 
 const apiLangSchema = z.enum(["en", "ru"]);
 export type ApiLang = z.infer<typeof apiLangSchema>;

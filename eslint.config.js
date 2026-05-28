@@ -73,5 +73,26 @@ export default tseslint.config(
       "vue/multi-word-component-names": "off",
     },
   },
+  {
+    // Hybrid import style in the client: same-feature stays relative (./X,
+    // ../store), cross-feature MUST go through the @/ alias. The two-or-more
+    // levels-up pattern is the load-bearing signal — it's how you'd reach
+    // out of the current feature, and that should be explicit.
+    files: ["apps/client/src/**/*.{ts,vue}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["../../*", "../../**/*", "../../../*", "../../../**/*"],
+              message:
+                "Cross-feature/cross-layer import — use @/features/<name>/... or @/shared/... instead.",
+            },
+          ],
+        },
+      ],
+    },
+  },
   prettier,
 );
