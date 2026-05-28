@@ -1,8 +1,7 @@
-import { createApp } from "vue";
-import { createPinia } from "pinia";
 import PrimeVue from "primevue/config";
 import ConfirmationService from "primevue/confirmationservice";
 import App from "./App.vue";
+import { router } from "./app/router";
 import { TarkovPreset } from "./theme";
 import "./styles.css";
 
@@ -23,6 +22,7 @@ if (import.meta.env.DEV && typeof window !== "undefined") {
 
 const app = createApp(App);
 app.use(createPinia());
+app.use(router);
 app.use(ConfirmationService);
 app.use(PrimeVue, {
   theme: {

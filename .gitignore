@@ -15,6 +15,14 @@ build/
 **/dev-dist/
 **/coverage/
 
+# vue-router auto-generated typed routes
+**/typed-router.d.ts
+
+# unplugin-auto-import / unplugin-vue-components generated declarations
+**/auto-imports.d.ts
+**/components.d.ts
+**/.eslintrc-auto-import.json
+
 # Tauri / Rust
 apps/desktop/src-tauri/target/
 apps/desktop/src-tauri/gen/
