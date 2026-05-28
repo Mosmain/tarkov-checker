@@ -9,54 +9,54 @@
 
 /** Display labels for modifier parts, used by the Kbd components. */
 const MODIFIER_DISPLAY: Readonly<Record<string, string>> = {
-  CommandOrControl: "Ctrl",
-  CmdOrCtrl: "Ctrl",
-  Control: "Ctrl",
-  Ctrl: "Ctrl",
-  Alt: "Alt",
-  Option: "Alt",
-  Shift: "Shift",
-  Meta: "Win",
-  Super: "Win",
-  Cmd: "Win",
-  Command: "Win",
+  CommandOrControl: 'Ctrl',
+  CmdOrCtrl: 'Ctrl',
+  Control: 'Ctrl',
+  Ctrl: 'Ctrl',
+  Alt: 'Alt',
+  Option: 'Alt',
+  Shift: 'Shift',
+  Meta: 'Win',
+  Super: 'Win',
+  Cmd: 'Win',
+  Command: 'Win',
 };
 
 /** Display labels for non-modifier main keys. Anything not listed falls back
  *  to an uppercased version of the token. */
 const KEY_DISPLAY: Readonly<Record<string, string>> = {
-  num0: "Num 0",
-  num1: "Num 1",
-  num2: "Num 2",
-  num3: "Num 3",
-  num4: "Num 4",
-  num5: "Num 5",
-  num6: "Num 6",
-  num7: "Num 7",
-  num8: "Num 8",
-  num9: "Num 9",
-  numadd: "Num +",
-  numsub: "Num -",
-  nummult: "Num *",
-  numdiv: "Num /",
-  numdec: "Num .",
-  Up: "↑",
-  Down: "↓",
-  Left: "←",
-  Right: "→",
-  Space: "Space",
-  Tab: "Tab",
-  Enter: "Enter",
-  Backspace: "⌫",
-  Delete: "Del",
-  Insert: "Ins",
-  Home: "Home",
-  End: "End",
-  PageUp: "PgUp",
-  PageDown: "PgDn",
+  num0: 'Num 0',
+  num1: 'Num 1',
+  num2: 'Num 2',
+  num3: 'Num 3',
+  num4: 'Num 4',
+  num5: 'Num 5',
+  num6: 'Num 6',
+  num7: 'Num 7',
+  num8: 'Num 8',
+  num9: 'Num 9',
+  numadd: 'Num +',
+  numsub: 'Num -',
+  nummult: 'Num *',
+  numdiv: 'Num /',
+  numdec: 'Num .',
+  Up: '↑',
+  Down: '↓',
+  Left: '←',
+  Right: '→',
+  Space: 'Space',
+  Tab: 'Tab',
+  Enter: 'Enter',
+  Backspace: '⌫',
+  Delete: 'Del',
+  Insert: 'Ins',
+  Home: 'Home',
+  End: 'End',
+  PageUp: 'PgUp',
+  PageDown: 'PgDn',
 };
 
-const MODIFIER_KEYS = new Set(["Control", "Alt", "Shift", "Meta", "OS"]);
+const MODIFIER_KEYS = new Set(['Control', 'Alt', 'Shift', 'Meta', 'OS']);
 
 /**
  * Split an accelerator string into display-friendly parts (e.g. for rendering
@@ -65,7 +65,7 @@ const MODIFIER_KEYS = new Set(["Control", "Alt", "Shift", "Meta", "OS"]);
  */
 export function formatHotkeyParts(combo: string): readonly string[] {
   if (!combo) return [];
-  const raw = combo.split("+");
+  const raw = combo.split('+');
   return raw.map((part, idx) => {
     if (idx < raw.length - 1) return MODIFIER_DISPLAY[part] ?? part;
     return KEY_DISPLAY[part] ?? part.toUpperCase();
@@ -79,7 +79,7 @@ interface CaptureResult {
   /** True when the user pressed Escape — caller should cancel recording. */
   cancelled: boolean;
   /** Reason the combo is invalid, or null if it's good. */
-  error: "no-modifier" | "bad-main-key" | null;
+  error: 'no-modifier' | 'bad-main-key' | null;
 }
 
 /**
@@ -87,7 +87,7 @@ interface CaptureResult {
  * settings recorder UI.
  */
 export function captureHotkey(event: KeyboardEvent): CaptureResult {
-  if (event.key === "Escape") {
+  if (event.key === 'Escape') {
     return { combo: null, cancelled: true, error: null };
   }
   // Holding only modifiers — wait for the main key.
@@ -96,24 +96,24 @@ export function captureHotkey(event: KeyboardEvent): CaptureResult {
   }
 
   const mods: string[] = [];
-  if (event.ctrlKey || event.metaKey) mods.push("CommandOrControl");
-  if (event.altKey) mods.push("Alt");
-  if (event.shiftKey) mods.push("Shift");
+  if (event.ctrlKey || event.metaKey) mods.push('CommandOrControl');
+  if (event.altKey) mods.push('Alt');
+  if (event.shiftKey) mods.push('Shift');
 
   const mainKey = normalizeMainKey(event);
   if (!mainKey) {
-    return { combo: null, cancelled: false, error: "bad-main-key" };
+    return { combo: null, cancelled: false, error: 'bad-main-key' };
   }
 
   // F-keys (F1-F24) are allowed without modifiers — they're rarely used for
   // typing, so binding `F12` alone doesn't conflict with normal input.
   const isFunctionKey = /^F([1-9]|1[0-9]|2[0-4])$/.test(mainKey);
   if (mods.length === 0 && !isFunctionKey) {
-    return { combo: null, cancelled: false, error: "no-modifier" };
+    return { combo: null, cancelled: false, error: 'no-modifier' };
   }
 
   return {
-    combo: mods.length > 0 ? [...mods, mainKey].join("+") : mainKey,
+    combo: mods.length > 0 ? [...mods, mainKey].join('+') : mainKey,
     cancelled: false,
     error: null,
   };
@@ -122,50 +122,50 @@ export function captureHotkey(event: KeyboardEvent): CaptureResult {
 // `KeyboardEvent.code` → Tauri accelerator token for non-letter/digit/F keys.
 const CODE_TO_ACCEL: Readonly<Record<string, string>> = {
   // Numpad digits
-  Numpad0: "num0",
-  Numpad1: "num1",
-  Numpad2: "num2",
-  Numpad3: "num3",
-  Numpad4: "num4",
-  Numpad5: "num5",
-  Numpad6: "num6",
-  Numpad7: "num7",
-  Numpad8: "num8",
-  Numpad9: "num9",
+  Numpad0: 'num0',
+  Numpad1: 'num1',
+  Numpad2: 'num2',
+  Numpad3: 'num3',
+  Numpad4: 'num4',
+  Numpad5: 'num5',
+  Numpad6: 'num6',
+  Numpad7: 'num7',
+  Numpad8: 'num8',
+  Numpad9: 'num9',
   // Numpad operators
-  NumpadAdd: "numadd",
-  NumpadSubtract: "numsub",
-  NumpadMultiply: "nummult",
-  NumpadDivide: "numdiv",
-  NumpadDecimal: "numdec",
-  NumpadEnter: "Enter",
+  NumpadAdd: 'numadd',
+  NumpadSubtract: 'numsub',
+  NumpadMultiply: 'nummult',
+  NumpadDivide: 'numdiv',
+  NumpadDecimal: 'numdec',
+  NumpadEnter: 'Enter',
   // Punctuation (literal character tokens accepted by Tauri/Electron accel)
-  Slash: "/",
-  Backslash: "\\",
-  Comma: ",",
-  Period: ".",
-  Semicolon: ";",
+  Slash: '/',
+  Backslash: '\\',
+  Comma: ',',
+  Period: '.',
+  Semicolon: ';',
   Quote: "'",
-  BracketLeft: "[",
-  BracketRight: "]",
-  Backquote: "`",
-  Minus: "-",
-  Equal: "=",
+  BracketLeft: '[',
+  BracketRight: ']',
+  Backquote: '`',
+  Minus: '-',
+  Equal: '=',
   // Navigation / editing
-  Space: "Space",
-  Tab: "Tab",
-  Enter: "Enter",
-  Backspace: "Backspace",
-  Delete: "Delete",
-  Insert: "Insert",
-  Home: "Home",
-  End: "End",
-  PageUp: "PageUp",
-  PageDown: "PageDown",
-  ArrowUp: "Up",
-  ArrowDown: "Down",
-  ArrowLeft: "Left",
-  ArrowRight: "Right",
+  Space: 'Space',
+  Tab: 'Tab',
+  Enter: 'Enter',
+  Backspace: 'Backspace',
+  Delete: 'Delete',
+  Insert: 'Insert',
+  Home: 'Home',
+  End: 'End',
+  PageUp: 'PageUp',
+  PageDown: 'PageDown',
+  ArrowUp: 'Up',
+  ArrowDown: 'Down',
+  ArrowLeft: 'Left',
+  ArrowRight: 'Right',
 };
 
 /** Map a KeyboardEvent to a Tauri-acceptable main-key token. */

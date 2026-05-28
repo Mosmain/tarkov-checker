@@ -1,21 +1,13 @@
-import L, { type Map as LeafletMap, type CRS } from "leaflet";
-import { mapInfo, mapSvgPath, type TarkovMapCode } from "@shared/maps";
+import L, { type Map as LeafletMap, type CRS } from 'leaflet';
+import { mapInfo, mapSvgPath, type TarkovMapCode } from '@shared/maps';
 import {
   useExtractMarkers,
   type UseExtractMarkers,
   type LabelMode,
   type LabelSize,
-} from "./useExtractMarkers";
-import {
-  usePlayerMarker,
-  type UsePlayerMarker,
-  type PlayerFollow,
-} from "./usePlayerMarker";
-import {
-  useFloorSwitcher,
-  type UseFloorSwitcher,
-  type LoadedMap,
-} from "./useFloorSwitcher";
+} from './useExtractMarkers';
+import { usePlayerMarker, type UsePlayerMarker, type PlayerFollow } from './usePlayerMarker';
+import { useFloorSwitcher, type UseFloorSwitcher, type LoadedMap } from './useFloorSwitcher';
 
 export type { LabelMode, LabelSize, PlayerFollow, LoadedMap };
 
@@ -76,17 +68,20 @@ async function fetchSvg(url: string): Promise<{
     throw new Error(`Failed to load ${url}: HTTP ${response.status}`);
   }
   const text = await response.text();
-  const doc = new DOMParser().parseFromString(text, "image/svg+xml");
-  const parseError = doc.querySelector("parsererror");
+  const doc = new DOMParser().parseFromString(text, 'image/svg+xml');
+  const parseError = doc.querySelector('parsererror');
   if (parseError) {
-    throw new Error(`SVG parse error in ${url}: ${parseError.textContent ?? "unknown"}`);
+    throw new Error(`SVG parse error in ${url}: ${parseError.textContent ?? 'unknown'}`);
   }
   const svg = doc.documentElement as unknown as SVGSVGElement;
-  const viewBoxAttr = svg.getAttribute("viewBox");
+  const viewBoxAttr = svg.getAttribute('viewBox');
   if (!viewBoxAttr) {
     throw new Error(`SVG at ${url} has no viewBox attribute`);
   }
-  const parts = viewBoxAttr.trim().split(/[\s,]+/).map(Number);
+  const parts = viewBoxAttr
+    .trim()
+    .split(/[\s,]+/)
+    .map(Number);
   if (parts.length !== 4 || parts.some((n) => !Number.isFinite(n))) {
     throw new Error(`SVG at ${url} has malformed viewBox: ${viewBoxAttr}`);
   }
@@ -95,7 +90,7 @@ async function fetchSvg(url: string): Promise<{
 
   const floors = new Map<string, SVGGElement>();
   for (const child of Array.from(svg.children)) {
-    if (child.tagName.toLowerCase() === "g" && child.id) {
+    if (child.tagName.toLowerCase() === 'g' && child.id) {
       floors.set(child.id, child as SVGGElement);
     }
   }
@@ -142,8 +137,8 @@ export function useLeafletMap(
     // Custom pane for overlay markers — sits above the default overlayPane
     // (z 400) where L.svgOverlay lands, so markers stay visible after a map
     // switch even though the SVG is fetched asynchronously and lands later.
-    const markersPane = instance.createPane("extracts");
-    markersPane.style.zIndex = "500";
+    const markersPane = instance.createPane('extracts');
+    markersPane.style.zIndex = '500';
     instance.fitBounds(bounds);
     initialZoom.value = instance.getZoom();
     instance.setMinZoom(initialZoom.value);

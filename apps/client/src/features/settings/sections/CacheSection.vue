@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { useExtractsCacheControl } from "@/features/server/composables/useExtractsCacheControl";
+import { useExtractsCacheControl } from '@/features/server/composables/useExtractsCacheControl';
 
-const { cacheRefreshing, cacheError, cacheRelativeAge, refreshCache } =
-  useExtractsCacheControl();
+const { cacheRefreshing, cacheError, cacheRelativeAge, refreshCache } = useExtractsCacheControl();
 const { t } = useI18n();
 </script>
 
@@ -10,7 +9,7 @@ const { t } = useI18n();
   <Fieldset :legend="t('cache.heading')">
     <div class="flex items-center justify-between gap-2">
       <div class="text-xs opacity-70">
-        {{ t("cache.lastUpdated") }}: <span class="opacity-100">{{ cacheRelativeAge }}</span>
+        {{ t('cache.lastUpdated') }}: <span class="opacity-100">{{ cacheRelativeAge }}</span>
       </div>
       <Button
         :label="cacheRefreshing ? t('cache.refreshing') : t('cache.refresh')"
@@ -25,6 +24,6 @@ const { t } = useI18n();
     <Message v-if="cacheError" severity="error" size="small" :closable="false" class="mt-2">
       {{ cacheError }}
     </Message>
-    <p class="mt-2 text-[10px] leading-relaxed opacity-50">{{ t("cache.hint") }}</p>
+    <p class="mt-2 text-[10px] leading-relaxed opacity-50">{{ t('cache.hint') }}</p>
   </Fieldset>
 </template>

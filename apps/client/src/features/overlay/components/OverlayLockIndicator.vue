@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { formatHotkeyParts } from "@/features/hotkeys/lib/hotkey";
+import { formatHotkeyParts } from '@/features/hotkeys/lib/hotkey';
 
 interface Props {
   lockHotkey: string;
@@ -17,11 +17,7 @@ const lockHotkeyParts = computed(() => formatHotkeyParts(props.lockHotkey));
     <span
       class="pointer-events-none inline-flex items-center gap-1 rounded-md bg-surface-800/70 px-2 py-1 text-[10px] font-semibold tracking-wider backdrop-blur"
     >
-      <kbd
-        v-for="(part, idx) in lockHotkeyParts"
-        :key="idx"
-        class="inline-flex items-center"
-      >
+      <kbd v-for="(part, idx) in lockHotkeyParts" :key="idx" class="inline-flex items-center">
         <span class="rounded border border-surface-600 bg-surface-900 px-1.5 py-0.5 font-mono">
           {{ part }}
         </span>

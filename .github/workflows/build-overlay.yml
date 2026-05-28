@@ -12,14 +12,22 @@ on:
   workflow_dispatch:
   push:
     branches: [master]
-    tags: ["v*"]
+    tags: ['v*']
+
+# Default-deny at workflow level. The build job overrides to write
+# because softprops/action-gh-release creates Releases on tag pushes.
+# Step-level permissions don't exist in GH Actions — job-level write
+# is the tightest scope available without splitting into build +
+# release jobs.
+permissions:
+  contents: read
 
 jobs:
   build:
     runs-on: windows-latest
     timeout-minutes: 30
     permissions:
-      contents: write # needed by softprops/action-gh-release to create Releases
+      contents: write # softprops/action-gh-release needs this to create Releases
 
     steps:
       - uses: actions/checkout@v4
@@ -29,12 +37,7 @@ jobs:
           # the build "succeeds" but the overlay ships a broken map.
           submodules: recursive
 
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
+      - uses: ./.github/actions/install-js
 
       # MSVC + Rust stable are preinstalled on windows-latest; this just
       # nails the channel and exposes `rustup` to subsequent steps.
@@ -46,8 +49,6 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: apps/desktop/src-tauri -> target
-
-      - run: pnpm install --frozen-lockfile
 
       - run: pnpm overlay:build
 

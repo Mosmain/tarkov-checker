@@ -1,0 +1,108 @@
+name: Checks
+
+# Default-deny: all jobs in this workflow only read the repo. No job
+# needs to write contents, post comments, or update statuses. If a
+# future job does, override at job level rather than relaxing here.
+permissions:
+  contents: read
+
+# Lint + typecheck + build + test. Triggers:
+# - PRs targeting master (auto) — gate before merge.
+# - Pushes to master (auto) — sanity check on landed commits.
+# - Manual dispatch (any branch) — explicit re-runs and pre-PR checks.
+#
+# Manual dispatch on master is intentionally a no-op (job-level `if:`
+# below) — the push trigger already covers that case, and GH doesn't
+# let us filter the branch dropdown itself. Pure JS toolchain, no
+# Rust/Tauri here — that's what build-overlay.yml is for. Ubuntu is
+# fine: nothing in lint/typecheck/build/test is platform-specific, and
+# it's faster and cheaper than windows-latest.
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [master]
+    # Docs-only changes don't touch anything we check. paths-ignore on
+    # workflow_dispatch isn't supported by GH — manual runs always go.
+    paths-ignore:
+      - '**/*.md'
+      - 'LICENSE*'
+      - '.gitignore'
+  push:
+    branches: [master]
+    paths-ignore:
+      - '**/*.md'
+      - 'LICENSE*'
+      - '.gitignore'
+
+# Cancel in-flight runs when a newer commit lands on the same ref.
+# Different PRs / branches get isolated groups, so they don't fight.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    # Skip only the redundant case: manual dispatch on master. Auto
+    # push/pull_request triggers on master still run.
+    if: github.event_name != 'workflow_dispatch' || github.ref != 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        # No submodules: the SVG-maps submodule is runtime-only, lint
+        # doesn't touch it.
+
+      - uses: ./.github/actions/install-js
+
+      # eslint-config-prettier disables format rules in ESLint, so
+      # Prettier itself isn't verified by `pnpm lint`. Run it first —
+      # a formatting drift fails fast before the heavier eslint pass.
+      - run: pnpm format:check
+
+      - run: pnpm lint
+
+  typecheck:
+    if: github.event_name != 'workflow_dispatch' || github.ref != 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/install-js
+
+      # turbo's `typecheck` task dependsOn `^build`, so shared/dist is
+      # built automatically before client/server typecheck.
+      - run: pnpm typecheck
+
+  test:
+    if: github.event_name != 'workflow_dispatch' || github.ref != 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/install-js
+
+      # turbo's `test` task dependsOn `^build` — shared gets built
+      # before vitest runs in client. Server has no tests yet; turbo
+      # silently skips packages without a test script.
+      - run: pnpm test
+
+  build:
+    if: github.event_name != 'workflow_dispatch' || github.ref != 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # apps/client/public/maps is a git submodule (SVG maps). Vite
+          # copies public/ to dist verbatim; without the submodule the
+          # bundle "succeeds" but ships an empty maps dir.
+          submodules: recursive
+
+      - uses: ./.github/actions/install-js
+
+      # JS-only build: shared (tsc) + client (vue-tsc + vite build) +
+      # server (tsc). The Tauri .exe build lives in build-overlay.yml
+      # because it needs windows-latest and a Rust toolchain.
+      - run: pnpm build

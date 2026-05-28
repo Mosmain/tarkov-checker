@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { useTauriOverlay } from "@/features/overlay/composables/useTauriOverlay";
-import MapSection from "./sections/MapSection.vue";
-import ExtractsSection from "./sections/ExtractsSection.vue";
-import PlayerSection from "./sections/PlayerSection.vue";
-import OverlaySection from "./sections/OverlaySection.vue";
-import HotkeysSection from "./sections/HotkeysSection.vue";
-import CacheSection from "./sections/CacheSection.vue";
-import LanguageSection from "./sections/LanguageSection.vue";
-import PathsSection from "./sections/PathsSection.vue";
+import { useTauriOverlay } from '@/features/overlay/composables/useTauriOverlay';
+import MapSection from './sections/MapSection.vue';
+import ExtractsSection from './sections/ExtractsSection.vue';
+import PlayerSection from './sections/PlayerSection.vue';
+import OverlaySection from './sections/OverlaySection.vue';
+import HotkeysSection from './sections/HotkeysSection.vue';
+import CacheSection from './sections/CacheSection.vue';
+import LanguageSection from './sections/LanguageSection.vue';
+import PathsSection from './sections/PathsSection.vue';
 
 const { t } = useI18n();
 const overlay = useTauriOverlay();
-const isDesktop = useMediaQuery("(min-width: 640px)");
+const isDesktop = useMediaQuery('(min-width: 640px)');
 const open = ref(false);
 </script>
 
@@ -60,7 +60,7 @@ const open = ref(false);
 
       <div class="pt-2 mt-2 border-t border-surface-700">
         <p class="mb-3 text-[10px] font-semibold uppercase tracking-wider opacity-50">
-          {{ t("systemSection") }}
+          {{ t('systemSection') }}
         </p>
 
         <div class="space-y-4">

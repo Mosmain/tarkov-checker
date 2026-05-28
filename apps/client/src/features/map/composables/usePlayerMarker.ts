@@ -1,7 +1,7 @@
-import L, { type Map as LeafletMap, type LatLngExpression } from "leaflet";
-import type { Position3D } from "@shared/tarkov-api";
+import L, { type Map as LeafletMap, type LatLngExpression } from 'leaflet';
+import type { Position3D } from '@shared/tarkov-api';
 
-export type PlayerFollow = "off" | "sm" | "md" | "lg";
+export type PlayerFollow = 'off' | 'sm' | 'md' | 'lg';
 
 export interface UsePlayerMarker {
   setPlayerPosition: (pos: Position3D, yaw?: number | null) => void;
@@ -10,7 +10,7 @@ export interface UsePlayerMarker {
 }
 
 /** Zoom levels (delta from initialZoom) for each follow mode; clamped to maxZoom. */
-const FOLLOW_ZOOM_DELTA: Readonly<Record<Exclude<PlayerFollow, "off">, number>> = {
+const FOLLOW_ZOOM_DELTA: Readonly<Record<Exclude<PlayerFollow, 'off'>, number>> = {
   sm: 1,
   md: 2,
   lg: 3,
@@ -37,7 +37,7 @@ export function usePlayerMarker(
 ): UsePlayerMarker {
   let playerLayer: L.LayerGroup | null = null;
   let playerCore: L.Marker | null = null;
-  let mode: PlayerFollow = "off";
+  let mode: PlayerFollow = 'off';
   let lastX = Number.NaN;
   let lastZ = Number.NaN;
   let lastYaw: number | null = Number.NaN;
@@ -57,7 +57,7 @@ export function usePlayerMarker(
     const displayYaw = yaw === null ? null : yaw + mapRotation;
     const icon = L.divIcon({
       html: buildPlayerIconHtml(displayYaw),
-      className: "player-icon-wrapper",
+      className: 'player-icon-wrapper',
       iconSize: [36, 36],
       iconAnchor: [18, 18],
     });
@@ -67,7 +67,7 @@ export function usePlayerMarker(
         interactive: false,
         keyboard: false,
         zIndexOffset: 1000,
-        pane: "extracts",
+        pane: 'extracts',
       }).addTo(playerLayer);
     } else {
       playerCore.setLatLng(latLng);
@@ -75,7 +75,7 @@ export function usePlayerMarker(
     }
 
     const changed = pos.x !== lastX || pos.z !== lastZ || yaw !== lastYaw;
-    if (changed && mode !== "off") {
+    if (changed && mode !== 'off') {
       const targetZoom = Math.min(
         initialZoom.value + FOLLOW_ZOOM_DELTA[mode],
         map.value.getMaxZoom(),

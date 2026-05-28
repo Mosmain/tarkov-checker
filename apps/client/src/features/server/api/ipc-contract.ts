@@ -1,5 +1,5 @@
-import type { ServerConfigResponse, ServerConfigUpdate } from "@shared/config-api";
-import type { ExtractsCacheResponse } from "@shared/tarkov-api";
+import type { ServerConfigResponse, ServerConfigUpdate } from '@shared/config-api';
+import type { ExtractsCacheResponse } from '@shared/tarkov-api';
 
 /**
  * The full set of Tauri IPC commands the Rust side exposes (see

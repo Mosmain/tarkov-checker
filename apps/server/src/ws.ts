@@ -1,6 +1,6 @@
-import type { FastifyInstance } from "fastify";
-import type { WebSocket } from "@fastify/websocket";
-import type { ServerMessage } from "@tarkov-checker/shared";
+import type { FastifyInstance } from 'fastify';
+import type { WebSocket } from '@fastify/websocket';
+import type { ServerMessage } from '@tarkov-checker/shared';
 
 const HEARTBEAT_INTERVAL_MS = 5_000;
 
@@ -42,24 +42,24 @@ function sendIfOpen(socket: WebSocket, message: ServerMessage): void {
 }
 
 export async function registerWebSocket(app: FastifyInstance, hub: Hub): Promise<void> {
-  app.get("/ws", { websocket: true }, (socket, req) => {
-    app.log.info({ ip: req.ip }, "ws client connected");
+  app.get('/ws', { websocket: true }, (socket, req) => {
+    app.log.info({ ip: req.ip }, 'ws client connected');
     hub.add(socket);
 
-    sendIfOpen(socket, { type: "heartbeat", t: Date.now() });
+    sendIfOpen(socket, { type: 'heartbeat', t: Date.now() });
 
     const interval = setInterval(() => {
-      sendIfOpen(socket, { type: "heartbeat", t: Date.now() });
+      sendIfOpen(socket, { type: 'heartbeat', t: Date.now() });
     }, HEARTBEAT_INTERVAL_MS);
 
-    socket.on("close", () => {
+    socket.on('close', () => {
       clearInterval(interval);
       hub.remove(socket);
-      app.log.info("ws client disconnected");
+      app.log.info('ws client disconnected');
     });
 
-    socket.on("error", (err: Error) => {
-      app.log.warn({ err }, "ws client error");
+    socket.on('error', (err: Error) => {
+      app.log.warn({ err }, 'ws client error');
     });
   });
 }

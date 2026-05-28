@@ -1,8 +1,8 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
-import { detectDocumentsDir, detectTarkovGameDir } from "./registry.js";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { detectDocumentsDir, detectTarkovGameDir } from './registry.js';
 
-export type PathSource = "env" | "manual" | "detected" | "missing";
+export type PathSource = 'env' | 'manual' | 'detected' | 'missing';
 
 export interface ResolvedPath {
   /** Absolute path resolved for this slot, or null when nothing is known. */
@@ -41,7 +41,7 @@ function readEnv(key: string): string | null {
 }
 
 function asResolved(value: string | null, source: PathSource): ResolvedPath {
-  if (!value) return { value: null, source: "missing", exists: false };
+  if (!value) return { value: null, source: 'missing', exists: false };
   return { value, source, exists: exists(value) };
 }
 
@@ -54,31 +54,31 @@ export async function resolvePaths(manual: ManualOverrides = {}): Promise<Resolv
   const detectedGame = await detectTarkovGameDir();
   const detectedDocuments = await detectDocumentsDir();
 
-  const gameEnv = readEnv("TARKOV_GAME_DIR");
+  const gameEnv = readEnv('TARKOV_GAME_DIR');
   const gameManual = manual.gameDir?.trim() || null;
   const gameDir: ResolvedPath = gameEnv
-    ? asResolved(gameEnv, "env")
+    ? asResolved(gameEnv, 'env')
     : gameManual
-      ? asResolved(gameManual, "manual")
-      : asResolved(detectedGame, "detected");
+      ? asResolved(gameManual, 'manual')
+      : asResolved(detectedGame, 'detected');
 
-  const logsEnv = readEnv("TARKOV_LOG_DIR");
-  const logsFromGame = gameDir.value ? path.join(gameDir.value, "Logs") : null;
+  const logsEnv = readEnv('TARKOV_LOG_DIR');
+  const logsFromGame = gameDir.value ? path.join(gameDir.value, 'Logs') : null;
   const logsDir: ResolvedPath = logsEnv
-    ? asResolved(logsEnv, "env")
+    ? asResolved(logsEnv, 'env')
     : // Derived from gameDir, so it inherits gameDir's source for the badge.
-      asResolved(logsFromGame, logsFromGame ? gameDir.source : "missing");
+      asResolved(logsFromGame, logsFromGame ? gameDir.source : 'missing');
 
-  const screenshotsEnv = readEnv("TARKOV_SCREENSHOT_DIR");
+  const screenshotsEnv = readEnv('TARKOV_SCREENSHOT_DIR');
   const screenshotsManual = manual.screenshotsDir?.trim() || null;
   const detectedScreenshots = detectedDocuments
-    ? path.join(detectedDocuments, "Escape from Tarkov", "Screenshots")
+    ? path.join(detectedDocuments, 'Escape from Tarkov', 'Screenshots')
     : null;
   const screenshotsDir: ResolvedPath = screenshotsEnv
-    ? asResolved(screenshotsEnv, "env")
+    ? asResolved(screenshotsEnv, 'env')
     : screenshotsManual
-      ? asResolved(screenshotsManual, "manual")
-      : asResolved(detectedScreenshots, "detected");
+      ? asResolved(screenshotsManual, 'manual')
+      : asResolved(detectedScreenshots, 'detected');
 
   return { gameDir, logsDir, screenshotsDir };
 }

@@ -12,7 +12,7 @@ const props = defineProps<{
 const { t } = useI18n();
 
 const emit = defineEmits<{
-  (e: "select", id: string): void;
+  (e: 'select', id: string): void;
 }>();
 
 const open = ref(false);
@@ -20,14 +20,14 @@ const root = ref<HTMLElement | null>(null);
 
 const currentLabel = computed(() => {
   const match = props.floors.find((f) => f.id === props.current);
-  return match?.label ?? props.floors[0]?.label ?? "";
+  return match?.label ?? props.floors[0]?.label ?? '';
 });
 
 function toggle(): void {
   open.value = !open.value;
 }
 function select(id: string): void {
-  emit("select", id);
+  emit('select', id);
   open.value = false;
 }
 function onDocumentClick(event: MouseEvent): void {
@@ -37,15 +37,15 @@ function onDocumentClick(event: MouseEvent): void {
   }
 }
 function onKey(event: KeyboardEvent): void {
-  if (event.key === "Escape" && open.value) open.value = false;
+  if (event.key === 'Escape' && open.value) open.value = false;
 }
 onMounted(() => {
-  document.addEventListener("mousedown", onDocumentClick);
-  document.addEventListener("keydown", onKey);
+  document.addEventListener('mousedown', onDocumentClick);
+  document.addEventListener('keydown', onKey);
 });
 onBeforeUnmount(() => {
-  document.removeEventListener("mousedown", onDocumentClick);
-  document.removeEventListener("keydown", onKey);
+  document.removeEventListener('mousedown', onDocumentClick);
+  document.removeEventListener('keydown', onKey);
 });
 </script>
 

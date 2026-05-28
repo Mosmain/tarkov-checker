@@ -1,19 +1,19 @@
-import type { PositionMessage } from "@shared/ws-messages";
-import { useWebSocket } from "./useWebSocket";
-import { dispatchServerEvent } from "./useServerEvents";
+import type { PositionMessage } from '@shared/ws-messages';
+import { useWebSocket } from './useWebSocket';
+import { dispatchServerEvent } from './useServerEvents';
 
-export type TransportStatus = "connecting" | "open" | "closed";
+export type TransportStatus = 'connecting' | 'open' | 'closed';
 
 export interface UseServerTransport {
   status: Ref<TransportStatus>;
 }
 
-const isTauri = "__TAURI_INTERNALS__" in window;
+const isTauri = '__TAURI_INTERNALS__' in window;
 
 // The Rust side emits the position payload without the discriminator — the
 // event channel name ("position") already carries that information, so the
 // payload shape is PositionMessage minus the literal `type` field.
-type PositionPayload = Omit<PositionMessage, "type">;
+type PositionPayload = Omit<PositionMessage, 'type'>;
 
 /**
  * Single entry point for "server-pushed" messages — mount once at the app
@@ -31,22 +31,22 @@ type PositionPayload = Omit<PositionMessage, "type">;
 export function useServerTransport(wsUrl: string): UseServerTransport {
   if (!isTauri) return useWebSocket(wsUrl);
 
-  const status = ref<TransportStatus>("connecting");
+  const status = ref<TransportStatus>('connecting');
   let unlisten: (() => void) | null = null;
 
   onMounted(async () => {
-    const { listen } = await import("@tauri-apps/api/event");
-    const handle = await listen<PositionPayload>("position", (event) => {
-      dispatchServerEvent({ type: "position", ...event.payload });
+    const { listen } = await import('@tauri-apps/api/event');
+    const handle = await listen<PositionPayload>('position', (event) => {
+      dispatchServerEvent({ type: 'position', ...event.payload });
     });
     unlisten = handle;
-    status.value = "open";
+    status.value = 'open';
   });
 
   onBeforeUnmount(() => {
     unlisten?.();
     unlisten = null;
-    status.value = "closed";
+    status.value = 'closed';
   });
 
   return { status };

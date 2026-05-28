@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { useI18nStore } from "@/features/i18n/store";
+import { useI18nStore } from '@/features/i18n/store';
 
 const { apiLang } = storeToRefs(useI18nStore());
 const { t } = useI18n();
 
 const langOptions = computed(() => [
-  { label: "EN", value: "en" as const },
-  { label: "RU", value: "ru" as const },
+  { label: 'EN', value: 'en' as const },
+  { label: 'RU', value: 'ru' as const },
 ]);
 </script>
 

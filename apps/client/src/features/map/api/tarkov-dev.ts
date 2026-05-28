@@ -2,20 +2,20 @@ import {
   extractsCacheResponse,
   type ExtractsCacheResponse,
   type MapExtracts,
-} from "@shared/tarkov-api";
-import { callBackend } from "@/features/server/api/transport";
+} from '@shared/tarkov-api';
+import { callBackend } from '@/features/server/api/transport';
 
-export type ApiLang = "en" | "ru" | "de" | "fr" | "es" | "it" | "ja" | "pl" | "pt" | "zh";
+export type ApiLang = 'en' | 'ru' | 'de' | 'fr' | 'es' | 'it' | 'ja' | 'pl' | 'pt' | 'zh';
 
 const fetchedAtByLang = new Map<string, number>();
 const inFlight = new Map<string, Promise<MapExtracts[]>>();
 
 function requestExtracts(lang: ApiLang, refresh: boolean): Promise<ExtractsCacheResponse> {
   const query: Record<string, string> = { lang };
-  if (refresh) query.refresh = "1";
+  if (refresh) query.refresh = '1';
   return callBackend({
-    tauri: { cmd: "get_extracts", args: { lang, refresh } },
-    http: { method: "GET", path: "/api/extracts", query },
+    tauri: { cmd: 'get_extracts', args: { lang, refresh } },
+    http: { method: 'GET', path: '/api/extracts', query },
     parse: (d) => extractsCacheResponse.parse(d),
   });
 }
@@ -24,7 +24,7 @@ function requestExtracts(lang: ApiLang, refresh: boolean): Promise<ExtractsCache
  * Cache-first read. The server holds the canonical cache; this client just
  * passes the language through. Concurrent calls share one HTTP round-trip.
  */
-export async function fetchAllExtracts(lang: ApiLang = "en"): Promise<MapExtracts[]> {
+export async function fetchAllExtracts(lang: ApiLang = 'en'): Promise<MapExtracts[]> {
   const pending = inFlight.get(lang);
   if (pending) return pending;
 
@@ -54,7 +54,7 @@ export function getCacheTimestamp(lang: ApiLang): number | null {
 
 export async function fetchExtractsForMap(
   nameId: string,
-  lang: ApiLang = "en",
+  lang: ApiLang = 'en',
 ): Promise<MapExtracts | null> {
   const all = await fetchAllExtracts(lang);
   const lowered = nameId.toLowerCase();

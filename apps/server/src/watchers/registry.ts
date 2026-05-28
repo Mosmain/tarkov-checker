@@ -1,5 +1,5 @@
-import { exec } from "node:child_process";
-import { promisify } from "node:util";
+import { exec } from 'node:child_process';
+import { promisify } from 'node:util';
 
 const execAsync = promisify(exec);
 
@@ -10,7 +10,7 @@ const execAsync = promisify(exec);
  * process.env so callers always get an absolute path.
  */
 async function readRegistryValue(keyPath: string, valueName: string): Promise<string | null> {
-  if (process.platform !== "win32") return null;
+  if (process.platform !== 'win32') return null;
   try {
     // chcp 65001 switches the cmd console to UTF-8 so paths containing
     // non-ASCII (e.g. Russian Documents folder) decode cleanly.
@@ -38,8 +38,8 @@ function expandWinVars(value: string): string {
  */
 export async function detectDocumentsDir(): Promise<string | null> {
   return readRegistryValue(
-    "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders",
-    "Personal",
+    'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders',
+    'Personal',
   );
 }
 
@@ -49,12 +49,12 @@ export async function detectDocumentsDir(): Promise<string | null> {
  */
 export async function detectTarkovGameDir(): Promise<string | null> {
   const keys = [
-    "HKLM\\SOFTWARE\\WOW6432Node\\Battlestate Games\\EFT",
-    "HKLM\\SOFTWARE\\Battlestate Games\\EFT",
-    "HKCU\\Software\\Battlestate Games\\EFT",
+    'HKLM\\SOFTWARE\\WOW6432Node\\Battlestate Games\\EFT',
+    'HKLM\\SOFTWARE\\Battlestate Games\\EFT',
+    'HKCU\\Software\\Battlestate Games\\EFT',
   ];
   for (const key of keys) {
-    const value = await readRegistryValue(key, "InstallLocation");
+    const value = await readRegistryValue(key, 'InstallLocation');
     if (value) return value;
   }
   return null;

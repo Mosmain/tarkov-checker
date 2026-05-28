@@ -1,0 +1,13 @@
+# Auto-bumps for action versions used in workflows + composite actions
+# under .github/. npm/pnpm ecosystem deliberately omitted for now —
+# would flood the queue while the product is still being polished. Add
+# a `package-ecosystem: npm` entry when the codebase stabilizes.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'ci'

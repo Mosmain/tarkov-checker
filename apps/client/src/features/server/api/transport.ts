@@ -10,13 +10,13 @@
  * so callers get a validated, typed result either way.
  */
 
-import { apiBase } from "@/shared/config";
-import type { IpcContract } from "./ipc-contract";
+import { apiBase } from '@/shared/config';
+import type { IpcContract } from './ipc-contract';
 
-const isTauri = "__TAURI_INTERNALS__" in window;
+const isTauri = '__TAURI_INTERNALS__' in window;
 
 export interface HttpCall {
-  method?: "GET" | "PUT" | "POST" | "DELETE";
+  method?: 'GET' | 'PUT' | 'POST' | 'DELETE';
   path: string;
   body?: unknown;
   query?: Record<string, string>;
@@ -28,20 +28,20 @@ export interface HttpCall {
  * line up with the contract's declared shapes per command.
  */
 export type BackendCall<K extends keyof IpcContract> = {
-  tauri: { cmd: K } & (IpcContract[K]["args"] extends undefined
+  tauri: { cmd: K } & (IpcContract[K]['args'] extends undefined
     ? { args?: undefined }
-    : { args: IpcContract[K]["args"] });
+    : { args: IpcContract[K]['args'] });
   http: HttpCall;
-  parse: (data: unknown) => IpcContract[K]["result"];
+  parse: (data: unknown) => IpcContract[K]['result'];
 };
 
 export async function callBackend<K extends keyof IpcContract>(
   call: BackendCall<K>,
-): Promise<IpcContract[K]["result"]> {
+): Promise<IpcContract[K]['result']> {
   if (isTauri) {
     // Lazy-import so the @tauri-apps/api chunk only loads when actually
     // running inside Tauri.
-    const { invoke } = await import("@tauri-apps/api/core");
+    const { invoke } = await import('@tauri-apps/api/core');
     const data = await invoke<unknown>(
       call.tauri.cmd,
       call.tauri.args as Record<string, unknown> | undefined,
@@ -52,21 +52,18 @@ export async function callBackend<K extends keyof IpcContract>(
 }
 
 async function httpRequest<T>(http: HttpCall, parse: (data: unknown) => T): Promise<T> {
-  const method = http.method ?? "GET";
-  const qs = http.query ? "?" + new URLSearchParams(http.query).toString() : "";
+  const method = http.method ?? 'GET';
+  const qs = http.query ? '?' + new URLSearchParams(http.query).toString() : '';
   const init: RequestInit = { method };
   if (http.body !== undefined) {
-    init.headers = { "Content-Type": "application/json" };
+    init.headers = { 'Content-Type': 'application/json' };
     init.body = JSON.stringify(http.body);
   }
   const r = await fetch(`${apiBase()}${http.path}${qs}`, init);
   if (!r.ok) {
     const body: unknown = await r.json().catch(() => ({}));
-    const detail =
-      typeof body === "object" && body !== null && "error" in body ? body.error : body;
-    throw new Error(
-      `${method} ${http.path} failed: HTTP ${r.status} — ${JSON.stringify(detail)}`,
-    );
+    const detail = typeof body === 'object' && body !== null && 'error' in body ? body.error : body;
+    throw new Error(`${method} ${http.path} failed: HTTP ${r.status} — ${JSON.stringify(detail)}`);
   }
   return parse(await r.json());
 }

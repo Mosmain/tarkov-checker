@@ -1,12 +1,12 @@
-import type { FastifyBaseLogger } from "fastify";
-import type { ResolvedPaths } from "./paths.js";
-import { startScreenshotWatcher, type ScreenshotWatcher } from "./screenshots.js";
-import type { Hub } from "../ws.js";
+import type { FastifyBaseLogger } from 'fastify';
+import type { ResolvedPaths } from './paths.js';
+import { startScreenshotWatcher, type ScreenshotWatcher } from './screenshots.js';
+import type { Hub } from '../ws.js';
 
-export { resolvePaths } from "./paths.js";
-export type { ResolvedPath, ResolvedPaths, PathSource, ManualOverrides } from "./paths.js";
-export { detectDocumentsDir, detectTarkovGameDir } from "./registry.js";
-export { parseScreenshotFilename } from "@tarkov-checker/shared";
+export { resolvePaths } from './paths.js';
+export type { ResolvedPath, ResolvedPaths, PathSource, ManualOverrides } from './paths.js';
+export { detectDocumentsDir, detectTarkovGameDir } from './registry.js';
+export { parseScreenshotFilename } from '@tarkov-checker/shared';
 
 /**
  * Long-lived watcher process owner. Holds whatever handles are currently
@@ -30,11 +30,11 @@ export class WatcherManager {
     } else {
       this.log.warn(
         {
-          screenshotsDir: paths.screenshotsDir.value ?? "(unset)",
+          screenshotsDir: paths.screenshotsDir.value ?? '(unset)',
           source: paths.screenshotsDir.source,
           exists: paths.screenshotsDir.exists,
         },
-        "screenshots dir is not usable — player marker pipeline dormant",
+        'screenshots dir is not usable — player marker pipeline dormant',
       );
     }
 
@@ -42,10 +42,10 @@ export class WatcherManager {
     if (!paths.logsDir.exists) {
       this.log.info(
         {
-          logsDir: paths.logsDir.value ?? "(unset)",
+          logsDir: paths.logsDir.value ?? '(unset)',
           source: paths.logsDir.source,
         },
-        "logs dir not usable (or log watcher not implemented yet) — ignoring",
+        'logs dir not usable (or log watcher not implemented yet) — ignoring',
       );
     }
   }

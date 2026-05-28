@@ -1,4 +1,4 @@
-import { useTauriOverlay } from "./useTauriOverlay";
+import { useTauriOverlay } from './useTauriOverlay';
 
 /**
  * One-shot Tauri overlay init:
@@ -19,5 +19,5 @@ export function useOverlayBootstrap(overlayClickThrough: Ref<boolean>): void {
   overlayClickThrough.value = false;
   void overlay.setClickThrough(false);
   watch(overlayClickThrough, (locked) => void overlay.setClickThrough(locked));
-  document.documentElement.classList.add("overlay-window");
+  document.documentElement.classList.add('overlay-window');
 }

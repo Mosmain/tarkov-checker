@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import MapQuickMenu from "@/features/overlay/components/MapQuickMenu.vue";
-import { useServerTransport } from "@/features/server/composables/useServerTransport";
-import { provideTransportStatus } from "@/features/server/composables/useTransportStatus";
-import { useOverlayStore } from "@/features/overlay/store";
-import { useHotkeysStore } from "@/features/hotkeys/store";
-import { useTauriOverlay } from "@/features/overlay/composables/useTauriOverlay";
-import { useGlobalShortcut } from "@/features/hotkeys/composables/useGlobalShortcut";
-import { useTrayIcon } from "@/features/overlay/composables/useTrayIcon";
-import { useOverlayBootstrap } from "@/features/overlay/composables/useOverlayBootstrap";
-import { wsUrl } from "@/shared/config";
+import MapQuickMenu from '@/features/overlay/components/MapQuickMenu.vue';
+import { useServerTransport } from '@/features/server/composables/useServerTransport';
+import { provideTransportStatus } from '@/features/server/composables/useTransportStatus';
+import { useOverlayStore } from '@/features/overlay/store';
+import { useHotkeysStore } from '@/features/hotkeys/store';
+import { useTauriOverlay } from '@/features/overlay/composables/useTauriOverlay';
+import { useGlobalShortcut } from '@/features/hotkeys/composables/useGlobalShortcut';
+import { useTrayIcon } from '@/features/overlay/composables/useTrayIcon';
+import { useOverlayBootstrap } from '@/features/overlay/composables/useOverlayBootstrap';
+import { wsUrl } from '@/shared/config';
 
 const { clickThrough: overlayClickThrough } = storeToRefs(useOverlayStore());
 const { lockHotkey } = storeToRefs(useHotkeysStore());
@@ -37,7 +37,7 @@ const quickMenu = ref<InstanceType<typeof MapQuickMenu> | null>(null);
 function onMapContextMenu(event: MouseEvent): void {
   if (!isTauri) return;
   const target = event.target as HTMLElement | null;
-  if (!target?.closest(".leaflet-container")) return;
+  if (!target?.closest('.leaflet-container')) return;
   event.preventDefault();
   quickMenu.value?.open(event.clientX, event.clientY);
 }

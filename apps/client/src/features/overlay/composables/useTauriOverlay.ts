@@ -11,18 +11,18 @@ interface OverlayApi {
   setZoom: (factor: number) => Promise<void>;
 }
 
-const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 
 let cachedApi: OverlayApi | null = null;
 
 async function loadTauriWindow(): Promise<unknown> {
   // Dynamic import so the @tauri-apps/api code is only loaded when needed.
-  const mod = await import("@tauri-apps/api/window");
+  const mod = await import('@tauri-apps/api/window');
   return mod.getCurrentWindow();
 }
 
 async function loadTauriWebview(): Promise<unknown> {
-  const mod = await import("@tauri-apps/api/webviewWindow");
+  const mod = await import('@tauri-apps/api/webviewWindow');
   return mod.getCurrentWebviewWindow();
 }
 
@@ -65,7 +65,7 @@ export function useTauriOverlay(): OverlayApi {
         const win = (await loadTauriWindow()) as WindowLike;
         await win.setOpacity(value);
         // Native worked — clear any CSS fallback we may have applied earlier.
-        document.documentElement.style.opacity = "";
+        document.documentElement.style.opacity = '';
       } catch {
         // Layered-window opacity isn't permitted on this Tauri build — fall
         // back to CSS so the slider stays visually responsive.

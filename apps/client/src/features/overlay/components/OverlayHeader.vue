@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import SettingsPanel from "@/features/settings/SettingsPanel.vue";
-import type { TransportStatus } from "@/features/server/composables/useServerTransport";
+import SettingsPanel from '@/features/settings/SettingsPanel.vue';
+import type { TransportStatus } from '@/features/server/composables/useServerTransport';
 
 interface Props {
   mapDisplayName: string;
@@ -14,14 +14,14 @@ defineEmits<{ close: [] }>();
 
 const statusIconClass = computed(() => {
   switch (props.status) {
-    case "open":
-      return "pi pi-circle-fill text-green-500";
-    case "connecting":
-      return "pi pi-circle-fill text-amber-400 animate-pulse";
-    case "closed":
-      return "pi pi-times-circle text-red-500";
+    case 'open':
+      return 'pi pi-circle-fill text-green-500';
+    case 'connecting':
+      return 'pi pi-circle-fill text-amber-400 animate-pulse';
+    case 'closed':
+      return 'pi pi-times-circle text-red-500';
     default:
-      return "pi pi-circle text-surface-500";
+      return 'pi pi-circle text-surface-500';
   }
 });
 
@@ -30,7 +30,7 @@ const statusIconClass = computed(() => {
 async function startDrag(event: MouseEvent): Promise<void> {
   if (!props.isTauri) return;
   if (event.button !== 0) return;
-  const { getCurrentWindow } = await import("@tauri-apps/api/window");
+  const { getCurrentWindow } = await import('@tauri-apps/api/window');
   await getCurrentWindow().startDragging();
 }
 </script>

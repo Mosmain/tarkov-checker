@@ -40,14 +40,14 @@ Each feature folder has the same internal layout when applicable: `composables/`
 
 Hybrid: same-feature stays relative for "tight coupling" signal, cross-feature uses `@/` alias for visibility. Enforced by ESLint (`no-restricted-imports` blocks `../../*`).
 
-| Case | Style | Example |
-|---|---|---|
-| Same folder | `./X` | `import { useFloorSwitcher } from "./useFloorSwitcher"` |
-| Same feature, parent | `../X` | `import { useOverlayStore } from "../store"` |
-| Cross feature | `@/features/<name>/...` | `import { useUiText } from "@/features/i18n"` |
-| Cross layer | `@/shared/...`, `@/app/...` | `import { apiBase } from "@/shared/config"` |
-| Workspace package | `@shared/...` | `import { TARKOV_MAPS } from "@shared/maps"` |
-| npm | bare | `import { useConfirm } from "primevue/useconfirm"` |
+| Case                 | Style                       | Example                                                 |
+| -------------------- | --------------------------- | ------------------------------------------------------- |
+| Same folder          | `./X`                       | `import { useFloorSwitcher } from "./useFloorSwitcher"` |
+| Same feature, parent | `../X`                      | `import { useOverlayStore } from "../store"`            |
+| Cross feature        | `@/features/<name>/...`     | `import { useUiText } from "@/features/i18n"`           |
+| Cross layer          | `@/shared/...`, `@/app/...` | `import { apiBase } from "@/shared/config"`             |
+| Workspace package    | `@shared/...`               | `import { TARKOV_MAPS } from "@shared/maps"`            |
+| npm                  | bare                        | `import { useConfirm } from "primevue/useconfirm"`      |
 
 The two `@shared` are different: `@shared/...` (no slash) is the workspace package at `packages/shared/`, `@/shared/...` is `apps/client/src/shared/`. Don't confuse them.
 
@@ -92,7 +92,7 @@ For nested or dynamic routes (`/raids/[id]`), see [Vue Router file-based docs](h
 1. Copy [`features/i18n/locales/en.json`](./src/features/i18n/locales/en.json) to `<code>.json` and translate values. Keys must match `en.json` exactly (it's the fallback).
 2. Extend the enum in [`features/i18n/store.ts`](./src/features/i18n/store.ts):
    ```ts
-   const apiLangSchema = z.enum(["en", "ru", "<code>"]);
+   const apiLangSchema = z.enum(['en', 'ru', '<code>']);
    ```
 3. Add to the language dropdown in [`features/settings/sections/LanguageSection.vue`](./src/features/settings/sections/LanguageSection.vue):
    ```ts
@@ -104,6 +104,7 @@ Only `en.json` is bundled eagerly — every other locale loads on demand via dyn
 ### Add a PrimeVue component
 
 Just use it in a template:
+
 ```vue
 <template>
   <Knob v-model="value" />
@@ -115,15 +116,21 @@ Just use it in a template:
 ### Add a PrimeVue composable (`useToast`, `useDialog`, ...)
 
 Explicit import — resolver doesn't cover composables in PrimeVue 4:
+
 ```ts
-import { useToast } from "primevue/usetoast";
+import { useToast } from 'primevue/usetoast';
 ```
 
 ### Add a new IPC command (Tauri side adds one too)
 
 1. Add an entry to [`features/server/api/ipc-contract.ts`](./src/features/server/api/ipc-contract.ts):
    ```ts
-   get_loot: { args: { mapCode: string }; result: LootResponse };
+   get_loot: {
+     args: {
+       mapCode: string;
+     }
+     result: LootResponse;
+   }
    ```
 2. Write a wrapper in `features/server/api/` calling `callBackend({ tauri: { cmd: "get_loot", ... }, http: { ... }, parse: ... })`. The literal `cmd` value narrows args + result types automatically.
 3. On the Rust side, add the matching `#[tauri::command]` in [`apps/desktop/src-tauri/src/commands.rs`](../desktop/src-tauri/src/commands.rs). On the Node side, add a Fastify route in `apps/server/src/`.
@@ -143,9 +150,9 @@ Tauri overlay dev needs both this Vite server (port 5173) and `pnpm --filter @ta
 
 ## Environment
 
-| Var | Default | Effect |
-|---|---|---|
-| `VITE_SERVER_PORT` | `3000` | Port the browser/PWA client expects for the LAN Node backend. Tauri builds ignore this (in-process Rust port owns IPC). |
+| Var                | Default | Effect                                                                                                                  |
+| ------------------ | ------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `VITE_SERVER_PORT` | `3000`  | Port the browser/PWA client expects for the LAN Node backend. Tauri builds ignore this (in-process Rust port owns IPC). |
 
 ## Where things connect
 
