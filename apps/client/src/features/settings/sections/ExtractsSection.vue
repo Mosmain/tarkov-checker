@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { FACTION_COLORS } from "@shared/maps";
 import { useMapSettingsStore, type ExtractFactionFilter } from "../../map/store";
-import { useUiText } from "../../i18n";
 
 const { extractFactions, extractLabelMode, extractLabelSize } = storeToRefs(
   useMapSettingsStore(),
 );
-const t = useUiText();
+const { t } = useI18n();
 
 const FACTION_OPTIONS: ReadonlyArray<{
   value: ExtractFactionFilter;
@@ -18,19 +17,19 @@ const FACTION_OPTIONS: ReadonlyArray<{
 ];
 
 const labelModeOptions = computed(() => [
-  { label: t.value.labelHover, value: "hover" as const },
-  { label: t.value.labelAlways, value: "always" as const },
+  { label: t("labelHover"), value: "hover" as const },
+  { label: t("labelAlways"), value: "always" as const },
 ]);
 
 const labelSizeOptions = computed(() => [
-  { label: t.value.labelSizes.sm, value: "sm" as const },
-  { label: t.value.labelSizes.md, value: "md" as const },
-  { label: t.value.labelSizes.lg, value: "lg" as const },
+  { label: t("labelSizes.sm"), value: "sm" as const },
+  { label: t("labelSizes.md"), value: "md" as const },
+  { label: t("labelSizes.lg"), value: "lg" as const },
 ]);
 </script>
 
 <template>
-  <Fieldset :legend="t.extracts">
+  <Fieldset :legend="t('extracts')">
     <div class="flex flex-col gap-1">
       <label
         v-for="opt in FACTION_OPTIONS"
@@ -47,12 +46,12 @@ const labelSizeOptions = computed(() => [
           :style="{ color: opt.color }"
           aria-hidden="true"
         />
-        <span class="text-sm">{{ t.factions[opt.value] }}</span>
+        <span class="text-sm">{{ t(`factions.${opt.value}`) }}</span>
       </label>
     </div>
 
     <div class="mt-3">
-      <p class="mb-1.5 text-xs opacity-60">{{ t.labels }}</p>
+      <p class="mb-1.5 text-xs opacity-60">{{ t("labels") }}</p>
       <SelectButton
         v-model="extractLabelMode"
         :options="labelModeOptions"
@@ -62,11 +61,11 @@ const labelSizeOptions = computed(() => [
         size="small"
         class="w-full"
       />
-      <p class="mt-1.5 text-[10px] leading-relaxed opacity-50">{{ t.labelHint }}</p>
+      <p class="mt-1.5 text-[10px] leading-relaxed opacity-50">{{ t("labelHint") }}</p>
     </div>
 
     <div class="mt-3">
-      <p class="mb-1.5 text-xs opacity-60">{{ t.labelSize }}</p>
+      <p class="mb-1.5 text-xs opacity-60">{{ t("labelSize") }}</p>
       <SelectButton
         v-model="extractLabelSize"
         :options="labelSizeOptions"

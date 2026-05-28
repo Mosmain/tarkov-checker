@@ -1,5 +1,4 @@
 import { useConfirm } from "primevue/useconfirm";
-import { useUiText } from "../../i18n";
 import { useTauriOverlay } from "./useTauriOverlay";
 
 /**
@@ -9,17 +8,17 @@ import { useTauriOverlay } from "./useTauriOverlay";
  */
 export function useCloseConfirm(): () => void {
   const confirm = useConfirm();
-  const t = useUiText();
+  const { t } = useI18n();
   const { isTauri } = useTauriOverlay();
 
   return function confirmClose(): void {
     if (!isTauri) return;
     confirm.require({
-      message: t.value.closeConfirm.message,
-      header: t.value.closeConfirm.title,
+      message: t("closeConfirm.message"),
+      header: t("closeConfirm.title"),
       icon: "pi pi-times-circle",
-      acceptLabel: t.value.closeConfirm.accept,
-      rejectLabel: t.value.closeConfirm.reject,
+      acceptLabel: t("closeConfirm.accept"),
+      rejectLabel: t("closeConfirm.reject"),
       acceptClass: "p-button-danger",
       accept: () => {
         void (async () => {

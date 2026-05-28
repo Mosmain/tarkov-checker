@@ -1,0 +1,88 @@
+{
+  "language": "Language",
+  "map": "Map",
+  "extracts": "Extracts",
+  "on": "On",
+  "off": "Off",
+  "labels": "Labels",
+  "labelHover": "On hover",
+  "labelAlways": "Always",
+  "labelHint": "Always shows extract names; switch to On hover for a minimal view.",
+  "labelSize": "Label size",
+  "labelSizes": { "sm": "S", "md": "M", "lg": "L" },
+  "player": "Player",
+  "playerFollow": "Auto-follow",
+  "playerFollowHint": "Recenter and zoom the map on every new position update.",
+  "playerFollowOptions": { "off": "Off", "sm": "S", "md": "M", "lg": "L" },
+  "settings": "Settings",
+  "systemSection": "System",
+  "floor": "Floor",
+  "factions": {
+    "pmc": "PMC",
+    "scav": "Scav",
+    "shared": "Shared"
+  },
+  "paths": {
+    "heading": "Tarkov paths",
+    "gameDir": "Game folder",
+    "screenshotsDir": "Screenshots folder",
+    "logsDir": "Logs",
+    "save": "Save",
+    "saved": "Saved",
+    "mobileHint": "Open this page on the machine running Tarkov to configure paths.",
+    "source": {
+      "env": "from .env",
+      "manual": "manual",
+      "detected": "auto-detected",
+      "missing": "not found"
+    },
+    "missingTooltip": "Folder doesn't exist on disk yet.",
+    "placeholderGameDir": "D:\\EFT",
+    "placeholderScreenshotsDir": "Documents\\Escape from Tarkov\\Screenshots"
+  },
+  "cache": {
+    "heading": "Data cache",
+    "lastUpdated": "Last updated",
+    "never": "Never",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing…",
+    "hint": "Extract coordinates are cached locally. tarkov.dev may be blocked on some networks — fetch once, use offline."
+  },
+  "overlay": {
+    "heading": "Overlay",
+    "alwaysOnTop": "Always on top",
+    "clickThrough": "Click-through",
+    "clickThroughWarning": "Once enabled, you can't click the window. Restart the app to re-enable interaction.",
+    "opacity": "Opacity",
+    "mapOpacity": "Map opacity",
+    "mapOpacityHint": "Available when overall opacity is below 100%.",
+    "zoom": "Zoom",
+    "quickMenuTitle": "Transparency"
+  },
+  "hotkeys": {
+    "heading": "Hotkeys",
+    "lock": "Toggle lock",
+    "lockHint": "Pressed globally to toggle click-through. F1–F24 work without a modifier; everything else needs Ctrl/Alt/Shift.",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "floorUp": "Next floor",
+    "floorDown": "Previous floor",
+    "record": "Change",
+    "recording": "Recording…",
+    "recordingPrompt": "Press the new combination (Esc to cancel)",
+    "invalid": "Need a modifier (Ctrl/Alt/Shift) — or a bare F-key.",
+    "conflict": "This combination is taken by another app. Try another."
+  },
+  "closeConfirm": {
+    "title": "Close the app?",
+    "message": "The window will be closed.",
+    "accept": "Close",
+    "reject": "Cancel"
+  },
+  "tray": {
+    "toggleLock": "Toggle lock",
+    "showWindow": "Show window",
+    "quit": "Quit",
+    "tooltip": "tarkov-checker"
+  }
+}

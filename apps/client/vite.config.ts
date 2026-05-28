@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import VueRouter from "vue-router/vite";
 import vue from "@vitejs/plugin-vue";
+import VueI18nPlugin from "@intlify/unplugin-vue-i18n/vite";
 import AutoImport from "unplugin-auto-import/vite";
 import Components from "unplugin-vue-components/vite";
 import { PrimeVueResolver } from "@primevue/auto-import-resolver";
@@ -26,7 +27,7 @@ export default defineConfig({
     // and stores are deliberately NOT auto-imported — explicit imports keep
     // cross-feature dependencies visible (and policeable by lint rules).
     AutoImport({
-      imports: ["vue", "vue-router", "pinia", "@vueuse/core"],
+      imports: ["vue", "vue-router", "pinia", "@vueuse/core", "vue-i18n"],
       // Scope is intentionally narrow: framework idioms (ref/computed/watch,
       // defineStore, useRouter, VueUse) cover dozens of call sites each, so
       // dropping them as auto-imports pays back many lines per addition. We
@@ -45,6 +46,14 @@ export default defineConfig({
       resolvers: [PrimeVueResolver()],
       dts: "src/components.d.ts",
       dirs: [],
+    }),
+    // Compiles JSON locale files to a lean runtime format (parses faster on
+    // app boot than re-parsing JSON) and exposes the global $t typing the
+    // Volar plugin needs. Locale files live next to the i18n entry.
+    VueI18nPlugin({
+      include: [fileURLToPath(new URL("./src/features/i18n/locales/**", import.meta.url))],
+      strictMessage: false,
+      runtimeOnly: false,
     }),
     tailwindcss(),
     VitePWA({

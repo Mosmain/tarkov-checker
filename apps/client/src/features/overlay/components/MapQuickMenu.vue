@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { useOverlayStore } from "../store";
-import { useUiText } from "../../i18n";
 import { opacityPercentBinding } from "../lib/opacity";
 
 const { opacity: overlayOpacity, mapOpacity: overlayMapOpacity } = storeToRefs(useOverlayStore());
-const t = useUiText();
+const { t } = useI18n();
 
 const position = ref<{ x: number; y: number } | null>(null);
 const panelRef = ref<HTMLElement | null>(null);
@@ -61,14 +60,14 @@ defineExpose({ open, close });
         role="menu"
       >
         <p class="mb-2 text-[10px] font-semibold uppercase tracking-wider opacity-60">
-          {{ t.overlay.quickMenuTitle }}
+          {{ t('overlay.quickMenuTitle') }}
         </p>
 
         <div class="space-y-3">
           <div>
             <div class="mb-1.5 flex items-center justify-between gap-3">
               <label class="text-xs opacity-70" for="quick-overlay-opacity">
-                {{ t.overlay.opacity }}
+                {{ t('overlay.opacity') }}
               </label>
               <span class="text-xs tabular-nums opacity-70">{{ opacityPercent }}%</span>
             </div>
@@ -85,7 +84,7 @@ defineExpose({ open, close });
           <div :class="mapOpacityDisabled ? 'opacity-50' : ''">
             <div class="mb-1.5 flex items-center justify-between gap-3">
               <label class="text-xs opacity-70" for="quick-overlay-map-opacity">
-                {{ t.overlay.mapOpacity }}
+                {{ t('overlay.mapOpacity') }}
               </label>
               <span class="text-xs tabular-nums opacity-70">{{ mapOpacityPercent }}%</span>
             </div>

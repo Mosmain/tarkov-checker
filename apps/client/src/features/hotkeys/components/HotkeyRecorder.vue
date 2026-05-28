@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useUiText } from "../../i18n";
 import { captureHotkey, formatHotkeyParts } from "../lib/hotkey";
 
 const props = defineProps<{
@@ -13,7 +12,7 @@ const emit = defineEmits<{
   (e: "update:modelValue", value: string): void;
 }>();
 
-const t = useUiText();
+const { t } = useI18n();
 
 const recording = ref(false);
 const error = ref<"invalid" | null>(null);
@@ -72,7 +71,7 @@ let currentRecorder: { cancel: () => void } | null = null;
     <div class="mb-1.5 flex items-center justify-between gap-2">
       <p class="text-xs opacity-60">{{ label }}</p>
       <Button
-        :label="recording ? t.hotkeys.recording : t.hotkeys.record"
+        :label="recording ? t('hotkeys.recording') : t('hotkeys.record')"
         size="small"
         severity="secondary"
         :outlined="!recording"
@@ -85,7 +84,7 @@ let currentRecorder: { cancel: () => void } | null = null;
       :class="recording ? 'ring-2 ring-primary' : ''"
     >
       <template v-if="recording">
-        <span class="opacity-70">{{ t.hotkeys.recordingPrompt }}</span>
+        <span class="opacity-70">{{ t('hotkeys.recordingPrompt') }}</span>
       </template>
       <template v-else>
         <span
@@ -104,7 +103,7 @@ let currentRecorder: { cancel: () => void } | null = null;
       v-if="error === 'invalid'"
       class="mt-1.5 text-[10px] leading-relaxed text-amber-400"
     >
-      {{ t.hotkeys.invalid }}
+      {{ t('hotkeys.invalid') }}
     </p>
   </div>
 </template>

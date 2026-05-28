@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useTauriOverlay } from "../../overlay/composables/useTauriOverlay";
 import { useServerPaths } from "../../server/composables/useServerPaths";
-import { useUiText } from "../../i18n";
 
 const props = defineProps<{
   /** Toggled by the parent drawer. Used as a retry trigger when the eager
@@ -10,7 +9,7 @@ const props = defineProps<{
 }>();
 
 const overlay = useTauriOverlay();
-const t = useUiText();
+const { t } = useI18n();
 
 // Tarkov paths are unreachable from a phone over LAN (the browser can't see
 // C:\EFT), but the Tauri overlay always runs on the same machine as Tarkov.
@@ -42,7 +41,7 @@ watch(
 </script>
 
 <template>
-  <Fieldset :legend="t.paths.heading">
+  <Fieldset :legend="t('paths.heading')">
     <Message v-if="pathsError" severity="error" size="small" :closable="false">
       {{ pathsError }}
     </Message>
@@ -51,14 +50,14 @@ watch(
     <div v-if="serverConfig" class="space-y-3">
       <div>
         <label class="mb-1 block text-xs opacity-70" for="game-dir-input">
-          {{ t.paths.gameDir }}
+          {{ t("paths.gameDir") }}
         </label>
-        <IconField :title="serverConfig.gameDir.exists ? '' : t.paths.missingTooltip">
+        <IconField :title="serverConfig.gameDir.exists ? '' : t('paths.missingTooltip')">
           <InputIcon :class="statusIconClass('gameDir')" />
           <InputText
             id="game-dir-input"
             v-model="gameDirInput"
-            :placeholder="t.paths.placeholderGameDir"
+            :placeholder="t('paths.placeholderGameDir')"
             :disabled="!canEditPaths || gameDirLocked"
             :readonly="!canEditPaths"
             size="small"
@@ -69,20 +68,20 @@ watch(
           class="mt-1 truncate text-[10px] opacity-50"
           :title="serverConfig.logsDir.value ?? ''"
         >
-          {{ t.paths.logsDir }}: {{ serverConfig.logsDir.value ?? "—" }}
+          {{ t("paths.logsDir") }}: {{ serverConfig.logsDir.value ?? "—" }}
         </p>
       </div>
 
       <div>
         <label class="mb-1 block text-xs opacity-70" for="screenshots-dir-input">
-          {{ t.paths.screenshotsDir }}
+          {{ t("paths.screenshotsDir") }}
         </label>
-        <IconField :title="serverConfig.screenshotsDir.exists ? '' : t.paths.missingTooltip">
+        <IconField :title="serverConfig.screenshotsDir.exists ? '' : t('paths.missingTooltip')">
           <InputIcon :class="statusIconClass('screenshotsDir')" />
           <InputText
             id="screenshots-dir-input"
             v-model="screenshotsDirInput"
-            :placeholder="t.paths.placeholderScreenshotsDir"
+            :placeholder="t('paths.placeholderScreenshotsDir')"
             :disabled="!canEditPaths || screenshotsDirLocked"
             :readonly="!canEditPaths"
             size="small"
@@ -93,10 +92,10 @@ watch(
 
       <div v-if="canEditPaths" class="flex items-center justify-end gap-2">
         <span v-if="pathsJustSaved" class="text-[11px] text-green-400">
-          {{ t.paths.saved }}
+          {{ t("paths.saved") }}
         </span>
         <Button
-          :label="t.paths.save"
+          :label="t('paths.save')"
           size="small"
           :disabled="!canSavePaths"
           :loading="pathsSaving"
@@ -105,7 +104,7 @@ watch(
       </div>
 
       <p v-else class="text-[10px] leading-relaxed opacity-50">
-        {{ t.paths.mobileHint }}
+        {{ t("paths.mobileHint") }}
       </p>
     </div>
   </Fieldset>

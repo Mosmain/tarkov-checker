@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { useUiText } from "../../i18n";
-
 interface Floor {
   readonly id: string;
   readonly label: string;
@@ -11,7 +9,7 @@ const props = defineProps<{
   current: string | null;
 }>();
 
-const t = useUiText();
+const { t } = useI18n();
 
 const emit = defineEmits<{
   (e: "select", id: string): void;
@@ -81,10 +79,10 @@ onBeforeUnmount(() => {
       severity="secondary"
       class="!bg-surface-800/80 hover:!bg-surface-800 !border-surface-700 backdrop-blur"
       :aria-expanded="open"
-      :aria-label="t.floor"
+      :aria-label="t('floor')"
       @click="toggle"
     >
-      {{ t.floor }}: {{ currentLabel }}
+      {{ t('floor') }}: {{ currentLabel }}
     </Button>
   </div>
 </template>

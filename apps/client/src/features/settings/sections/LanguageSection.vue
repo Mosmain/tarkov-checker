@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { useI18nStore } from "../../i18n/store";
-import { useUiText } from "../../i18n";
 
 const { apiLang } = storeToRefs(useI18nStore());
-const t = useUiText();
+const { t } = useI18n();
 
 const langOptions = computed(() => [
   { label: "EN", value: "en" as const },
@@ -12,7 +11,7 @@ const langOptions = computed(() => [
 </script>
 
 <template>
-  <Fieldset :legend="t.language">
+  <Fieldset :legend="t('language')">
     <SelectButton
       v-model="apiLang"
       :options="langOptions"

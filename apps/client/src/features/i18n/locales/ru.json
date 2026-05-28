@@ -1,0 +1,88 @@
+{
+  "language": "Язык",
+  "map": "Карта",
+  "extracts": "Выходы",
+  "on": "Вкл",
+  "off": "Выкл",
+  "labels": "Подписи",
+  "labelHover": "При наведении",
+  "labelAlways": "Всегда",
+  "labelHint": "Подписи видны всегда; переключи на «При наведении», если хочется меньше шума.",
+  "labelSize": "Размер подписей",
+  "labelSizes": { "sm": "S", "md": "M", "lg": "L" },
+  "player": "Игрок",
+  "playerFollow": "Авто-следование",
+  "playerFollowHint": "Центрируем и приближаем карту при каждом новом обновлении позиции.",
+  "playerFollowOptions": { "off": "Выкл", "sm": "S", "md": "M", "lg": "L" },
+  "settings": "Настройки",
+  "systemSection": "Системные",
+  "floor": "Уровень",
+  "factions": {
+    "pmc": "ЧВК",
+    "scav": "Дикие",
+    "shared": "Общие"
+  },
+  "paths": {
+    "heading": "Пути Tarkov",
+    "gameDir": "Папка с игрой",
+    "screenshotsDir": "Папка скриншотов",
+    "logsDir": "Логи",
+    "save": "Сохранить",
+    "saved": "Сохранено",
+    "mobileHint": "Открой эту страницу на машине с Tarkov, чтобы настроить пути.",
+    "source": {
+      "env": "из .env",
+      "manual": "вручную",
+      "detected": "найдено автоматически",
+      "missing": "не найдено"
+    },
+    "missingTooltip": "Папка пока не существует.",
+    "placeholderGameDir": "D:\\EFT",
+    "placeholderScreenshotsDir": "Documents\\Escape from Tarkov\\Screenshots"
+  },
+  "cache": {
+    "heading": "Кеш данных",
+    "lastUpdated": "Обновлено",
+    "never": "Никогда",
+    "refresh": "Обновить",
+    "refreshing": "Обновляю…",
+    "hint": "Координаты выходов кешируются локально. tarkov.dev иногда недоступен с RU IP — обновили один раз и пользуемся."
+  },
+  "overlay": {
+    "heading": "Оверлей",
+    "alwaysOnTop": "Поверх всех окон",
+    "clickThrough": "Прозрачное для кликов",
+    "clickThroughWarning": "После включения окно перестанет реагировать на мышь. Чтобы вернуть взаимодействие — перезапусти приложение.",
+    "opacity": "Прозрачность",
+    "mapOpacity": "Прозрачность карты",
+    "mapOpacityHint": "Доступно когда общая прозрачность ниже 100%.",
+    "zoom": "Масштаб",
+    "quickMenuTitle": "Прозрачность"
+  },
+  "hotkeys": {
+    "heading": "Хоткеи",
+    "lock": "Переключить блокировку",
+    "lockHint": "Глобально переключает click-through. F1–F24 работают без модификатора; всем остальным нужен Ctrl/Alt/Shift.",
+    "zoomIn": "Приблизить",
+    "zoomOut": "Отдалить",
+    "floorUp": "Следующий этаж",
+    "floorDown": "Предыдущий этаж",
+    "record": "Изменить",
+    "recording": "Запись…",
+    "recordingPrompt": "Нажми новое сочетание (Esc — отмена)",
+    "invalid": "Нужен модификатор (Ctrl/Alt/Shift) — или F-клавиша без него.",
+    "conflict": "Это сочетание уже занято другим приложением. Попробуй другое."
+  },
+  "closeConfirm": {
+    "title": "Закрыть приложение?",
+    "message": "Окно будет закрыто.",
+    "accept": "Закрыть",
+    "reject": "Отмена"
+  },
+  "tray": {
+    "toggleLock": "Переключить блокировку",
+    "showWindow": "Показать окно",
+    "quit": "Выход",
+    "tooltip": "tarkov-checker"
+  }
+}

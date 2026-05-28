@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { useOverlayStore } from "../../overlay/store";
 import { useOverlaySync } from "../../overlay/composables/useOverlaySync";
-import { useUiText } from "../../i18n";
 
 const { alwaysOnTop: overlayAlwaysOnTop, zoom: overlayZoom } = storeToRefs(useOverlayStore());
 const { opacityPercent, mapOpacityPercent, mapOpacityDisabled } = useOverlaySync();
-const t = useUiText();
+const { t } = useI18n();
 
 const overlayZoomOptions = computed(() => [
   { label: "75%", value: "75" as const },
@@ -16,16 +15,16 @@ const overlayZoomOptions = computed(() => [
 </script>
 
 <template>
-  <Fieldset :legend="t.overlay.heading">
+  <Fieldset :legend="t('overlay.heading')">
     <div class="space-y-3">
       <div class="flex items-center justify-between gap-3">
-        <label class="text-sm" for="overlay-always-on-top">{{ t.overlay.alwaysOnTop }}</label>
+        <label class="text-sm" for="overlay-always-on-top">{{ t("overlay.alwaysOnTop") }}</label>
         <ToggleSwitch v-model="overlayAlwaysOnTop" input-id="overlay-always-on-top" />
       </div>
 
       <div>
         <div class="mb-1.5 flex items-center justify-between gap-3">
-          <label class="text-xs opacity-70" for="overlay-opacity">{{ t.overlay.opacity }}</label>
+          <label class="text-xs opacity-70" for="overlay-opacity">{{ t("overlay.opacity") }}</label>
           <span class="text-xs tabular-nums opacity-70">{{ opacityPercent }}%</span>
         </div>
         <Slider
@@ -41,7 +40,7 @@ const overlayZoomOptions = computed(() => [
       <div :class="mapOpacityDisabled ? 'opacity-50' : ''">
         <div class="mb-1.5 flex items-center justify-between gap-3">
           <label class="text-xs opacity-70" for="overlay-map-opacity">
-            {{ t.overlay.mapOpacity }}
+            {{ t("overlay.mapOpacity") }}
           </label>
           <span class="text-xs tabular-nums opacity-70">{{ mapOpacityPercent }}%</span>
         </div>
@@ -58,12 +57,12 @@ const overlayZoomOptions = computed(() => [
           v-if="mapOpacityDisabled"
           class="mt-1.5 text-[10px] leading-relaxed opacity-50"
         >
-          {{ t.overlay.mapOpacityHint }}
+          {{ t("overlay.mapOpacityHint") }}
         </p>
       </div>
 
       <div>
-        <p class="mb-1.5 text-xs opacity-60">{{ t.overlay.zoom }}</p>
+        <p class="mb-1.5 text-xs opacity-60">{{ t("overlay.zoom") }}</p>
         <SelectButton
           v-model="overlayZoom"
           :options="overlayZoomOptions"

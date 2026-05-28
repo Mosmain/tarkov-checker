@@ -1,6 +1,5 @@
 import { fetchAllExtracts, getCacheTimestamp, refreshExtracts } from "../../map/api/tarkov-dev";
 import { useI18nStore } from "../../i18n/store";
-import { useUiText } from "../../i18n";
 import { TARKOV_MAPS, type TarkovMapCode } from "@shared/maps";
 
 export interface UseExtractsCacheControl {
@@ -23,7 +22,7 @@ export interface UseExtractsCacheControl {
  */
 export function useExtractsCacheControl(): UseExtractsCacheControl {
   const { apiLang } = storeToRefs(useI18nStore());
-  const t = useUiText();
+  const { t } = useI18n();
 
   const localizedMapNames = ref<Partial<Record<string, string>>>({});
   const cacheTimestamp = ref<number | null>(null);
@@ -68,7 +67,7 @@ export function useExtractsCacheControl(): UseExtractsCacheControl {
 
   const cacheRelativeAge = computed(() => {
     const ts = cacheTimestamp.value;
-    if (!ts) return t.value.cache.never;
+    if (!ts) return t("cache.never");
     const ms = Date.now() - ts;
     const minutes = Math.round(ms / 60_000);
     if (minutes < 1) return "<1m";

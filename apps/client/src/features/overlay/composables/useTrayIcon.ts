@@ -1,5 +1,4 @@
 import { useI18nStore } from "../../i18n/store";
-import { useUiText } from "../../i18n";
 
 type TrayHandle = Awaited<ReturnType<typeof import("@tauri-apps/api/tray").TrayIcon.new>>;
 
@@ -13,7 +12,7 @@ const TRAY_ID = "tarkov-checker-tray";
 export function useTrayIcon(isTauri: boolean, overlayClickThrough: Ref<boolean>): void {
   if (!isTauri) return;
 
-  const t = useUiText();
+  const { t } = useI18n();
   const { apiLang } = storeToRefs(useI18nStore());
   let trayRef: TrayHandle | null = null;
 
@@ -28,14 +27,14 @@ export function useTrayIcon(isTauri: boolean, overlayClickThrough: Ref<boolean>)
       items: [
         {
           id: "toggle-lock",
-          text: t.value.tray.toggleLock,
+          text: t("tray.toggleLock"),
           action: () => {
             overlayClickThrough.value = !overlayClickThrough.value;
           },
         },
         {
           id: "show",
-          text: t.value.tray.showWindow,
+          text: t("tray.showWindow"),
           action: async () => {
             const win = getCurrentWindow();
             await win.show();
@@ -45,7 +44,7 @@ export function useTrayIcon(isTauri: boolean, overlayClickThrough: Ref<boolean>)
         { item: "Separator" },
         {
           id: "quit",
-          text: t.value.tray.quit,
+          text: t("tray.quit"),
           action: async () => {
             await getCurrentWindow().close();
           },
@@ -65,7 +64,7 @@ export function useTrayIcon(isTauri: boolean, overlayClickThrough: Ref<boolean>)
         id: TRAY_ID,
         icon: icon ?? undefined,
         menu: await buildTrayMenu(),
-        tooltip: t.value.tray.tooltip,
+        tooltip: t("tray.tooltip"),
         showMenuOnLeftClick: true,
       });
     } catch (err) {
@@ -78,7 +77,7 @@ export function useTrayIcon(isTauri: boolean, overlayClickThrough: Ref<boolean>)
     if (!trayRef) return;
     try {
       await trayRef.setMenu(await buildTrayMenu());
-      await trayRef.setTooltip(t.value.tray.tooltip);
+      await trayRef.setTooltip(t("tray.tooltip"));
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error("[tray] i18n refresh failed:", err);
