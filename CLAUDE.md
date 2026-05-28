@@ -17,7 +17,7 @@
   a plain browser PWA on a phone. `useServerTransport` and the
   `api/*.ts` files branch on `"__TAURI_INTERNALS__" in window`: Tauri
   → `invoke(...)` + `listen('position', ...)`; browser → `fetch
-  http://<host>:3000` + `new WebSocket(...)`.
+http://<host>:3000` + `new WebSocket(...)`.
 - `packages/shared` — source of truth for the WS payload shapes
   (zod schemas + inferred types, consumed by client + Node server) and
   for the raw-code → display-name + SVG-filename table in `src/maps.ts`
@@ -34,7 +34,7 @@
 Two independent dev scenarios:
 
 - **Desktop overlay** (most common): one terminal — `pnpm --filter
-  @tarkov-checker/desktop tauri:dev`. This builds the Rust side, runs
+@tarkov-checker/desktop tauri:dev`. This builds the Rust side, runs
   Vite under the hood (via `beforeDevCommand: ""` + Tauri's built-in
   devUrl wiring — wait, `beforeDevCommand` is empty, so you also need
   a Vite up). In practice: open a second terminal first and run
@@ -104,6 +104,7 @@ with `L.marker([position.z, position.x])` lands at the visually correct
 spot on the SVG without any per-call math.
 
 Per-map calibration lives in `packages/shared/src/maps.ts`:
+
 - `transform: [scaleX, offsetX, scaleY, offsetY]` — fed to
   `L.Transformation(scaleX, offsetX, -scaleY, offsetY)` (scaleY is
   negated to flip the Leaflet lat axis).
@@ -184,7 +185,7 @@ fields (zod-validated, versioned `STORAGE_KEY = "tarkov-checker:settings:v3"`):
   the composable compares each incoming `(x, z)` against the last followed
   point and only re-centers when it actually changed (skips spam updates
   when the player is standing still). Zoom level per step is `initialZoom +
-  FOLLOW_ZOOM_DELTA[mode]`.
+FOLLOW_ZOOM_DELTA[mode]`.
 - `mapCode` — current Tarkov map
 - `overlayAlwaysOnTop`, `overlayClickThrough`, `overlayOpacity` (0.3–1),
   `overlayZoom` (`"75" | "100" | "125" | "150"`) — overlay-only, see
@@ -214,6 +215,7 @@ center). Earlier `CircleMarker` is gone. The `extracts` Leaflet pane is a
 custom `<div>` (z 500) and needs an explicit CSS override in `styles.css`
 to undo Tailwind preflight's `img { max-width: 100% }` — without it the
 marker img collapses to width:0:
+
 ```
 .leaflet-extracts-pane img.leaflet-marker-icon {
   max-width: none !important; max-height: none !important; width: auto;
@@ -234,9 +236,10 @@ Frontend access to window APIs goes through `useTauriOverlay()`
 no-op so the same code path serves both.
 
 **Overlay controls** (only rendered when `isTauri`):
+
 - **Drag region** — the WS-status pill in `App.vue`'s top-right cluster.
   Uses an explicit `@mousedown` handler that calls `getCurrentWindow().
-  startDragging()` rather than `data-tauri-drag-region` attribute, which
+startDragging()` rather than `data-tauri-drag-region` attribute, which
   is flaky on `decorations: false + transparent: true` windows. Child
   `<i>` and `<span>` inside the pill have `pointer-events: none` so the
   drag start always lands on the pill itself.
@@ -248,12 +251,12 @@ no-op so the same code path serves both.
   `overlayClickThrough` in the store. Click on the open lock locks the
   window; **only the global hotkey can unlock it**, because once
   click-through is on the lock button itself isn't clickable. App.vue
-  *always* resets `overlayClickThrough` to `false` on Tauri startup —
+  _always_ resets `overlayClickThrough` to `false` on Tauri startup —
   the locked state intentionally doesn't persist across sessions, so
   the app can't boot into an unrecoverable lockout.
 - **Opacity slider** — calls `Window.setOpacity()` (Windows Layered
   Window API). If the call rejects (the permission `core:window:
-  allow-set-opacity` doesn't exist in Tauri 2.11.x), the composable
+allow-set-opacity` doesn't exist in Tauri 2.11.x), the composable
   silently falls back to `document.documentElement.style.opacity` so the
   slider remains visually responsive.
 - **Zoom** — `WebviewWindow.setZoom(factor)`.
@@ -266,6 +269,7 @@ both `Pressed` and `Released` — toggle only on `Pressed`.
 **Capabilities** (`apps/desktop/src-tauri/capabilities/default.json`)
 must include the privileged window ops explicitly — `core:default`
 covers basics only:
+
 ```
 core:window:allow-set-always-on-top
 core:window:allow-set-ignore-cursor-events
@@ -276,10 +280,12 @@ global-shortcut:allow-register
 global-shortcut:allow-unregister
 global-shortcut:allow-is-registered
 ```
+
 Forgetting any of these → IPC calls reject with a permission error;
 the JS side has no obvious feedback unless you check the webview console.
 
 **Transparency** requires both:
+
 1. `transparent: true` in tauri.conf.json
 2. `html, body, #app { background: transparent; }` in styles.css (and no
    `bg-*` on `index.html`'s `<body>`)
@@ -294,17 +300,18 @@ the JS side has no obvious feedback unless you check the webview console.
 Lives under `apps/desktop/src-tauri/src/server/`. Mirrors the Node
 modules in `apps/server/src/` 1:1 so cross-checking stays cheap:
 
-| Node (LAN backend) | Rust (in-process) | Purpose |
-|---|---|---|
-| `watchers/screenshots.ts` | `server/screenshots.rs` | chokidar `awaitWriteFinish` → `notify-debouncer-full` 250 ms |
-| `watchers/paths.ts` + `registry.ts` | `server/paths.rs` | `reg query` subprocess → `winreg` direct |
-| `config-store.ts` | `server/config.rs` | JSON in `apps/server/data/` → `%APPDATA%/tarkov-checker/` |
-| `extracts-cache.ts` | `server/extracts.rs` | per-lang `inFlight` Map → outer `tokio::sync::Mutex` (single user, serializing is cheap) |
-| `ws.ts` Hub broadcast | `app.emit("position", ...)` | WS fan-out → Tauri event |
-| `GET/PUT /api/config`, `GET /api/extracts` | `commands::{get_config, update_config, get_extracts}` | HTTP routes → IPC commands |
+| Node (LAN backend)                         | Rust (in-process)                                     | Purpose                                                                                  |
+| ------------------------------------------ | ----------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `watchers/screenshots.ts`                  | `server/screenshots.rs`                               | chokidar `awaitWriteFinish` → `notify-debouncer-full` 250 ms                             |
+| `watchers/paths.ts` + `registry.ts`        | `server/paths.rs`                                     | `reg query` subprocess → `winreg` direct                                                 |
+| `config-store.ts`                          | `server/config.rs`                                    | JSON in `apps/server/data/` → `%APPDATA%/tarkov-checker/`                                |
+| `extracts-cache.ts`                        | `server/extracts.rs`                                  | per-lang `inFlight` Map → outer `tokio::sync::Mutex` (single user, serializing is cheap) |
+| `ws.ts` Hub broadcast                      | `app.emit("position", ...)`                           | WS fan-out → Tauri event                                                                 |
+| `GET/PUT /api/config`, `GET /api/extracts` | `commands::{get_config, update_config, get_extracts}` | HTTP routes → IPC commands                                                               |
 
 Frontend doesn't know which backend it talks to. Switch is in two
 places only:
+
 - `apps/client/src/composables/useServerTransport.ts` — Tauri:
   `listen('position', ...)` + status hard-coded to `"open"`. Browser:
   delegates to the legacy `useWebSocket` composable.
@@ -337,16 +344,17 @@ Fixing each one separately got the Tauri build green:
 
 1. **HVCI / Memory Integrity must be OFF.** Windows 11's Core Isolation
    (`Settings → Privacy & security → Windows Security → Device security →
-   Core isolation`) crashes rustc on heavy crates (random `0xc0000005`
+Core isolation`) crashes rustc on heavy crates (random `0xc0000005`
    in different crates each run, often as deep as ~250/355). Disable
    "Memory integrity", reboot. Verify with:
    `(Get-CimInstance Win32_DeviceGuard -Namespace 'root\Microsoft\Windows\
-   DeviceGuard').SecurityServicesRunning` → should be empty/`0`. VBS
+DeviceGuard').SecurityServicesRunning` → should be empty/`0`. VBS
    itself can stay running (LSA protection uses it).
 
 2. **Defender re-enables itself after reboot.** Manually toggling
    Windows Defender off does **not** persist. Use permanent exclusions
    (admin PowerShell):
+
    ```
    Add-MpPreference -ExclusionPath 'C:\Users\<u>\.cargo'
    Add-MpPreference -ExclusionPath 'C:\Users\<u>\.rustup'
@@ -382,7 +390,7 @@ Fixing each one separately got the Tauri build green:
    scripts (`embed-resource`, `ring`, `httparse`, ...) intermittently
    fail to spawn with `Os { code: 5, kind: PermissionDenied }` ("Отказано
    в доступе") or crash partway with `STATUS_ACCESS_VIOLATION
-   (0xc0000005)`. Different crate each run, no consistent culprit.
+(0xc0000005)`. Different crate each run, no consistent culprit.
    Cargo is incremental — each retry resumes from the last finished
    crate. Plan for 5–10 retries on a fresh release build, fewer on
    incremental ones. Most likely cause is Smart App Control or Tamper
@@ -400,11 +408,11 @@ Fixing each one separately got the Tauri build green:
 Single workflow at `.github/workflows/build-overlay.yml`, runs on
 `windows-latest`. Three triggers, three distinct behaviours:
 
-| Trigger                  | CI runs | Artifact (30 d) | GitHub Release |
-| ------------------------ | :-----: | :-------------: | :------------: |
-| `workflow_dispatch`      |   ✅    |       ✅        |       ❌       |
-| `push` to `master`       |   ✅    |       ✅        |       ❌       |
-| `push` of `v*` tag       |   ✅    |       ✅        |       ✅       |
+| Trigger             | CI runs | Artifact (30 d) | GitHub Release |
+| ------------------- | :-----: | :-------------: | :------------: |
+| `workflow_dispatch` |   ✅    |       ✅        |       ❌       |
+| `push` to `master`  |   ✅    |       ✅        |       ❌       |
+| `push` of `v*` tag  |   ✅    |       ✅        |       ✅       |
 
 Master pushes are CI-gate-only on purpose — not every merge is a
 release, and auto-publishing would spam the Releases tab.

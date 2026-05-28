@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useOverlayStore } from "../store";
-import { opacityPercentBinding } from "../lib/opacity";
+import { useOverlayStore } from '../store';
+import { opacityPercentBinding } from '../lib/opacity';
 
 const { opacity: overlayOpacity, mapOpacity: overlayMapOpacity } = storeToRefs(useOverlayStore());
 const { t } = useI18n();
@@ -35,8 +35,8 @@ function close(): void {
 onClickOutside(panelRef, () => close());
 
 // Esc to dismiss.
-useEventListener(window, "keydown", (e) => {
-  if (e.key === "Escape" && position.value) close();
+useEventListener(window, 'keydown', (e) => {
+  if (e.key === 'Escape' && position.value) close();
 });
 
 defineExpose({ open, close });

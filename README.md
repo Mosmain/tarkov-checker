@@ -1,6 +1,6 @@
 # tarkov-checker
 
-*English below · [Русский ниже](#tarkov-checker-русская-версия)*
+_English below · [Русский ниже](#tarkov-checker-русская-версия)_
 
 Live in-raid map for Escape from Tarkov. Watches Tarkov's screenshot
 folder, parses your position from F12-overlay filenames, and renders

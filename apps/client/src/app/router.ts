@@ -1,7 +1,7 @@
-import { createRouter, createMemoryHistory, createWebHistory } from "vue-router";
-import { routes } from "vue-router/auto-routes";
+import { createRouter, createMemoryHistory, createWebHistory } from 'vue-router';
+import { routes } from 'vue-router/auto-routes';
 
-const isTauri = "__TAURI_INTERNALS__" in window;
+const isTauri = '__TAURI_INTERNALS__' in window;
 
 /**
  * Route table is generated from src/pages/*.vue at build time by the

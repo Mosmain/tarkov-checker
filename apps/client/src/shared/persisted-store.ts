@@ -1,4 +1,4 @@
-import type { z } from "zod";
+import type { z } from 'zod';
 
 /**
  * Reactive ref backed by localStorage, validated against a zod schema on read.
@@ -15,7 +15,7 @@ export function persistedRef<T extends z.ZodTypeAny>(
   defaultValue: z.infer<T>,
 ): Ref<z.infer<T>> {
   let initial = defaultValue;
-  if (typeof localStorage !== "undefined") {
+  if (typeof localStorage !== 'undefined') {
     const raw = localStorage.getItem(key);
     if (raw !== null) {
       try {
@@ -30,7 +30,7 @@ export function persistedRef<T extends z.ZodTypeAny>(
   watch(
     r,
     (value) => {
-      if (typeof localStorage === "undefined") return;
+      if (typeof localStorage === 'undefined') return;
       localStorage.setItem(key, JSON.stringify(value));
     },
     { deep: true },

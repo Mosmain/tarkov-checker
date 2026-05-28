@@ -1,7 +1,7 @@
-import chokidar from "chokidar";
-import type { FastifyBaseLogger } from "fastify";
-import { parseScreenshotFilename, quaternionToYawDegrees } from "@tarkov-checker/shared";
-import type { Hub } from "../ws.js";
+import chokidar from 'chokidar';
+import type { FastifyBaseLogger } from 'fastify';
+import { parseScreenshotFilename, quaternionToYawDegrees } from '@tarkov-checker/shared';
+import type { Hub } from '../ws.js';
 
 export interface ScreenshotWatcher {
   stop: () => Promise<void>;
@@ -26,13 +26,13 @@ export function startScreenshotWatcher(
     awaitWriteFinish: { stabilityThreshold: 250, pollInterval: 50 },
   });
 
-  watcher.on("add", (filePath) => {
+  watcher.on('add', (filePath) => {
     const parsed = parseScreenshotFilename(filePath);
     if (!parsed) return;
     const yaw = parsed.orientation ? quaternionToYawDegrees(parsed.orientation) : null;
-    log.info({ filePath, position: parsed.position, yaw }, "screenshot position");
+    log.info({ filePath, position: parsed.position, yaw }, 'screenshot position');
     hub.broadcast({
-      type: "position",
+      type: 'position',
       t: Date.now(),
       x: parsed.position.x,
       y: parsed.position.y,
@@ -41,11 +41,11 @@ export function startScreenshotWatcher(
     });
   });
 
-  watcher.on("error", (err) => {
-    log.warn({ err }, "screenshot watcher error");
+  watcher.on('error', (err) => {
+    log.warn({ err }, 'screenshot watcher error');
   });
 
-  log.info({ screenshotDir }, "screenshot watcher started");
+  log.info({ screenshotDir }, 'screenshot watcher started');
 
   return {
     stop: () => watcher.close(),

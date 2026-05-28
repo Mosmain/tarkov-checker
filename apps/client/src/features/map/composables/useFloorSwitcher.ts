@@ -47,16 +47,16 @@ export function useFloorSwitcher(
       const group = groupsByFid.get(fid);
       if (!group) continue;
       if (fid === id) {
-        group.style.display = "";
-        group.style.opacity = "";
+        group.style.display = '';
+        group.style.opacity = '';
       } else if (fid === ground) {
         // Ground is the persistent context — always visible, dimmed when
         // another floor sits on top.
-        group.style.display = "";
-        group.style.opacity = "0.15";
+        group.style.display = '';
+        group.style.opacity = '0.15';
       } else {
-        group.style.display = "none";
-        group.style.opacity = "";
+        group.style.display = 'none';
+        group.style.opacity = '';
       }
     }
     // SVG draws later siblings on top of earlier ones. Move the active group

@@ -1,6 +1,6 @@
-import { useOverlayStore } from "../store";
-import { useTauriOverlay } from "./useTauriOverlay";
-import { opacityPercentBinding } from "../lib/opacity";
+import { useOverlayStore } from '../store';
+import { useTauriOverlay } from './useTauriOverlay';
+import { opacityPercentBinding } from '../lib/opacity';
 
 export interface UseOverlaySync {
   opacityPercent: WritableComputedRef<number>;
@@ -41,7 +41,7 @@ export function useOverlaySync(): UseOverlaySync {
   // the disabled-slider hint.
   function applyMapBgAlpha(): void {
     const effective = overlayOpacity.value < 1 ? overlayMapOpacity.value : 1;
-    document.documentElement.style.setProperty("--map-bg-alpha", String(effective));
+    document.documentElement.style.setProperty('--map-bg-alpha', String(effective));
   }
   applyMapBgAlpha();
   watch([overlayOpacity, overlayMapOpacity], applyMapBgAlpha);

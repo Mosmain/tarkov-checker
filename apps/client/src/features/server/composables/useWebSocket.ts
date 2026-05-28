@@ -1,26 +1,26 @@
-import { serverMessage } from "@shared/ws-messages";
-import { dispatchServerEvent } from "./useServerEvents";
+import { serverMessage } from '@shared/ws-messages';
+import { dispatchServerEvent } from './useServerEvents';
 
-export type WsStatus = "connecting" | "open" | "closed";
+export type WsStatus = 'connecting' | 'open' | 'closed';
 
 interface UseWebSocketResult {
   status: Ref<WsStatus>;
 }
 
 export function useWebSocket(url: string): UseWebSocketResult {
-  const status = ref<WsStatus>("connecting");
+  const status = ref<WsStatus>('connecting');
   let socket: WebSocket | null = null;
 
   function connect(): void {
     socket = new WebSocket(url);
-    status.value = "connecting";
+    status.value = 'connecting';
 
-    socket.addEventListener("open", () => {
-      status.value = "open";
+    socket.addEventListener('open', () => {
+      status.value = 'open';
     });
 
-    socket.addEventListener("message", (event) => {
-      if (typeof event.data !== "string") return;
+    socket.addEventListener('message', (event) => {
+      if (typeof event.data !== 'string') return;
       try {
         const parsed: unknown = JSON.parse(event.data);
         const result = serverMessage.safeParse(parsed);
@@ -32,12 +32,12 @@ export function useWebSocket(url: string): UseWebSocketResult {
       }
     });
 
-    socket.addEventListener("close", () => {
-      status.value = "closed";
+    socket.addEventListener('close', () => {
+      status.value = 'closed';
     });
 
-    socket.addEventListener("error", () => {
-      status.value = "closed";
+    socket.addEventListener('error', () => {
+      status.value = 'closed';
     });
   }
 

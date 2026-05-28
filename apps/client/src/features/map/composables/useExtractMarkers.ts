@@ -1,8 +1,8 @@
-import L, { type Marker, type LayerGroup, type Map as LeafletMap } from "leaflet";
-import type { Extract } from "@shared/tarkov-api";
+import L, { type Marker, type LayerGroup, type Map as LeafletMap } from 'leaflet';
+import type { Extract } from '@shared/tarkov-api';
 
-export type LabelMode = "hover" | "always";
-export type LabelSize = "sm" | "md" | "lg";
+export type LabelMode = 'hover' | 'always';
+export type LabelSize = 'sm' | 'md' | 'lg';
 
 export interface UseExtractMarkers {
   addExtractMarkers: (extracts: readonly Extract[]) => void;
@@ -19,35 +19,35 @@ interface MarkerEntry {
 }
 
 const LABEL_SIZE_PX: Readonly<Record<LabelSize, string>> = {
-  sm: "9px",
-  md: "11px",
-  lg: "14px",
+  sm: '9px',
+  md: '11px',
+  lg: '14px',
 };
 
 const EXTRACT_ICON_SIZE = 26;
-const EXTRACT_ICONS: Readonly<Record<"pmc" | "scav" | "shared", L.Icon>> = {
+const EXTRACT_ICONS: Readonly<Record<'pmc' | 'scav' | 'shared', L.Icon>> = {
   pmc: L.icon({
-    iconUrl: "/icons/extracts/extract_pmc.png",
+    iconUrl: '/icons/extracts/extract_pmc.png',
     iconSize: [EXTRACT_ICON_SIZE, EXTRACT_ICON_SIZE],
     iconAnchor: [EXTRACT_ICON_SIZE / 2, EXTRACT_ICON_SIZE / 2],
     tooltipAnchor: [0, 0],
   }),
   scav: L.icon({
-    iconUrl: "/icons/extracts/extract_scav.png",
+    iconUrl: '/icons/extracts/extract_scav.png',
     iconSize: [EXTRACT_ICON_SIZE, EXTRACT_ICON_SIZE],
     iconAnchor: [EXTRACT_ICON_SIZE / 2, EXTRACT_ICON_SIZE / 2],
     tooltipAnchor: [0, 0],
   }),
   shared: L.icon({
-    iconUrl: "/icons/extracts/extract_shared.png",
+    iconUrl: '/icons/extracts/extract_shared.png',
     iconSize: [EXTRACT_ICON_SIZE, EXTRACT_ICON_SIZE],
     iconAnchor: [EXTRACT_ICON_SIZE / 2, EXTRACT_ICON_SIZE / 2],
     tooltipAnchor: [0, 0],
   }),
 };
 
-function extractIcon(faction: Extract["faction"]): L.Icon {
-  const key = (faction ?? "shared") as keyof typeof EXTRACT_ICONS;
+function extractIcon(faction: Extract['faction']): L.Icon {
+  const key = (faction ?? 'shared') as keyof typeof EXTRACT_ICONS;
   return EXTRACT_ICONS[key] ?? EXTRACT_ICONS.shared;
 }
 
@@ -56,8 +56,8 @@ const COLOCATION_TOLERANCE = 2;
 /** Radial distance from marker centre to the centre of its tooltip, in screen pixels. */
 const TOOLTIP_RING_RADIUS = 28;
 
-function factionForFilter(faction: Extract["faction"]): string {
-  return faction ?? "shared";
+function factionForFilter(faction: Extract['faction']): string {
+  return faction ?? 'shared';
 }
 
 /**
@@ -69,20 +69,20 @@ export function useExtractMarkers(map: ShallowRef<LeafletMap | null>): UseExtrac
   let extractsLayer: LayerGroup | null = null;
   const entries: MarkerEntry[] = [];
   const state = {
-    visibleFactions: new Set<string>(["pmc", "scav", "shared"]),
-    labelMode: "hover" as LabelMode,
+    visibleFactions: new Set<string>(['pmc', 'scav', 'shared']),
+    labelMode: 'hover' as LabelMode,
   };
 
   function isEntryVisible(entry: MarkerEntry): boolean {
     return state.visibleFactions.has(factionForFilter(entry.extract.faction));
   }
 
-  function buildTooltipOpts(): Omit<L.TooltipOptions, "offset" | "className"> {
+  function buildTooltipOpts(): Omit<L.TooltipOptions, 'offset' | 'className'> {
     return {
-      direction: "center",
+      direction: 'center',
       opacity: 0.95,
-      permanent: state.labelMode === "always",
-      sticky: state.labelMode === "hover",
+      permanent: state.labelMode === 'always',
+      sticky: state.labelMode === 'hover',
     };
   }
 
@@ -96,8 +96,8 @@ export function useExtractMarkers(map: ShallowRef<LeafletMap | null>): UseExtrac
         offset: entry.tooltipOffset,
         className: `extract-tooltip extract-tooltip--${factionClass}`,
       });
-      entry.marker.off("click", reopenAllPermanentTooltips);
-      entry.marker.on("click", reopenAllPermanentTooltips);
+      entry.marker.off('click', reopenAllPermanentTooltips);
+      entry.marker.on('click', reopenAllPermanentTooltips);
     }
   }
 
@@ -107,7 +107,7 @@ export function useExtractMarkers(map: ShallowRef<LeafletMap | null>): UseExtrac
    * marker's tooltip after each click so they stay parked.
    */
   function reopenAllPermanentTooltips(): void {
-    if (state.labelMode !== "always") return;
+    if (state.labelMode !== 'always') return;
     setTimeout(() => {
       for (const entry of entries) {
         if (isEntryVisible(entry)) entry.marker.openTooltip();
@@ -169,7 +169,7 @@ export function useExtractMarkers(map: ShallowRef<LeafletMap | null>): UseExtrac
     for (const ex of extracts) {
       const marker = L.marker([ex.position.z, ex.position.x], {
         icon: extractIcon(ex.faction),
-        pane: "extracts",
+        pane: 'extracts',
       });
       entries.push({ marker, extract: ex, tooltipOffset: [0, -TOOLTIP_RING_RADIUS] });
     }
@@ -184,14 +184,14 @@ export function useExtractMarkers(map: ShallowRef<LeafletMap | null>): UseExtrac
   }
 
   function setLabelSize(size: LabelSize): void {
-    document.documentElement.style.setProperty("--extract-label-size", LABEL_SIZE_PX[size]);
+    document.documentElement.style.setProperty('--extract-label-size', LABEL_SIZE_PX[size]);
   }
 
   function setLabelMode(mode: LabelMode): void {
     if (state.labelMode === mode) return;
     state.labelMode = mode;
     applyTooltipBindings();
-    if (mode === "hover") {
+    if (mode === 'hover') {
       for (const entry of entries) {
         entry.marker.closeTooltip();
       }
@@ -204,8 +204,8 @@ export function useExtractMarkers(map: ShallowRef<LeafletMap | null>): UseExtrac
   watch(
     map,
     (m, prev) => {
-      if (prev) prev.off("click", reopenAllPermanentTooltips);
-      if (m) m.on("click", reopenAllPermanentTooltips);
+      if (prev) prev.off('click', reopenAllPermanentTooltips);
+      if (m) m.on('click', reopenAllPermanentTooltips);
     },
     { immediate: true },
   );

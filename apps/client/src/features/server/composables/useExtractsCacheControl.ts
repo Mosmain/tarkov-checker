@@ -1,6 +1,10 @@
-import { fetchAllExtracts, getCacheTimestamp, refreshExtracts } from "@/features/map/api/tarkov-dev";
-import { useI18nStore } from "@/features/i18n/store";
-import { TARKOV_MAPS, type TarkovMapCode } from "@shared/maps";
+import {
+  fetchAllExtracts,
+  getCacheTimestamp,
+  refreshExtracts,
+} from '@/features/map/api/tarkov-dev';
+import { useI18nStore } from '@/features/i18n/store';
+import { TARKOV_MAPS, type TarkovMapCode } from '@shared/maps';
 
 export interface UseExtractsCacheControl {
   mapLabelFor: (code: TarkovMapCode) => string;
@@ -67,10 +71,10 @@ export function useExtractsCacheControl(): UseExtractsCacheControl {
 
   const cacheRelativeAge = computed(() => {
     const ts = cacheTimestamp.value;
-    if (!ts) return t("cache.never");
+    if (!ts) return t('cache.never');
     const ms = Date.now() - ts;
     const minutes = Math.round(ms / 60_000);
-    if (minutes < 1) return "<1m";
+    if (minutes < 1) return '<1m';
     if (minutes < 60) return `${minutes}m`;
     const hours = Math.round(minutes / 60);
     if (hours < 24) return `${hours}h`;

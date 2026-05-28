@@ -1,6 +1,6 @@
-import { createI18n } from "vue-i18n";
-import en from "./locales/en.json";
-import type { ApiLang } from "./store";
+import { createI18n } from 'vue-i18n';
+import en from './locales/en.json';
+import type { ApiLang } from './store';
 
 /**
  * Translation messages for every locale we support. Keys are the JSON file
@@ -16,14 +16,14 @@ type MessageSchema = typeof en;
 
 export const i18n = createI18n<MessageSchema, ApiLang, false>({
   legacy: false,
-  locale: "en",
-  fallbackLocale: "en",
+  locale: 'en',
+  fallbackLocale: 'en',
   messages: { en } as Record<ApiLang, MessageSchema>,
   missingWarn: false,
   fallbackWarn: false,
 });
 
-const loaded = new Set<ApiLang>(["en"]);
+const loaded = new Set<ApiLang>(['en']);
 
 /**
  * Set the active UI locale, lazy-loading its JSON the first time it's

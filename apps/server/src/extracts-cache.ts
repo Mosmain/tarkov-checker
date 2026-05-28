@@ -1,9 +1,9 @@
-import * as fs from "node:fs/promises";
-import * as path from "node:path";
-import { z } from "zod";
-import { mapExtracts, type MapExtracts } from "@tarkov-checker/shared";
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
+import { z } from 'zod';
+import { mapExtracts, type MapExtracts } from '@tarkov-checker/shared';
 
-const TARKOV_DEV_URL = "https://api.tarkov.dev/graphql";
+const TARKOV_DEV_URL = 'https://api.tarkov.dev/graphql';
 
 const cacheEntrySchema = z.object({
   fetchedAt: z.number().int().nonnegative(),
@@ -31,18 +31,18 @@ export class ExtractsCache {
 
   async load(): Promise<void> {
     try {
-      const text = await fs.readFile(this.filePath, "utf8");
+      const text = await fs.readFile(this.filePath, 'utf8');
       const parsed = cacheFileSchema.safeParse(JSON.parse(text));
       this.store = parsed.success ? parsed.data : {};
     } catch (err) {
-      if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+      if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
       this.store = {};
     }
   }
 
   private async persist(): Promise<void> {
     await fs.mkdir(path.dirname(this.filePath), { recursive: true });
-    await fs.writeFile(this.filePath, JSON.stringify(this.store, null, 2), "utf8");
+    await fs.writeFile(this.filePath, JSON.stringify(this.store, null, 2), 'utf8');
   }
 
   /** Returns the cached entry for the given language, or null if no entry exists. */
@@ -93,8 +93,8 @@ export class ExtractsCache {
   private async fetchTarkovDev(lang: string): Promise<MapExtracts[]> {
     const query = `{ maps(lang: ${lang}) { nameId name extracts { name faction position { x y z } } } }`;
     const response = await fetch(TARKOV_DEV_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query }),
     });
     if (!response.ok) {
@@ -102,10 +102,10 @@ export class ExtractsCache {
     }
     const payload = (await response.json()) as GraphQLResponse<{ maps: unknown }>;
     if (payload.errors && payload.errors.length > 0) {
-      throw new Error(`tarkov.dev API: ${payload.errors.map((e) => e.message).join("; ")}`);
+      throw new Error(`tarkov.dev API: ${payload.errors.map((e) => e.message).join('; ')}`);
     }
     if (!payload.data) {
-      throw new Error("tarkov.dev API: empty response");
+      throw new Error('tarkov.dev API: empty response');
     }
     return extractsResponseSchema.parse(payload.data).maps;
   }

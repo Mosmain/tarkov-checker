@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 export const position3d = z.object({
   x: z.number(),
@@ -6,7 +6,7 @@ export const position3d = z.object({
   z: z.number(),
 });
 
-export const extractFaction = z.enum(["pmc", "scav", "shared"]);
+export const extractFaction = z.enum(['pmc', 'scav', 'shared']);
 
 export const extract = z.object({
   name: z.string(),

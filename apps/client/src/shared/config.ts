@@ -7,7 +7,7 @@
  * IPC + position events), but the helpers stay safe to call regardless.
  */
 
-const SERVER_PORT = import.meta.env.VITE_SERVER_PORT || "3000";
+const SERVER_PORT = import.meta.env.VITE_SERVER_PORT || '3000';
 
 export function apiBase(): string {
   return `http://${window.location.hostname}:${SERVER_PORT}`;

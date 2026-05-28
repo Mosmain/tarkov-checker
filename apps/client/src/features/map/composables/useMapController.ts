@@ -12,7 +12,7 @@ export interface MapController {
   prevFloor: () => void;
 }
 
-export const MapControllerKey: InjectionKey<MapController> = Symbol("MapController");
+export const MapControllerKey: InjectionKey<MapController> = Symbol('MapController');
 
 const NOOP_CONTROLLER: MapController = {
   zoomIn: () => undefined,

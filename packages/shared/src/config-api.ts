@@ -1,6 +1,6 @@
-import { z } from "zod";
+import { z } from 'zod';
 
-export const pathSourceSchema = z.enum(["env", "manual", "detected", "missing"]);
+export const pathSourceSchema = z.enum(['env', 'manual', 'detected', 'missing']);
 
 export const resolvedPathSchema = z.object({
   value: z.string().nullable(),

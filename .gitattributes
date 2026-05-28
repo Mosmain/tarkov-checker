@@ -1,0 +1,20 @@
+# Normalize all text files to LF in the working tree, regardless of the
+# contributor's core.autocrlf setting. Without this, Windows checkouts
+# convert LF -> CRLF and `pnpm format:check` fails on every fresh clone.
+* text=auto eol=lf
+
+# Binary assets — never touch line endings (defensive; text=auto already
+# detects most of these, but explicit is safer for fonts/images).
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.svg   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
+*.eot   binary
+*.pdf   binary
+*.exe   binary

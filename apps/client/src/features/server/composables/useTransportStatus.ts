@@ -1,6 +1,6 @@
-import type { TransportStatus } from "./useServerTransport";
+import type { TransportStatus } from './useServerTransport';
 
-const TransportStatusKey: InjectionKey<Ref<TransportStatus>> = Symbol("TransportStatus");
+const TransportStatusKey: InjectionKey<Ref<TransportStatus>> = Symbol('TransportStatus');
 
 /**
  * App-root provides the live transport status; route views read it via
@@ -12,5 +12,5 @@ export function provideTransportStatus(status: Ref<TransportStatus>): void {
 }
 
 export function useTransportStatus(): Ref<TransportStatus> {
-  return inject(TransportStatusKey, ref<TransportStatus>("connecting"));
+  return inject(TransportStatusKey, ref<TransportStatus>('connecting'));
 }

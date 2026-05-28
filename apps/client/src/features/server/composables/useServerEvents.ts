@@ -1,4 +1,4 @@
-import type { ServerMessage, ServerMessageType } from "@shared/ws-messages";
+import type { ServerMessage, ServerMessageType } from '@shared/ws-messages';
 
 type EventMap = {
   [K in ServerMessageType]: Extract<ServerMessage, { type: K }>;
@@ -49,10 +49,7 @@ export function onServerEvent<K extends ServerMessageType>(
  * effect scope disposes (component unmount, EffectScope.stop, etc.).
  * Subscription is active immediately — no onMounted delay.
  */
-export function useServerEvent<K extends ServerMessageType>(
-  type: K,
-  handler: Handler<K>,
-): void {
+export function useServerEvent<K extends ServerMessageType>(type: K, handler: Handler<K>): void {
   const off = onServerEvent(type, handler);
   onScopeDispose(off);
 }

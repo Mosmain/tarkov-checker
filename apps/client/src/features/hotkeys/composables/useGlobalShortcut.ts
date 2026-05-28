@@ -7,11 +7,7 @@
  *
  * In browser context all of this is a no-op so the same code lives in both.
  */
-export function useGlobalShortcut(
-  isTauri: boolean,
-  combo: Ref<string>,
-  action: () => void,
-): void {
+export function useGlobalShortcut(isTauri: boolean, combo: Ref<string>, action: () => void): void {
   let registered: string | null = null;
   // Prevents the watch from looping when we revert combo.value after a
   // failed registration.
@@ -19,9 +15,7 @@ export function useGlobalShortcut(
 
   async function tryRegister(next: string): Promise<boolean> {
     if (!isTauri) return false;
-    const { register, unregister } = await import(
-      "@tauri-apps/plugin-global-shortcut"
-    );
+    const { register, unregister } = await import('@tauri-apps/plugin-global-shortcut');
     if (registered) {
       try {
         await unregister(registered);
@@ -41,13 +35,13 @@ export function useGlobalShortcut(
     try {
       await register(next, (e) => {
         // Plugin fires both "Pressed" and "Released" — trigger on Pressed only.
-        if (e.state === "Pressed") action();
+        if (e.state === 'Pressed') action();
       });
       registered = next;
       return true;
     } catch (err) {
       // eslint-disable-next-line no-console
-      console.error("[hotkey] failed to register", next, err);
+      console.error('[hotkey] failed to register', next, err);
       return false;
     }
   }
@@ -72,7 +66,7 @@ export function useGlobalShortcut(
 
   onBeforeUnmount(async () => {
     if (!isTauri || !registered) return;
-    const { unregister } = await import("@tauri-apps/plugin-global-shortcut");
+    const { unregister } = await import('@tauri-apps/plugin-global-shortcut');
     try {
       await unregister(registered);
     } catch {

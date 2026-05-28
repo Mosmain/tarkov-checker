@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useTauriOverlay } from "@/features/overlay/composables/useTauriOverlay";
-import { useServerPaths } from "@/features/server/composables/useServerPaths";
+import { useTauriOverlay } from '@/features/overlay/composables/useTauriOverlay';
+import { useServerPaths } from '@/features/server/composables/useServerPaths';
 
 const props = defineProps<{
   /** Toggled by the parent drawer. Used as a retry trigger when the eager
@@ -13,7 +13,7 @@ const { t } = useI18n();
 
 // Tarkov paths are unreachable from a phone over LAN (the browser can't see
 // C:\EFT), but the Tauri overlay always runs on the same machine as Tarkov.
-const isDesktop = useMediaQuery("(min-width: 640px)");
+const isDesktop = useMediaQuery('(min-width: 640px)');
 const canEditPaths = computed(() => overlay.isTauri || isDesktop.value);
 
 const {
@@ -50,7 +50,7 @@ watch(
     <div v-if="serverConfig" class="space-y-3">
       <div>
         <label class="mb-1 block text-xs opacity-70" for="game-dir-input">
-          {{ t("paths.gameDir") }}
+          {{ t('paths.gameDir') }}
         </label>
         <IconField :title="serverConfig.gameDir.exists ? '' : t('paths.missingTooltip')">
           <InputIcon :class="statusIconClass('gameDir')" />
@@ -64,17 +64,14 @@ watch(
             fluid
           />
         </IconField>
-        <p
-          class="mt-1 truncate text-[10px] opacity-50"
-          :title="serverConfig.logsDir.value ?? ''"
-        >
-          {{ t("paths.logsDir") }}: {{ serverConfig.logsDir.value ?? "—" }}
+        <p class="mt-1 truncate text-[10px] opacity-50" :title="serverConfig.logsDir.value ?? ''">
+          {{ t('paths.logsDir') }}: {{ serverConfig.logsDir.value ?? '—' }}
         </p>
       </div>
 
       <div>
         <label class="mb-1 block text-xs opacity-70" for="screenshots-dir-input">
-          {{ t("paths.screenshotsDir") }}
+          {{ t('paths.screenshotsDir') }}
         </label>
         <IconField :title="serverConfig.screenshotsDir.exists ? '' : t('paths.missingTooltip')">
           <InputIcon :class="statusIconClass('screenshotsDir')" />
@@ -92,7 +89,7 @@ watch(
 
       <div v-if="canEditPaths" class="flex items-center justify-end gap-2">
         <span v-if="pathsJustSaved" class="text-[11px] text-green-400">
-          {{ t("paths.saved") }}
+          {{ t('paths.saved') }}
         </span>
         <Button
           :label="t('paths.save')"
@@ -104,7 +101,7 @@ watch(
       </div>
 
       <p v-else class="text-[10px] leading-relaxed opacity-50">
-        {{ t("paths.mobileHint") }}
+        {{ t('paths.mobileHint') }}
       </p>
     </div>
   </Fieldset>
