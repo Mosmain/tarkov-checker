@@ -147,6 +147,15 @@ export default defineConfig(({ mode }) => ({
     watch: {
       ignored: ['**/src-tauri/**'],
     },
+    // One-origin dev: page is served by Vite (:5173), backend by Fastify
+    // (:3000), but the browser sees both at :5173. Removes CORS entirely
+    // (was previously needed for /api/* preflights and the hijacked /events
+    // response). http-proxy passes through chunked transfer-encoding, so
+    // the SSE stream survives the hop without buffering.
+    proxy: {
+      '/api': { target: 'http://localhost:3000', changeOrigin: false },
+      '/events': { target: 'http://localhost:3000', changeOrigin: false },
+    },
   },
   build: {
     // Matches tsconfig.base.json's target — lets Vite skip down-leveling syntax

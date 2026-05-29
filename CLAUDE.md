@@ -42,8 +42,14 @@ Two independent dev scenarios:
 - **LAN/phone mode**: `pnpm dev` from repo root runs `turbo run dev` —
   brings up the Node server (`:3000`) and the Vite dev server (`:5173`,
   host `0.0.0.0`) in parallel. Phone on the same LAN visits
-  `http://<pc-ip>:5173` and the client falls back to its WS+HTTP path.
-  This flow does **not** involve the Tauri overlay.
+  `http://<pc-ip>:5173`; Vite proxies `/api/*` and `/events` to the
+  Fastify backend on :3000 (see `server.proxy` in `vite.config.ts`), so
+  the browser only ever sees one origin. **Prod LAN mode** (no Vite):
+  `pnpm build` then `pnpm --filter @tarkov-checker/server start` —
+  Fastify serves the built SPA from `apps/client/dist/` plus its own
+  `/api` + `/events`. Phone hits `http://<pc-ip>:3000` for both. CORS is
+  not configured anywhere because there's never a cross-origin request.
+  Neither flow involves the Tauri overlay.
 
 `apps/desktop/src-tauri/tauri.conf.json` keeps `beforeDevCommand` empty
 so Vite isn't double-spawned when run under Turbo.
@@ -194,10 +200,6 @@ config file > registry auto-detect. `logsDir` is always derived from
 tooling sometimes sets `PORT=5173` for the whole runner. Don't read
 `PORT` in the Node server. The Rust port doesn't listen on any TCP
 port at all.
-
-`@fastify/cors` (Node side) must whitelist `PUT` explicitly — its
-default methods list is `GET,HEAD,POST` and the preflight responds
-with 204 but the actual PUT then gets dropped silently in the browser.
 
 ## User settings
 

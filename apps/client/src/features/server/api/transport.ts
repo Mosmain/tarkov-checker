@@ -3,8 +3,8 @@
  * runs both inside the Tauri overlay and as a plain browser PWA:
  *
  * - In Tauri: invokes a named IPC command via `@tauri-apps/api/core`.
- * - In a plain browser: calls the LAN Node server (apps/server) over HTTP at
- *   the port from VITE_SERVER_PORT (default 3000).
+ * - In a plain browser: makes a same-origin HTTP call (Vite proxies /api to
+ *   Fastify in dev; Fastify serves both the SPA and /api in prod).
  *
  * The raw response is fed through `parse` (typically a zod schema's `.parse`)
  * so callers get a validated, typed result either way.

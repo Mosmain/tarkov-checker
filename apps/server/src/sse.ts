@@ -42,20 +42,14 @@ export function registerSse(app: FastifyInstance, hub: Hub): void {
     reply.hijack();
     const res = reply.raw;
 
-    const headers: Record<string, string> = {
+    // Page and backend live on the same origin in both dev (Vite proxies
+    // /events) and prod (Fastify serves the SPA directly), so no CORS
+    // headers needed.
+    res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache, no-transform',
       Connection: 'keep-alive',
-    };
-    // EventSource obeys CORS (WebSocket didn't): the page is served from a
-    // different origin (:5173) than this server (:3000). hijack() bypasses
-    // @fastify/cors's reply hook, so mirror its `origin: true` policy here by
-    // reflecting the request origin — otherwise the browser won't read the
-    // stream. EventSource defaults to withCredentials=false, so no
-    // Allow-Credentials header is needed.
-    const origin = req.headers.origin;
-    if (origin) headers['Access-Control-Allow-Origin'] = origin;
-    res.writeHead(200, headers);
+    });
     // Flush headers + open the stream so the client's onopen fires promptly.
     res.write(': connected\n\n');
 

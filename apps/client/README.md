@@ -161,12 +161,6 @@ pnpm lint       # eslint --max-warnings=0
 
 Tauri overlay dev needs both this Vite server (port 5173) and `pnpm --filter @tarkov-checker/desktop tauri:dev` from a second terminal. See [CLAUDE.md → Dev workflow](../../CLAUDE.md#dev-workflow).
 
-## Environment
-
-| Var                | Default | Effect                                                                                                                  |
-| ------------------ | ------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `VITE_SERVER_PORT` | `3000`  | Port the browser/PWA client expects for the LAN Node backend. Tauri builds ignore this (in-process Rust port owns IPC). |
-
 ## Where things connect
 
 - **Server-pushed messages** (position only) — schema in [`@shared/ws-messages`](../../packages/shared/src/ws-messages.ts). Node server pushes over SSE, Rust port emits as a Tauri event; client uses the same Zod schema either way.
