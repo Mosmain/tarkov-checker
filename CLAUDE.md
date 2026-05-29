@@ -7,17 +7,18 @@
   `src-tauri/src/server/`), plus the IPC commands the webview calls.
   This is what ships as the single 6 MB `.exe`. See "Desktop overlay's
   in-process server" below.
-- `apps/server` — **LAN-only Node/Fastify backend**, kept for the
-  phone/PWA scenario (browser client connects over WS+HTTP to a PC
-  that's running `pnpm dev`). Not bundled into the desktop overlay
-  anymore — same watcher logic lives natively in `apps/desktop`. When
-  changing watcher/parser/cache behaviour, **update both ports** or
-  they'll drift.
-- `apps/client` — Vue PWA + Leaflet map. Runs both inside Tauri and as
-  a plain browser PWA on a phone. `useServerTransport` and the
+- `apps/server` — **LAN-only Node/Fastify backend** for the phone-as-
+  second-screen scenario: serves the built SPA from `apps/client/dist/`
+  via `@fastify/static`, plus `/api/config` and `/events` (SSE). Not
+  bundled into the desktop overlay — the same watcher logic lives
+  natively in `apps/desktop`. When changing watcher/parser/cache
+  behaviour, **update both ports** or they'll drift.
+- `apps/client` — Vue + Leaflet map. Runs both inside Tauri and as a
+  plain browser page on a phone. `useServerTransport` and the
   `api/*.ts` files branch on `"__TAURI_INTERNALS__" in window`: Tauri
-  → `invoke(...)` + `listen('position', ...)`; browser → `fetch
-http://<host>:3000` + `new EventSource(.../events)` (SSE).
+  → `invoke(...)` + `listen('position', ...)`; browser → same-origin
+  `fetch('/api/*')` + `new EventSource('/events')` (Vite proxies to
+  Fastify in dev; Fastify owns everything in prod).
 - `packages/shared` — source of truth for the position payload shape
   (zod schemas + inferred types, consumed by client + Node server) and
   for the raw-code → display-name + SVG-filename table in `src/maps.ts`
@@ -484,5 +485,3 @@ yourself debugging local rustc crashes again, push a tag instead.**
   reproducibility matters. `2>&1` in PowerShell with native commands
   wraps stderr as ErrorRecord and trips `$?` even on success; use the
   default stream behaviour and let PS capture both streams to file.
-- PWA icons under `apps/client/public/icons/` (root) are placeholders
-  separate from the Tauri ones in `apps/desktop/src-tauri/icons/`.

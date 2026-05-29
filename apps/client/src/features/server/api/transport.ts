@@ -1,6 +1,6 @@
 /**
  * Single dispatch point for client→backend reads/writes. The same client code
- * runs both inside the Tauri overlay and as a plain browser PWA:
+ * runs both inside the Tauri overlay and as a plain browser page:
  *
  * - In Tauri: invokes a named IPC command via `@tauri-apps/api/core`.
  * - In a plain browser: makes a same-origin HTTP call (Vite proxies /api to

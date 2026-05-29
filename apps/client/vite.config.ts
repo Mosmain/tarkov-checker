@@ -6,7 +6,6 @@ import AutoImport from 'unplugin-auto-import/vite';
 import Components from 'unplugin-vue-components/vite';
 import { PrimeVueResolver } from '@primevue/auto-import-resolver';
 import tailwindcss from '@tailwindcss/vite';
-import { VitePWA } from 'vite-plugin-pwa';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { fileURLToPath, URL } from 'node:url';
 
@@ -69,56 +68,6 @@ export default defineConfig(({ mode }) => ({
       runtimeOnly: false,
     }),
     tailwindcss(),
-    VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg'],
-      manifest: {
-        name: 'tarkov-checker',
-        short_name: 'tarkov',
-        description: 'Escape from Tarkov live in-raid map',
-        theme_color: '#0b0b0b',
-        background_color: '#0b0b0b',
-        display: 'standalone',
-        orientation: 'portrait',
-        // TODO: replace placeholder icons before first PWA release.
-        icons: [
-          { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-        ],
-      },
-      workbox: {
-        // Precache only the app shell. The default pattern dragged in legacy
-        // font formats (.eot/.ttf/.woff — every browser we target prefers
-        // woff2), the 342 KB primeicons SVG fallback (same reason), and every
-        // map SVG from the submodule (one per Tarkov location — caching all 12
-        // up-front blows the offline budget on a feature the user only opens
-        // one map at a time). woff2 stays; .svg is handled via runtimeCaching.
-        globPatterns: ['**/*.{js,css,html,woff2,png,webmanifest}'],
-        runtimeCaching: [
-          {
-            // Map SVGs cache lazily — once the user visits a map, subsequent
-            // loads of that map work offline. New maps don't require a config
-            // change.
-            urlPattern: ({ url }) => url.pathname.startsWith('/maps/'),
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'tarkov-map-svgs',
-              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 30 },
-            },
-          },
-          {
-            // tarkov.dev GraphQL — short SWR so offline still shows the last
-            // payload while a background refresh updates it.
-            urlPattern: ({ url }) => url.hostname === 'api.tarkov.dev',
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'tarkov-dev-api',
-              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 6 },
-            },
-          },
-        ],
-      },
-    }),
     // `pnpm --filter @tarkov-checker/client analyze` runs `vite build --mode analyze`
     // and pops an interactive treemap of the production bundle.
     mode === 'analyze' &&
@@ -159,7 +108,7 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     // Matches tsconfig.base.json's target — lets Vite skip down-leveling syntax
-    // already supported by every browser the PWA + Tauri WebView2 run on.
+    // already supported by every browser and Tauri WebView2 we run on.
     target: 'es2022',
     // modulePreload polyfill targets pre-2021 Safari/Firefox; our es2022 target
     // already excludes them, so the polyfill is dead weight in index.html.

@@ -8,7 +8,7 @@ interface UseServerStreamResult {
 }
 
 /**
- * Browser/PWA transport: a Server-Sent Events stream from the LAN Node server
+ * Browser transport: a Server-Sent Events stream from the LAN Node server
  * (apps/server `GET /events`). EventSource reconnects automatically on
  * transport errors — that built-in retry is the whole point of moving off the
  * old WebSocket composable, which had no reconnect.

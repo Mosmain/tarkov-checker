@@ -15,7 +15,7 @@ const { lockHotkey } = storeToRefs(useHotkeysStore());
 
 const { isTauri } = useTauriOverlay();
 
-// Browser/PWA mode talks to the LAN Node server over SSE; Tauri mode shortcuts
+// Browser mode talks to the LAN Node server over SSE; Tauri mode shortcuts
 // that layer and listens for Rust-emitted events directly.
 const { status } = useServerTransport(eventsUrl());
 provideTransportStatus(status);

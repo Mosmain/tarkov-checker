@@ -1,6 +1,6 @@
 # @tarkov-checker/client
 
-Vue PWA + Leaflet map. Runs both inside the Tauri overlay (`apps/desktop`) and as a plain browser PWA on phones over LAN. Same code path, different transport (Tauri events vs SSE / `EventSource`).
+Vue + Leaflet map. Runs both inside the Tauri overlay (`apps/desktop`) and as a plain browser page on phones over LAN (the same prod build Fastify serves at `:3000/`). Same code path, different transport (Tauri events vs SSE / `EventSource`).
 
 Specifics about Tauri internals, Windows build quirks, and dev workflow live in [the repo CLAUDE.md](../../CLAUDE.md). This README is for contributors working **inside the client**.
 
@@ -164,7 +164,7 @@ Tauri overlay dev needs both this Vite server (port 5173) and `pnpm --filter @ta
 ## Where things connect
 
 - **Server-pushed messages** (position only) — schema in [`@shared/ws-messages`](../../packages/shared/src/ws-messages.ts). Node server pushes over SSE, Rust port emits as a Tauri event; client uses the same Zod schema either way.
-- **Tarkov map calibration** (CRS, bounds, rotation) — [`@shared/maps`](../../packages/shared/src/maps.ts). Modifying calibration affects both desktop and PWA.
+- **Tarkov map calibration** (CRS, bounds, rotation) — [`@shared/maps`](../../packages/shared/src/maps.ts). Modifying calibration affects both desktop and browser.
 - **HTTP / IPC** — single dispatch in [`features/server/api/transport.ts`](./src/features/server/api/transport.ts). Tauri detection via `"__TAURI_INTERNALS__" in window`.
 
 ## See also
