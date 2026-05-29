@@ -90,6 +90,50 @@ export const TARKOV_MAPS = {
     ],
     defaultFloor: 'Ground_Floor',
   },
+  // 1.0.5.0 rcid rename. BSG dropped the legacy "Factory 4" numbering in the
+  // scene preset bundle while keeping `factory4_day` as the internal Location
+  // id in the [Transit] line. Verified live on 2026-05-30.
+  factory_day: {
+    displayName: 'Factory',
+    svgFile: 'Factory.svg',
+    bounds: [
+      [77, -64.5],
+      [-65.5, 67.4],
+    ],
+    transform: [1.629, 119.9, 1.629, 139.3],
+    rotation: 90,
+    svgLayer: 'Ground_Floor',
+    canonical: 'factory4_day',
+    floors: [
+      { id: 'Third_Floor', label: '2' },
+      { id: 'Second_Floor', label: '1' },
+      { id: 'Ground_Floor', label: '0' },
+      { id: 'Basement', label: '-1' },
+    ],
+    defaultFloor: 'Ground_Floor',
+  },
+  // Predicted alias for the renamed night variant — not yet observed live,
+  // but extrapolated from the factory_day rename. Cheap to keep; if the
+  // prediction is wrong the entry just goes unused.
+  factory_night: {
+    displayName: 'Factory (Night)',
+    svgFile: 'Factory.svg',
+    bounds: [
+      [77, -64.5],
+      [-65.5, 67.4],
+    ],
+    transform: [1.629, 119.9, 1.629, 139.3],
+    rotation: 90,
+    svgLayer: 'Ground_Floor',
+    canonical: 'factory4_day',
+    floors: [
+      { id: 'Third_Floor', label: '2' },
+      { id: 'Second_Floor', label: '1' },
+      { id: 'Ground_Floor', label: '0' },
+      { id: 'Basement', label: '-1' },
+    ],
+    defaultFloor: 'Ground_Floor',
+  },
   woods: {
     displayName: 'Woods',
     svgFile: 'Woods.svg',
@@ -141,6 +185,27 @@ export const TARKOV_MAPS = {
     ],
     defaultFloor: 'Ground_Level',
   },
+  // 1.0.5.0 rcid rename. BSG shipped `Rezerv_Base` (PascalCase + underscore)
+  // in the scene preset bundle; lowercased here so the parser's normalised
+  // output (`rezerv_base`) resolves. The [Transit] line still emits the
+  // legacy `RezervBase` → `rezervbase` canonical. Verified live 2026-05-30.
+  rezerv_base: {
+    displayName: 'Reserve',
+    svgFile: 'Reserve.svg',
+    bounds: [
+      [289, -293],
+      [-303, 244],
+    ],
+    transform: [0.395, 122, 0.395, 137.65],
+    rotation: 180,
+    svgLayer: 'Ground_Level',
+    canonical: 'rezervbase',
+    floors: [
+      { id: 'Ground_Level', label: '0' },
+      { id: 'Bunkers', label: '-1' },
+    ],
+    defaultFloor: 'Ground_Level',
+  },
   interchange: {
     displayName: 'Interchange',
     svgFile: 'Interchange.svg',
@@ -184,6 +249,31 @@ export const TARKOV_MAPS = {
     rotation: 180,
     svgLayer: 'Ground_Level',
     canonical: null,
+    floors: [
+      { id: 'Fifth_Floor', label: '5' },
+      { id: 'Fourth_Floor', label: '4' },
+      { id: 'Third_Floor', label: '3' },
+      { id: 'Second_Floor', label: '2' },
+      { id: 'First_Floor', label: '1' },
+      { id: 'Ground_Level', label: '0' },
+      { id: 'Underground_Level', label: '-1' },
+    ],
+    defaultFloor: 'Ground_Level',
+  },
+  // 1.0.5.0 rcid rename. BSG shipped just `city` in the scene preset bundle
+  // (`city_preset.bundle`); `[Transit] Locations:TarkovStreets` still carries
+  // the legacy canonical id. Verified live 2026-05-30.
+  city: {
+    displayName: 'Streets of Tarkov',
+    svgFile: 'StreetsOfTarkov.svg',
+    bounds: [
+      [323, -295],
+      [-280, 532],
+    ],
+    transform: [0.38, 0, 0.38, 0],
+    rotation: 180,
+    svgLayer: 'Ground_Level',
+    canonical: 'tarkovstreets',
     floors: [
       { id: 'Fifth_Floor', label: '5' },
       { id: 'Fourth_Floor', label: '4' },

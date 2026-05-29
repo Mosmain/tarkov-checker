@@ -8,5 +8,6 @@
 //! `apps/server/src/` stays straightforward.
 
 pub mod config;
+pub mod logs;
 pub mod paths;
 pub mod screenshots;

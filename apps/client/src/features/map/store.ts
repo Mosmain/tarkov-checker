@@ -8,6 +8,7 @@ const labelModeSchema = z.enum(['hover', 'always']);
 const labelSizeSchema = z.enum(['sm', 'md', 'lg']);
 const playerFollowSchema = z.enum(['off', 'sm', 'md', 'lg']);
 const mapCodeSchema = z.string().refine((s): s is TarkovMapCode => s in TARKOV_MAPS);
+const autoMapSwitchSchema = z.boolean();
 
 export type ExtractFactionFilter = z.infer<typeof extractFactionSchema>;
 export type ExtractLabelMode = z.infer<typeof labelModeSchema>;
@@ -35,6 +36,14 @@ export const useMapSettingsStore = defineStore('map-settings', () => {
     playerFollowSchema,
     'off' as PlayerFollow,
   );
+  const autoMapSwitch = persistedRef('tc.map.autoMapSwitch', autoMapSwitchSchema, true);
 
-  return { mapCode, extractFactions, extractLabelMode, extractLabelSize, playerFollow };
+  return {
+    mapCode,
+    extractFactions,
+    extractLabelMode,
+    extractLabelSize,
+    playerFollow,
+    autoMapSwitch,
+  };
 });

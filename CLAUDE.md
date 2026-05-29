@@ -267,6 +267,14 @@ Persisted state lives in **per-feature** Pinia stores, not one big store:
     every fresh position update. Wired in `useLeafletMap.setPlayerFollow`;
     only re-centers when `(x, z)` actually changes (skips spam updates when
     the player stands still). Zoom step: `initialZoom + FOLLOW_ZOOM_DELTA[mode]`.
+  - `autoMapSwitch` — boolean, default `true`. When on, incoming
+    `map-change` events from the logs watcher flip `mapCode` to whatever
+    the game just loaded (resolved through `canonicalMapCode()` so
+    aliases like `factory4_night` → `factory4_day` collapse). Unknown
+    `rawMapId`s (a fresh BSG map we haven't added to `TARKOV_MAPS` yet)
+    are silently dropped with one `console.warn`. Wiring lives in
+    `features/map/composables/useAutoMapSwitch.ts`, mounted once at
+    `App.vue` root.
 - `apps/client/src/features/i18n/store.ts` — `apiLang` (`"en" | "ru"`).
   The store's `watch(apiLang, ..., {immediate: true})` mirrors the value
   into vue-i18n's `locale`; `main.ts` calls `useI18nStore()` eagerly after
@@ -372,9 +380,10 @@ modules in `apps/server/src/` 1:1 so cross-checking stays cheap:
 | Node (LAN backend)                         | Rust (in-process)                                     | Purpose                                                                                  |
 | ------------------------------------------ | ----------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | `watchers/screenshots.ts`                  | `server/screenshots.rs`                               | chokidar `awaitWriteFinish` → `notify-debouncer-full` 250 ms                             |
+| `watchers/logs.ts`                         | `server/logs.rs`                                      | tail `* application_NNN.log` in latest `log_*/`; emit `map-change` on `rcid:` / `Location:` hits |
 | `watchers/paths.ts` + `registry.ts`        | `server/paths.rs`                                     | `reg query` subprocess → `winreg` direct                                                 |
 | `config-store.ts`                          | `server/config.rs`                                    | JSON in `apps/server/data/` → `%APPDATA%/tarkov-checker/`                                |
-| `sse.ts` Hub broadcast                     | `app.emit("position", ...)`                           | SSE fan-out → Tauri event                                                                |
+| `sse.ts` Hub broadcast                     | `app.emit("position" \| "map-change", ...)`           | SSE fan-out → Tauri event                                                                |
 | `GET/PUT /api/config`                      | `commands::{get_config, update_config}`               | HTTP routes → IPC commands                                                               |
 
 Frontend doesn't know which backend it talks to. Switch is in two
@@ -394,12 +403,46 @@ old `get_extracts` command, since the extracts dataset is now bundled
 into the SPA. The Rust port only watches the filesystem and writes
 config; nothing reaches out to the network.
 
-`PositionPayload` (struct in `screenshots.rs`) and the TS
-`PositionMessage` schema in `packages/shared/src/ws-messages.ts` must
-stay in sync. That's the only cross-port payload now — the message file
-keeps the `ws-messages.ts` name for historical reasons (was the WS
-schema before the SSE migration), but only carries the `position` type
-today.
+`PositionPayload` (struct in `screenshots.rs`) and `MapChangePayload`
+(struct in `logs.rs`) on the Rust side mirror `PositionMessage` and
+`MapChangeMessage` from `packages/shared/src/ws-messages.ts`. Adding a
+new event type means touching all four declarations (TS schema + TS
+discriminated union + Rust payload + Tauri `listen()` call in
+`useServerTransport.ts`); the file is still called `ws-messages.ts` for
+historical reasons (was the WS schema before the SSE migration).
+
+The logs watcher (`logs.ts` / `logs.rs`) tails the **latest** `log_*/`
+session folder under `logsDir` — picked by sort order (timestamps in the
+folder name). On startup it scans the tail of the active
+`application_NNN.log` (~64 KB window) for the most recent map-load line
+and emits one seed `map-change` so the overlay snaps to whatever map
+Tarkov is currently in (mid-raid or post-extract). After that it tails
+from EOF, watches for new `log_*/` folders (next game launch) and for
+higher-suffix `application_NNN.log` rotations within the active folder.
+The parser regex lives once in `@shared/parse-log.ts` (Node) and is
+mirrored literally in `server/logs.rs` (Rust) — `SCENE_PRESET_RE` +
+`TRANSIT_LOCATION_RE` + `TRACE_LOCATION_RE` — keep them in sync. The
+parser **lowercases its capture group** before returning, so callers
+have a stable key regardless of which line shape produced the hit. Same
+map, three case conventions observed live on 2026-05-30 in patch
+1.0.5.0:
+
+| Line shape | Sample id | Note |
+| --- | --- | --- |
+| `rcid:<id>.scenespreset.asset` | `factory_day` / `city` / `Rezerv_Base` | primary, fires ~30s before raid; case varies per map |
+| `[Transit] Locations:<id>` | `factory4_day` / `TarkovStreets` / `RezervBase` | canonical legacy id, fires after `LocationLoaded` |
+| `Location: <id>, Sid:` (TRACE) | `bigmap` | pre-1.0.5.0 only; line removed in 1.0.5.0 but pattern stays for historical session reads |
+
+Patch 1.0.5.0 also **renamed several scene-preset bundles** (BSG dropped
+the legacy "Factory 4" numbering and the `tarkov` prefix on Streets,
+swapped Reserve's `rezervbase` for `Rezerv_Base`). The `[Transit]`
+`Locations:` field still emits the canonical legacy id, so the parser's
+secondary pattern works as a no-alias fallback. The primary `rcid:` path
+is faster but needs alias maintenance: `TARKOV_MAPS` carries
+`factory_day` / `factory_night` / `city` / `rezerv_base` alias entries
+pointing back to their canonical via the same `canonical:` field already
+used for `factory4_night` and `sandbox_high`. Adding a future rename =
+one new alias entry + one new test case in `parse-log.spec.ts`.
 
 `bundle.active: false` in `tauri.conf.json` — overlay:build skips MSI
 and NSIS, just produces the bare `.exe` at

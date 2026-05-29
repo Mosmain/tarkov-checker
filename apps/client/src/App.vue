@@ -8,6 +8,7 @@ import { useTauriOverlay } from '@/features/overlay/composables/useTauriOverlay'
 import { useGlobalShortcut } from '@/features/hotkeys/composables/useGlobalShortcut';
 import { useTrayIcon } from '@/features/overlay/composables/useTrayIcon';
 import { useOverlayBootstrap } from '@/features/overlay/composables/useOverlayBootstrap';
+import { useAutoMapSwitch } from '@/features/map/composables/useAutoMapSwitch';
 import { eventsUrl } from '@/shared/config';
 
 const { clickThrough: overlayClickThrough } = storeToRefs(useOverlayStore());
@@ -19,6 +20,10 @@ const { isTauri } = useTauriOverlay();
 // that layer and listens for Rust-emitted events directly.
 const { status } = useServerTransport(eventsUrl());
 provideTransportStatus(status);
+
+// Subscribe once at the app root so map-change events flip mapSettingsStore
+// regardless of which route is currently mounted.
+useAutoMapSwitch();
 
 // Lock toggle is the only truly global hotkey — every other map-specific
 // shortcut lives inside OverlayView, scoped to that route.

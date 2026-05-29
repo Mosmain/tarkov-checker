@@ -2,7 +2,7 @@
 import { VISIBLE_MAP_CODES, TARKOV_MAPS, type TarkovMapCode } from '@shared/maps';
 import { useMapSettingsStore } from '@/features/map/store';
 
-const { mapCode } = storeToRefs(useMapSettingsStore());
+const { mapCode, autoMapSwitch } = storeToRefs(useMapSettingsStore());
 const { t, te } = useI18n();
 
 /**
@@ -24,12 +24,19 @@ const mapOptions = computed(() =>
 
 <template>
   <Fieldset :legend="t('map')">
-    <Select
-      v-model="mapCode"
-      :options="mapOptions"
-      option-label="label"
-      option-value="value"
-      fluid
-    />
+    <div class="space-y-3">
+      <Select
+        v-model="mapCode"
+        :options="mapOptions"
+        option-label="label"
+        option-value="value"
+        fluid
+      />
+      <div class="flex items-center justify-between gap-3">
+        <label class="text-sm" for="map-auto-switch">{{ t('autoMapSwitch') }}</label>
+        <ToggleSwitch v-model="autoMapSwitch" input-id="map-auto-switch" />
+      </div>
+      <p class="text-[10px] leading-relaxed opacity-50">{{ t('autoMapSwitchHint') }}</p>
+    </div>
   </Fieldset>
 </template>

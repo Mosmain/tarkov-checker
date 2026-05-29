@@ -1,6 +1,8 @@
 {
   "language": "Language",
   "map": "Map",
+  "autoMapSwitch": "Auto-switch on raid",
+  "autoMapSwitchHint": "Follow the map the game just loaded into. Reads Tarkov's session log; falls back to manual select for unknown maps.",
   "extracts": "Extracts",
   "on": "On",
   "off": "Off",

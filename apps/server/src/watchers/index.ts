@@ -1,6 +1,7 @@
 import type { FastifyBaseLogger } from 'fastify';
 import type { ResolvedPaths } from './paths.js';
 import { startScreenshotWatcher, type ScreenshotWatcher } from './screenshots.js';
+import { startLogsWatcher, type LogsWatcher } from './logs.js';
 import type { Hub } from '../sse.js';
 
 export { resolvePaths } from './paths.js';
@@ -38,14 +39,17 @@ export class WatcherManager {
       );
     }
 
-    // TODO: log watcher uses paths.logsDir similarly.
-    if (!paths.logsDir.exists) {
+    if (paths.logsDir.exists && paths.logsDir.value) {
+      this.handles.push(
+        startLogsWatcher(paths.logsDir.value, this.hub, this.log) as LogsWatcher,
+      );
+    } else {
       this.log.info(
         {
           logsDir: paths.logsDir.value ?? '(unset)',
           source: paths.logsDir.source,
         },
-        'logs dir not usable (or log watcher not implemented yet) — ignoring',
+        'logs dir not usable — map auto-switch pipeline dormant',
       );
     }
   }
