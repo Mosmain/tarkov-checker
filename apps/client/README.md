@@ -13,7 +13,7 @@ Specifics about Tauri internals, Windows build quirks, and dev workflow live in 
 - **vue-i18n 11** — JSON locale files, lazy-loaded
 - **PrimeVue 4** (Aura preset, custom purple primary) + **Tailwind v4** (CSS-first, no `tailwind.config.ts`)
 - **Leaflet 1.9** — custom CRS per Tarkov map, see [useLeafletMap.ts](./src/features/map/composables/useLeafletMap.ts)
-- **Zod** at every boundary (localStorage, API, WS messages)
+- **Zod** at every boundary (localStorage, API, server-pushed SSE messages)
 
 ## `src/` structure
 
@@ -21,7 +21,7 @@ Specifics about Tauri internals, Windows build quirks, and dev workflow live in 
 app/        Composition root — router config.
 pages/      File-based routes. Add a *.vue here → it becomes a route. typed-router.d.ts is regenerated on dev/build.
 features/   One folder per business feature, each fully owns its slice:
-  map/         Leaflet map, extracts/floors/player composables, MapView component, static extracts dataset (data/extracts.json)
+  map/         Leaflet map, extracts/floors/player composables, MapView component, static extracts dataset (data/extracts/<code>.json — one file per canonical map, indexed via import.meta.glob)
   overlay/     Tauri overlay window controls, opacity/zoom sync, tray icon, overlay-specific components
   hotkeys/     Global shortcuts, HotkeyRecorder, accelerator parser
   server/      SSE/HTTP transport, typed IPC contract, server event bus, /api/config client
@@ -99,7 +99,20 @@ For nested or dynamic routes (`/raids/[id]`), see [Vue Router file-based docs](h
    { label: "<Native name>", value: "<code>" as const },
    ```
 
-Only `en.json` is bundled eagerly — every other locale loads on demand via dynamic `import()`. Tarkov.dev API supports `en, ru, de, fr, es, it, ja, pl, pt, zh, ko` — extract names will localize for those automatically.
+Only `en.json` is bundled eagerly — every other locale loads on demand via dynamic `import()`.
+
+Extract names (`extractNames.<map>.<key>`) and map names (`mapNames.<code>`) are hand-curated per locale file — there is no runtime translation source anymore, so a new locale needs the operator to translate those keys. English values exist as a fallback (`MapSection`/`MapView` drop back to `TARKOV_MAPS[code].displayName` and to the JSON `key` itself when a translation is missing).
+
+**Restart `vite dev` after editing locale JSON.** `@intlify/unplugin-vue-i18n` pre-compiles the files in its Vite plugin and does NOT re-trigger HMR on disk changes — without a restart, freshly added keys aren't visible (`te()` returns false, `t()` echoes the key back).
+
+### Add a new map
+
+1. Add an entry to [`packages/shared/src/maps.ts`](../../packages/shared/src/maps.ts)' `TARKOV_MAPS` with the raw Tarkov code as key — `svgFile`, `bounds`, `transform`, `rotation`, `floors`. Set `canonical: null` for a brand-new map, or `canonical: '<other code>'` if it shares an SVG with an existing map (factory day/night pattern).
+2. Drop the SVG into the [`apps/client/public/maps/`](./public/maps/) submodule (or symlink from a fork).
+3. Create [`src/features/map/data/extracts/<code>.json`](./src/features/map/data/extracts/) as a flat array of `{key, factions[], position}`. `import.meta.glob` picks it up automatically.
+4. Add localized display names: `mapNames.<code>` and `extractNames.<code>.<key>` in both [`features/i18n/locales/en.json`](./src/features/i18n/locales/en.json) and [`ru.json`](./src/features/i18n/locales/ru.json). Restart `vite dev` for the locale plugin to see them.
+
+The original 10 maps were seeded from tarkov.dev's GraphQL (`maps { nameId extracts { name faction position {x y z} } }`); it's known to ship buggy faction tags for some maps, so the JSON is the curated truth.
 
 ### Add a PrimeVue component
 
