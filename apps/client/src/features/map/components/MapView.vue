@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useLeafletMap } from '../composables/useLeafletMap';
-import type { ExtractMarker } from '../composables/useExtractMarkers';
+import type { ExtractMarker } from '../layers/extracts/useExtractMarkers';
 import { extractsForMap } from '../data/extracts';
 import { mapInfo, type TarkovMapCode } from '@shared/maps';
 import { useMapSettingsStore } from '../store';
@@ -77,11 +77,27 @@ useServerEvent('position', (msg) => {
 });
 
 /**
- * Static dataset → marker list. Multi-faction extracts (e.g. an exit usable
- * by both PMC and Scav) expand into one marker per faction at the same
- * position; useExtractMarkers' radial offset keeps their tooltips readable.
- * Names come from i18n — falls back to the stable key if a translation is
- * missing so a freshly fetched extract still renders something legible.
+ * Position bucket size for merging co-located extracts: any two exits
+ * whose `(x, z)` round to the same bucket cell get fused into one composite
+ * marker. Co-located but semantically distinct exits (Customs has dorms
+ * V-Ex + old road gate ~1m apart) become a multi-faction marker with a
+ * multi-row tooltip — one name per faction — instead of two stacked
+ * single-faction icons.
+ */
+const COLOCATION_TOLERANCE = 2;
+
+interface RawExtract {
+  key: string;
+  factions: ReadonlyArray<'pmc' | 'scav' | 'shared'>;
+  position: { x: number; y: number; z: number };
+}
+
+/**
+ * Static dataset → marker list. Steps: (1) localize each extract's name
+ * via i18n with key-as-fallback; (2) bucket extracts by (x, z) so co-
+ * located ones merge into a single composite marker; (3) flatten each
+ * raw extract's `factions[]` into per-faction entries on the merged
+ * marker so the icon and the tooltip can render them independently.
  */
 function loadExtracts(): void {
   emit('extractsError', null);
@@ -90,14 +106,40 @@ function loadExtracts(): void {
     emit('extractsError', `No extracts dataset for mapCode=${props.mapCode}`);
     return;
   }
-  const markers: ExtractMarker[] = [];
-  for (const ex of data) {
+
+  function nameOf(ex: RawExtract): string {
     const i18nKey = `extractNames.${props.mapCode}.${ex.key}`;
-    const name = t(i18nKey);
-    const displayName = name === i18nKey ? ex.key : name;
-    for (const faction of ex.factions) {
-      markers.push({ name: displayName, faction, position: ex.position });
+    const v = t(i18nKey);
+    return v === i18nKey ? ex.key : v;
+  }
+
+  const buckets = new Map<string, RawExtract[]>();
+  for (const ex of data) {
+    const bx = Math.round(ex.position.x / COLOCATION_TOLERANCE);
+    const bz = Math.round(ex.position.z / COLOCATION_TOLERANCE);
+    const key = `${bx},${bz}`;
+    const group = buckets.get(key);
+    if (group) group.push(ex);
+    else buckets.set(key, [ex]);
+  }
+
+  const markers: ExtractMarker[] = [];
+  for (const group of buckets.values()) {
+    const entries: { faction: 'pmc' | 'scav' | 'shared'; name: string }[] = [];
+    let sumX = 0;
+    let sumY = 0;
+    let sumZ = 0;
+    for (const ex of group) {
+      const name = nameOf(ex);
+      for (const faction of ex.factions) entries.push({ faction, name });
+      sumX += ex.position.x;
+      sumY += ex.position.y;
+      sumZ += ex.position.z;
     }
+    markers.push({
+      entries,
+      position: { x: sumX / group.length, y: sumY / group.length, z: sumZ / group.length },
+    });
   }
   addExtractMarkers(markers);
 }

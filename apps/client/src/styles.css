@@ -98,39 +98,69 @@ html.overlay-window body {
   background: rgb(from var(--p-surface-950) r g b / var(--map-bg-alpha, 1));
 }
 
-.leaflet-extracts-pane img.leaflet-marker-icon {
+/* Each extract is a divIcon — Leaflet owns the outer div (sets its own
+ * position:absolute + transform:translate3d for map-relative placement);
+ * we only style its children. Tailwind preflight gives <img> max-width:
+ * 100% which collapses the icon to 0 inside a positioned ancestor, so
+ * clear it and pin the size explicitly. */
+.leaflet-extracts-pane .extract-icon-divicon img {
+  display: block;
+  width: 26px;
+  height: 26px;
   max-width: none !important;
   max-height: none !important;
-  width: auto;
+}
+/* Multi-faction composite: clipped PNG slices stack on top of each other.
+ * `position: absolute` works because Leaflet already makes the outer div a
+ * positioned ancestor; `inset: 0` stretches each slice across the 26×26
+ * box, and the per-slice clip-path (inline, from SLICE_2/SLICE_3) carves
+ * out its triangular share. */
+.leaflet-extracts-pane .extract-icon-divicon .extract-icon-slice {
+  position: absolute;
+  inset: 0;
 }
 
+/* Tooltip container — Leaflet adds .leaflet-tooltip; we hide its built-in
+ * pseudo-element callout and let the per-row stripes carry faction colour
+ * (rows live inside, one per distinct name). Padding goes on the rows so
+ * the stripes touch the container edges. */
 .leaflet-tooltip.extract-tooltip {
   background: color-mix(in oklab, var(--p-surface-900) 78%, transparent);
   border: 1px solid var(--p-surface-700);
-  border-left-width: 3px;
   color: var(--p-surface-0);
   font-family: 'Bender', system-ui, sans-serif;
   font-size: var(--extract-label-size, 11px);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 3px 8px 3px 9px;
+  padding: 0;
   border-radius: 3px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(6px);
   white-space: nowrap;
+  overflow: hidden;
 }
 .leaflet-tooltip.extract-tooltip::before {
   display: none;
 }
-.leaflet-tooltip.extract-tooltip--pmc {
+.extract-tooltip-row {
+  padding: 3px 8px 3px 9px;
+  border-left: 3px solid var(--p-surface-500);
+}
+.extract-tooltip-row + .extract-tooltip-row {
+  border-top: 1px solid var(--p-surface-700);
+}
+.extract-tooltip-row--pmc {
   border-left-color: #22c55e;
 }
-.leaflet-tooltip.extract-tooltip--scav {
+.extract-tooltip-row--scav {
   border-left-color: #eab308;
 }
-.leaflet-tooltip.extract-tooltip--shared {
+.extract-tooltip-row--shared {
   border-left-color: #3b82f6;
+}
+.extract-tooltip-row--multi {
+  border-left-color: var(--p-surface-500);
 }
 
 .player-icon-wrapper {

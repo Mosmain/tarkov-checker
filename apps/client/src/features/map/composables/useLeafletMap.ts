@@ -5,7 +5,7 @@ import {
   type UseExtractMarkers,
   type LabelMode,
   type LabelSize,
-} from './useExtractMarkers';
+} from '../layers/extracts/useExtractMarkers';
 import { usePlayerMarker, type UsePlayerMarker, type PlayerFollow } from './usePlayerMarker';
 import { useFloorSwitcher, type UseFloorSwitcher, type LoadedMap } from './useFloorSwitcher';
 
