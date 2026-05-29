@@ -1,0 +1,83 @@
+[
+  {
+    "key": "cellars",
+    "factions": ["pmc"],
+    "position": {
+      "x": 73.89422,
+      "y": -3.2876668,
+      "z": -29.0818882
+    }
+  },
+  {
+    "key": "gate_3",
+    "factions": ["scav"],
+    "position": {
+      "x": 58.709,
+      "y": 1.59233332,
+      "z": 60.86811
+    }
+  },
+  {
+    "key": "gate_3_2",
+    "factions": ["pmc"],
+    "position": {
+      "x": 58.43222,
+      "y": 3.17233324,
+      "z": 63.29811
+    }
+  },
+  {
+    "key": "camera_bunker_door",
+    "factions": ["scav"],
+    "position": {
+      "x": -15.71578,
+      "y": -1.64766669,
+      "z": 40.1081123
+    }
+  },
+  {
+    "key": "office_window",
+    "factions": ["scav"],
+    "position": {
+      "x": 17.8332214,
+      "y": 8.730333,
+      "z": 39.8851128
+    }
+  },
+  {
+    "key": "gate_0",
+    "factions": ["pmc"],
+    "position": {
+      "x": -63.66578,
+      "y": 2.85233331,
+      "z": 55.8781128
+    }
+  },
+  {
+    "key": "med_tent_gate",
+    "factions": ["pmc"],
+    "position": {
+      "x": -17.5257778,
+      "y": 1.99233329,
+      "z": -61.27189
+    }
+  },
+  {
+    "key": "courtyard_gate",
+    "factions": ["pmc"],
+    "position": {
+      "x": 23.7642212,
+      "y": 1.3623333,
+      "z": 68.93811
+    }
+  },
+  {
+    "key": "smugglers_passage",
+    "factions": ["pmc"],
+    "position": {
+      "x": 48.026,
+      "y": -1.61300015,
+      "z": -28.8580017
+    }
+  }
+]

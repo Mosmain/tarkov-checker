@@ -3,7 +3,7 @@
 ## What each package owns
 
 - `apps/desktop` — Tauri 2 wrapper. Owns the production app: Rust
-  in-process port of the watcher/config/extracts pipeline (under
+  in-process port of the watcher/config pipeline (under
   `src-tauri/src/server/`), plus the IPC commands the webview calls.
   This is what ships as the single 6 MB `.exe`. See "Desktop overlay's
   in-process server" below.
@@ -125,19 +125,48 @@ Labs) have floor groups (Basement, Ground_Floor, ...). Any floor-
 switcher UI must consult a per-map allowlist of which group IDs are
 "floors" — don't toggle all top-level groups blindly.
 
-## tarkov.dev API client
+## Extracts dataset (static)
 
-`apps/client/src/api/tarkov-dev.ts` is a thin GraphQL client (plain
-`fetch`, per-language promise cache, zod-validated payloads — no Apollo/
-urql for a handful of queries). Schemas live in
-`packages/shared/src/tarkov-api.ts` so the server can reuse them later
-if needed.
+Source of truth is `apps/client/src/features/map/data/extracts/` — one JSON
+file per canonical map (`bigmap.json`, `tarkovstreets.json`, ...), each a
+flat array of `{key, factions[], position}` entries. Hand-curated, bundled
+into the client, no runtime fetch. Vite's `import.meta.glob('./extracts/
+*.json', { eager: true })` in `data/extracts.ts` indexes the files at
+build time — adding a new map is just dropping a file, no manual list to
+update.
 
-`Map.nameId` from the API matches our raw Tarkov codes (`bigmap`,
-`factory4_day`, `RezervBase`, ...) case-insensitively — see
-`fetchExtractsForMap` for the lookup. The `lang` argument is keyed
-into the cache so refetching after a language switch is just one HTTP
-hit per language per session.
+Only canonical map codes get a file (the keys of `TARKOV_MAPS` with
+`canonical === null`); aliases like `factory4_night` and `sandbox_high`
+resolve through `canonicalMapCode()` from `@shared/maps`, so the data tree
+only stores one record per logical map. Display names — both for the map
+itself and for each extract — live in i18n: `mapNames.<canonicalMapCode>`
+and `extractNames.<canonicalMapCode>.<key>` under
+`apps/client/src/features/i18n/locales/{en,ru}.json`. The JSON files hold
+no strings — adding a language is a locale-only change.
+
+`factions` is an array because one physical exit can serve multiple sides
+(e.g. PMC + Scav share the same door). The client expands each multi-
+faction extract into one marker per faction at the same position;
+`useExtractMarkers.computeTooltipOffsets` fans the labels radially.
+
+Adding a new map: drop a `<canonicalCode>.json` file (flat array of
+`{key, factions[], position}`) into `data/extracts/`, add its display name
+to `mapNames.<code>` and each extract's name to `extractNames.<code>.<key>`
+in both locale files, and ensure the `<code>` exists in `TARKOV_MAPS` with
+SVG/calibration. No script — `import.meta.glob` picks up the file at next
+build.
+
+The dataset was originally seeded from tarkov.dev's GraphQL `maps { nameId
+extracts { name faction position { x y z } } }` (lang `en` + `ru`).
+tarkov.dev's faction tags are known to be wrong on several maps (Streets,
+Ground Zero); the per-map JSONs hold the curated truth. Keep `key` stable
+when correcting names — rename the i18n string, not the JSON id.
+
+**`@intlify/unplugin-vue-i18n` caveat:** locale JSON is pre-compiled by
+the Vite plugin and does NOT re-trigger HMR when the files change on
+disk. After editing `mapNames` / `extractNames` in `locales/{en,ru}.json`,
+restart `vite dev` — otherwise `te()` returns false and `t()` echoes the
+key back in the running app.
 
 ## Tarkov path resolution
 
@@ -305,9 +334,8 @@ modules in `apps/server/src/` 1:1 so cross-checking stays cheap:
 | `watchers/screenshots.ts`                  | `server/screenshots.rs`                               | chokidar `awaitWriteFinish` → `notify-debouncer-full` 250 ms                             |
 | `watchers/paths.ts` + `registry.ts`        | `server/paths.rs`                                     | `reg query` subprocess → `winreg` direct                                                 |
 | `config-store.ts`                          | `server/config.rs`                                    | JSON in `apps/server/data/` → `%APPDATA%/tarkov-checker/`                                |
-| `extracts-cache.ts`                        | `server/extracts.rs`                                  | per-lang `inFlight` Map → outer `tokio::sync::Mutex` (single user, serializing is cheap) |
 | `sse.ts` Hub broadcast                     | `app.emit("position", ...)`                           | SSE fan-out → Tauri event                                                                |
-| `GET/PUT /api/config`, `GET /api/extracts` | `commands::{get_config, update_config, get_extracts}` | HTTP routes → IPC commands                                                               |
+| `GET/PUT /api/config`                      | `commands::{get_config, update_config}`               | HTTP routes → IPC commands                                                               |
 
 Frontend doesn't know which backend it talks to. Switch is in two
 places only:
@@ -316,7 +344,7 @@ places only:
   `listen('position', ...)` + status hard-coded to `"open"`. Browser:
   delegates to the `useServerStream` composable (SSE / `EventSource`,
   which auto-reconnects).
-- `apps/client/src/api/{server-config,tarkov-dev}.ts` — Tauri: dynamic
+- `apps/client/src/features/server/api/server-config.ts` — Tauri: dynamic
   import of `@tauri-apps/api/core` + `invoke(...)`. Browser: `fetch`.
 
 The Rust port uses `reqwest` with `native-tls` (Windows SChannel) — not

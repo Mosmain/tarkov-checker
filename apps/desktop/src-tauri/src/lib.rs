@@ -7,7 +7,6 @@ use std::sync::Arc;
 use tauri::Manager;
 
 use crate::server::config::{self, ConfigStore};
-use crate::server::extracts::{self, ExtractsCache};
 use crate::server::paths;
 use crate::watcher::WatcherSlot;
 
@@ -19,32 +18,25 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::get_config,
             commands::update_config,
-            commands::get_extracts,
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();
             let data_dir = config::data_dir()?;
             std::fs::create_dir_all(&data_dir)?;
 
-            // Block-on the async loads — we want everything ready before
-            // the webview starts running its onMounted hooks. The two
-            // files are tiny JSON; this is in the millisecond range.
+            // Block-on the async load — we want the config ready before
+            // the webview starts running its onMounted hooks. Tiny JSON;
+            // this is in the millisecond range.
             let store = tauri::async_runtime::block_on(ConfigStore::load(
                 data_dir.join("config.json"),
             ))?;
             let store = Arc::new(store);
-
-            let cache = tauri::async_runtime::block_on(ExtractsCache::load(
-                extracts::cache_file(&data_dir),
-            ))?;
-            let cache = Arc::new(cache);
 
             let slot = WatcherSlot::default();
             let resolved = paths::resolve(&tauri::async_runtime::block_on(store.overrides()));
             watcher::apply_resolved(&app_handle, &slot, &resolved);
 
             app.manage(store);
-            app.manage(cache);
             app.manage(slot);
 
             Ok(())

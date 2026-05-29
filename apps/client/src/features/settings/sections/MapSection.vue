@@ -1,14 +1,24 @@
 <script setup lang="ts">
-import { VISIBLE_MAP_CODES } from '@shared/maps';
+import { VISIBLE_MAP_CODES, TARKOV_MAPS, type TarkovMapCode } from '@shared/maps';
 import { useMapSettingsStore } from '@/features/map/store';
-import { useExtractsCacheControl } from '@/features/server/composables/useExtractsCacheControl';
 
 const { mapCode } = storeToRefs(useMapSettingsStore());
-const { mapLabelFor } = useExtractsCacheControl();
-const { t } = useI18n();
+const { t, te } = useI18n();
+
+/**
+ * Localized map name with a graceful fallback. `te` checks whether a key
+ * exists for the active locale (without firing missing-translation warns),
+ * and we drop back to the hardcoded English `displayName` from maps.ts
+ * when no translation has been added yet — so a freshly-added map still
+ * renders something legible before the operator updates the locale files.
+ */
+function mapLabel(code: TarkovMapCode): string {
+  const key = `mapNames.${code}`;
+  return te(key) ? t(key) : TARKOV_MAPS[code].displayName;
+}
 
 const mapOptions = computed(() =>
-  VISIBLE_MAP_CODES.map((code) => ({ value: code, label: mapLabelFor(code) })),
+  VISIBLE_MAP_CODES.map((code) => ({ value: code, label: mapLabel(code) })),
 );
 </script>
 

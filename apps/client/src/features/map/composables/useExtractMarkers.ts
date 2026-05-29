@@ -1,11 +1,22 @@
 import L, { type Marker, type LayerGroup, type Map as LeafletMap } from 'leaflet';
-import type { Extract } from '@shared/tarkov-api';
+import type { FactionKey } from '@shared/maps';
 
 export type LabelMode = 'hover' | 'always';
 export type LabelSize = 'sm' | 'md' | 'lg';
 
+/**
+ * One marker on the map. Multi-faction extracts (e.g. an exit usable by both
+ * PMC and Scav) are expanded by the caller into one ExtractMarker per
+ * faction at the same position; computeTooltipOffsets fans them out radially.
+ */
+export interface ExtractMarker {
+  readonly name: string;
+  readonly faction: FactionKey;
+  readonly position: { readonly x: number; readonly y: number; readonly z: number };
+}
+
 export interface UseExtractMarkers {
-  addExtractMarkers: (extracts: readonly Extract[]) => void;
+  addExtractMarkers: (extracts: readonly ExtractMarker[]) => void;
   setExtractFilter: (visibleFactions: ReadonlyArray<string>) => void;
   setLabelMode: (mode: LabelMode) => void;
   setLabelSize: (size: LabelSize) => void;
@@ -13,7 +24,7 @@ export interface UseExtractMarkers {
 
 interface MarkerEntry {
   marker: Marker;
-  extract: Extract;
+  extract: ExtractMarker;
   /** Tooltip offset in screen pixels relative to the marker centre. */
   tooltipOffset: [number, number];
 }
@@ -25,7 +36,7 @@ const LABEL_SIZE_PX: Readonly<Record<LabelSize, string>> = {
 };
 
 const EXTRACT_ICON_SIZE = 26;
-const EXTRACT_ICONS: Readonly<Record<'pmc' | 'scav' | 'shared', L.Icon>> = {
+const EXTRACT_ICONS: Readonly<Record<FactionKey, L.Icon>> = {
   pmc: L.icon({
     iconUrl: '/icons/extracts/extract_pmc.png',
     iconSize: [EXTRACT_ICON_SIZE, EXTRACT_ICON_SIZE],
@@ -46,19 +57,10 @@ const EXTRACT_ICONS: Readonly<Record<'pmc' | 'scav' | 'shared', L.Icon>> = {
   }),
 };
 
-function extractIcon(faction: Extract['faction']): L.Icon {
-  const key = (faction ?? 'shared') as keyof typeof EXTRACT_ICONS;
-  return EXTRACT_ICONS[key] ?? EXTRACT_ICONS.shared;
-}
-
 /** Extracts within this many in-game units of each other share a tooltip ring. */
 const COLOCATION_TOLERANCE = 2;
 /** Radial distance from marker centre to the centre of its tooltip, in screen pixels. */
 const TOOLTIP_RING_RADIUS = 28;
-
-function factionForFilter(faction: Extract['faction']): string {
-  return faction ?? 'shared';
-}
 
 /**
  * Owns the extracts layer: markers, tooltips, faction filter, and label
@@ -74,7 +76,7 @@ export function useExtractMarkers(map: ShallowRef<LeafletMap | null>): UseExtrac
   };
 
   function isEntryVisible(entry: MarkerEntry): boolean {
-    return state.visibleFactions.has(factionForFilter(entry.extract.faction));
+    return state.visibleFactions.has(entry.extract.faction);
   }
 
   function buildTooltipOpts(): Omit<L.TooltipOptions, 'offset' | 'className'> {
@@ -90,11 +92,10 @@ export function useExtractMarkers(map: ShallowRef<LeafletMap | null>): UseExtrac
     const base = buildTooltipOpts();
     for (const entry of entries) {
       entry.marker.unbindTooltip();
-      const factionClass = factionForFilter(entry.extract.faction);
       entry.marker.bindTooltip(entry.extract.name, {
         ...base,
         offset: entry.tooltipOffset,
-        className: `extract-tooltip extract-tooltip--${factionClass}`,
+        className: `extract-tooltip extract-tooltip--${entry.extract.faction}`,
       });
       entry.marker.off('click', reopenAllPermanentTooltips);
       entry.marker.on('click', reopenAllPermanentTooltips);
@@ -131,7 +132,7 @@ export function useExtractMarkers(map: ShallowRef<LeafletMap | null>): UseExtrac
   function computeTooltipOffsets(): void {
     // Markers stay at their true (x, z); only their tooltips get a radial offset
     // so labels do not stack on top of each other when extracts share a spot
-    // (e.g. RUAF Roadblock has both a PMC and a Scav variant a metre apart).
+    // (e.g. an exit usable by both PMC and Scav, or two same-named variants).
     const bucketSize = Math.max(COLOCATION_TOLERANCE, 1);
     const groups = new Map<string, MarkerEntry[]>();
     for (const entry of entries) {
@@ -158,7 +159,7 @@ export function useExtractMarkers(map: ShallowRef<LeafletMap | null>): UseExtrac
     }
   }
 
-  function addExtractMarkers(extracts: readonly Extract[]): void {
+  function addExtractMarkers(extracts: readonly ExtractMarker[]): void {
     if (!map.value) return;
     if (extractsLayer) {
       extractsLayer.clearLayers();
@@ -168,7 +169,7 @@ export function useExtractMarkers(map: ShallowRef<LeafletMap | null>): UseExtrac
     entries.length = 0;
     for (const ex of extracts) {
       const marker = L.marker([ex.position.z, ex.position.x], {
-        icon: extractIcon(ex.faction),
+        icon: EXTRACT_ICONS[ex.faction],
         pane: 'extracts',
       });
       entries.push({ marker, extract: ex, tooltipOffset: [0, -TOOLTIP_RING_RADIUS] });

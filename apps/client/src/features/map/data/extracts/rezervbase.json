@@ -1,0 +1,101 @@
+[
+  {
+    "key": "armored_train",
+    "factions": ["shared"],
+    "position": {
+      "x": 144.986,
+      "y": -3.92,
+      "z": -147.352
+    }
+  },
+  {
+    "key": "d_2",
+    "factions": ["pmc"],
+    "position": {
+      "x": -121.479065,
+      "y": -17.0010071,
+      "z": 172.24913
+    }
+  },
+  {
+    "key": "bunker_hermetic_door",
+    "factions": ["shared"],
+    "position": {
+      "x": 61.9206619,
+      "y": -5.257,
+      "z": -190.541931
+    }
+  },
+  {
+    "key": "cliff_descent",
+    "factions": ["pmc"],
+    "position": {
+      "x": -9.24,
+      "y": 20.93,
+      "z": 208.43
+    }
+  },
+  {
+    "key": "scav_lands_co_op",
+    "factions": ["shared"],
+    "position": {
+      "x": -127.9,
+      "y": -3.28,
+      "z": -142.59
+    }
+  },
+  {
+    "key": "sewer_manhole",
+    "factions": ["shared"],
+    "position": {
+      "x": 40.18,
+      "y": -5.12,
+      "z": 76.45
+    }
+  },
+  {
+    "key": "hole_in_the_wall_by_the_mountains",
+    "factions": ["scav"],
+    "position": {
+      "x": -261.43,
+      "y": -6.34,
+      "z": 48.52
+    }
+  },
+  {
+    "key": "heating_pipe",
+    "factions": ["scav"],
+    "position": {
+      "x": -35.26,
+      "y": -5.15,
+      "z": -180.12
+    }
+  },
+  {
+    "key": "depot_hermetic_door",
+    "factions": ["scav"],
+    "position": {
+      "x": 120.78,
+      "y": -10.27,
+      "z": -120.352
+    }
+  },
+  {
+    "key": "checkpoint_fence",
+    "factions": ["scav"],
+    "position": {
+      "x": 61.97,
+      "y": -4.43,
+      "z": 134.31
+    }
+  },
+  {
+    "key": "exit_to_woods",
+    "factions": ["pmc"],
+    "position": {
+      "x": 36.53,
+      "y": -5.97000027,
+      "z": -221.56
+    }
+  }
+]

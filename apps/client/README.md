@@ -21,10 +21,10 @@ Specifics about Tauri internals, Windows build quirks, and dev workflow live in 
 app/        Composition root — router config.
 pages/      File-based routes. Add a *.vue here → it becomes a route. typed-router.d.ts is regenerated on dev/build.
 features/   One folder per business feature, each fully owns its slice:
-  map/         Leaflet map, extracts/floors/player composables, MapView component, tarkov.dev API client
+  map/         Leaflet map, extracts/floors/player composables, MapView component, static extracts dataset (data/extracts.json)
   overlay/     Tauri overlay window controls, opacity/zoom sync, tray icon, overlay-specific components
   hotkeys/     Global shortcuts, HotkeyRecorder, accelerator parser
-  server/      WS/HTTP transport, typed IPC contract, server event bus, /api/config + /api/extracts clients
+  server/      SSE/HTTP transport, typed IPC contract, server event bus, /api/config client
   i18n/        createI18n instance, store (apiLang persisted), locales/<code>.json files
   settings/    SettingsPanel.vue + section sub-components — UI for stores owned by other features
 shared/     Cross-feature utilities (persisted-store, config) — no business logic

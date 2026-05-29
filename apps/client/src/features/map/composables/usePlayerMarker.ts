@@ -1,7 +1,12 @@
 import L, { type Map as LeafletMap, type LatLngExpression } from 'leaflet';
-import type { Position3D } from '@shared/tarkov-api';
 
 export type PlayerFollow = 'off' | 'sm' | 'md' | 'lg';
+
+interface Position3D {
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+}
 
 export interface UsePlayerMarker {
   setPlayerPosition: (pos: Position3D, yaw?: number | null) => void;

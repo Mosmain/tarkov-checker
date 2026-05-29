@@ -1,0 +1,245 @@
+[
+  {
+    "key": "zb_013",
+    "factions": ["pmc"],
+    "position": {
+      "x": 200.9755,
+      "y": -1.1484108,
+      "z": -153.086456
+    }
+  },
+  {
+    "key": "dorms_v_ex",
+    "factions": ["pmc"],
+    "position": {
+      "x": 181.08,
+      "y": -0.71,
+      "z": 213.25
+    }
+  },
+  {
+    "key": "zb_1011",
+    "factions": ["pmc"],
+    "position": {
+      "x": 621.4962,
+      "y": -2.07000017,
+      "z": -128.604919
+    }
+  },
+  {
+    "key": "crossroads",
+    "factions": ["shared"],
+    "position": {
+      "x": -334.804016,
+      "y": 2.19002676,
+      "z": -87.97917
+    }
+  },
+  {
+    "key": "old_gas_station",
+    "factions": ["pmc"],
+    "position": {
+      "x": 309.499634,
+      "y": -2.182013,
+      "z": -174.320175
+    }
+  },
+  {
+    "key": "trailer_park",
+    "factions": ["pmc"],
+    "position": {
+      "x": -313.720276,
+      "y": -1.72000742,
+      "z": -233.280121
+    }
+  },
+  {
+    "key": "ruaf_roadblock",
+    "factions": ["pmc"],
+    "position": {
+      "x": -10.250061,
+      "y": 1.92000723,
+      "z": -138.450043
+    }
+  },
+  {
+    "key": "military_base_cp",
+    "factions": ["scav"],
+    "position": {
+      "x": 644.87915,
+      "y": 2.400003,
+      "z": 126.867371
+    }
+  },
+  {
+    "key": "passage_between_rocks",
+    "factions": ["scav"],
+    "position": {
+      "x": 539.394,
+      "y": 11.8200016,
+      "z": 200.3388
+    }
+  },
+  {
+    "key": "railroad_to_military_base",
+    "factions": ["scav"],
+    "position": {
+      "x": 489.058228,
+      "y": 3.950006,
+      "z": 221.391266
+    }
+  },
+  {
+    "key": "old_road_gate",
+    "factions": ["scav"],
+    "position": {
+      "x": 181.769958,
+      "y": 1.4999938,
+      "z": 214.01001
+    }
+  },
+  {
+    "key": "sniper_roadblock",
+    "factions": ["scav"],
+    "position": {
+      "x": 15.0805054,
+      "y": 0.139977932,
+      "z": 126.291855
+    }
+  },
+  {
+    "key": "railroad_to_port",
+    "factions": ["scav"],
+    "position": {
+      "x": -149.109558,
+      "y": -0.629980564,
+      "z": 46.68419
+    }
+  },
+  {
+    "key": "trailer_park_workers_shack",
+    "factions": ["scav"],
+    "position": {
+      "x": -248.543152,
+      "y": 2.550012,
+      "z": -232.991119
+    }
+  },
+  {
+    "key": "railroad_to_tarkov",
+    "factions": ["scav"],
+    "position": {
+      "x": -163.4682,
+      "y": 3.389978,
+      "z": -217.452026
+    }
+  },
+  {
+    "key": "ruaf_roadblock_2",
+    "factions": ["scav"],
+    "position": {
+      "x": -9.436584,
+      "y": 1.6499877,
+      "z": -138.743988
+    }
+  },
+  {
+    "key": "warehouse_17",
+    "factions": ["scav"],
+    "position": {
+      "x": 50.7402344,
+      "y": 2.13601065,
+      "z": -69.8183746
+    }
+  },
+  {
+    "key": "factory_shacks",
+    "factions": ["scav"],
+    "position": {
+      "x": 205.5899,
+      "y": 3.719995,
+      "z": 3.31001282
+    }
+  },
+  {
+    "key": "warehouse_4",
+    "factions": ["scav"],
+    "position": {
+      "x": 341.569946,
+      "y": 3.550012,
+      "z": -25.84999
+    }
+  },
+  {
+    "key": "old_gas_station_gate",
+    "factions": ["scav"],
+    "position": {
+      "x": 300.509,
+      "y": 3.469995,
+      "z": -198.522247
+    }
+  },
+  {
+    "key": "factory_far_corner",
+    "factions": ["scav"],
+    "position": {
+      "x": 652.454834,
+      "y": 3.19999838,
+      "z": -160.48848
+    }
+  },
+  {
+    "key": "administration_gate",
+    "factions": ["scav"],
+    "position": {
+      "x": 671.13,
+      "y": 3.19999838,
+      "z": -54.6699753
+    }
+  },
+  {
+    "key": "railroad_passage_flare",
+    "factions": ["pmc"],
+    "position": {
+      "x": 139.592712,
+      "y": 3.800012,
+      "z": -324.7145
+    }
+  },
+  {
+    "key": "scav_checkpoint",
+    "factions": ["scav"],
+    "position": {
+      "x": 652.24,
+      "y": 1.00499988,
+      "z": -27.1200027
+    }
+  },
+  {
+    "key": "boiler_room_basement_co_op",
+    "factions": ["shared"],
+    "position": {
+      "x": 100.56,
+      "y": -4.98,
+      "z": -44.42
+    }
+  },
+  {
+    "key": "smugglers_boat",
+    "factions": ["pmc"],
+    "position": {
+      "x": -41.5100021,
+      "y": -12.633,
+      "z": 122.67
+    }
+  },
+  {
+    "key": "smugglers_bunker_zb_1012",
+    "factions": ["pmc"],
+    "position": {
+      "x": 463.18,
+      "y": -1.46,
+      "z": -112.36
+    }
+  }
+]
