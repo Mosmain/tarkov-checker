@@ -1,7 +1,7 @@
 import chokidar from 'chokidar';
 import type { FastifyBaseLogger } from 'fastify';
 import { parseScreenshotFilename, quaternionToYawDegrees } from '@tarkov-checker/shared';
-import type { Hub } from '../ws.js';
+import type { Hub } from '../sse.js';
 
 export interface ScreenshotWatcher {
   stop: () => Promise<void>;

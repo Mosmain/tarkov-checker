@@ -1,7 +1,7 @@
 import type { FastifyBaseLogger } from 'fastify';
 import type { ResolvedPaths } from './paths.js';
 import { startScreenshotWatcher, type ScreenshotWatcher } from './screenshots.js';
-import type { Hub } from '../ws.js';
+import type { Hub } from '../sse.js';
 
 export { resolvePaths } from './paths.js';
 export type { ResolvedPath, ResolvedPaths, PathSource, ManualOverrides } from './paths.js';

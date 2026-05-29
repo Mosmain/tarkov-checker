@@ -8,16 +8,16 @@ import { useTauriOverlay } from '@/features/overlay/composables/useTauriOverlay'
 import { useGlobalShortcut } from '@/features/hotkeys/composables/useGlobalShortcut';
 import { useTrayIcon } from '@/features/overlay/composables/useTrayIcon';
 import { useOverlayBootstrap } from '@/features/overlay/composables/useOverlayBootstrap';
-import { wsUrl } from '@/shared/config';
+import { eventsUrl } from '@/shared/config';
 
 const { clickThrough: overlayClickThrough } = storeToRefs(useOverlayStore());
 const { lockHotkey } = storeToRefs(useHotkeysStore());
 
 const { isTauri } = useTauriOverlay();
 
-// Browser/PWA mode talks to the LAN Node server; Tauri mode shortcuts the
-// WS layer and listens for Rust-emitted events directly.
-const { status } = useServerTransport(wsUrl());
+// Browser/PWA mode talks to the LAN Node server over SSE; Tauri mode shortcuts
+// that layer and listens for Rust-emitted events directly.
+const { status } = useServerTransport(eventsUrl());
 provideTransportStatus(status);
 
 // Lock toggle is the only truly global hotkey — every other map-specific

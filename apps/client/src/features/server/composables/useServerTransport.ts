@@ -1,5 +1,5 @@
 import type { PositionMessage } from '@shared/ws-messages';
-import { useWebSocket } from './useWebSocket';
+import { useServerStream } from './useServerStream';
 import { dispatchServerEvent } from './useServerEvents';
 
 export type TransportStatus = 'connecting' | 'open' | 'closed';
@@ -25,11 +25,11 @@ type PositionPayload = Omit<PositionMessage, 'type'>;
  *   screenshot watcher. Status is hardcoded to `"open"` once listeners are
  *   attached — the same process owns both sides, so there isn't any
  *   meaningful "down" state to surface.
- * - In a plain browser (PWA on phone): falls back to the LAN WebSocket
- *   server (Node `apps/server`) on port 3000.
+ * - In a plain browser (PWA on phone): falls back to the LAN SSE stream
+ *   (Node `apps/server` `GET /events`) on port 3000.
  */
-export function useServerTransport(wsUrl: string): UseServerTransport {
-  if (!isTauri) return useWebSocket(wsUrl);
+export function useServerTransport(streamUrl: string): UseServerTransport {
+  if (!isTauri) return useServerStream(streamUrl);
 
   const status = ref<TransportStatus>('connecting');
   let unlisten: (() => void) | null = null;

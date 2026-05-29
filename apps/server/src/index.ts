@@ -2,10 +2,9 @@ import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
-import websocket from '@fastify/websocket';
 import { z } from 'zod';
 import { serverConfigUpdateSchema } from '@tarkov-checker/shared';
-import { Hub, registerWebSocket } from './ws.js';
+import { Hub, registerSse } from './sse.js';
 import { resolvePaths, WatcherManager } from './watchers/index.js';
 import { ConfigStore } from './config-store.js';
 import { ExtractsCache } from './extracts-cache.js';
@@ -33,12 +32,11 @@ await app.register(cors, {
   origin: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 });
-await app.register(websocket);
 
 app.get('/health', () => ({ ok: true, t: Date.now() }));
 
 const hub = new Hub();
-await registerWebSocket(app, hub);
+registerSse(app, hub);
 
 const configStore = new ConfigStore(CONFIG_FILE);
 await configStore.load();

@@ -17,8 +17,8 @@
   a plain browser PWA on a phone. `useServerTransport` and the
   `api/*.ts` files branch on `"__TAURI_INTERNALS__" in window`: Tauri
   → `invoke(...)` + `listen('position', ...)`; browser → `fetch
-http://<host>:3000` + `new WebSocket(...)`.
-- `packages/shared` — source of truth for the WS payload shapes
+http://<host>:3000` + `new EventSource(.../events)` (SSE).
+- `packages/shared` — source of truth for the position payload shape
   (zod schemas + inferred types, consumed by client + Node server) and
   for the raw-code → display-name + SVG-filename table in `src/maps.ts`
   (`bigmap` → `{displayName:"Customs", svgFile:"Customs.svg"}`). The
@@ -306,7 +306,7 @@ modules in `apps/server/src/` 1:1 so cross-checking stays cheap:
 | `watchers/paths.ts` + `registry.ts`        | `server/paths.rs`                                     | `reg query` subprocess → `winreg` direct                                                 |
 | `config-store.ts`                          | `server/config.rs`                                    | JSON in `apps/server/data/` → `%APPDATA%/tarkov-checker/`                                |
 | `extracts-cache.ts`                        | `server/extracts.rs`                                  | per-lang `inFlight` Map → outer `tokio::sync::Mutex` (single user, serializing is cheap) |
-| `ws.ts` Hub broadcast                      | `app.emit("position", ...)`                           | WS fan-out → Tauri event                                                                 |
+| `sse.ts` Hub broadcast                     | `app.emit("position", ...)`                           | SSE fan-out → Tauri event                                                                |
 | `GET/PUT /api/config`, `GET /api/extracts` | `commands::{get_config, update_config, get_extracts}` | HTTP routes → IPC commands                                                               |
 
 Frontend doesn't know which backend it talks to. Switch is in two
@@ -314,7 +314,8 @@ places only:
 
 - `apps/client/src/composables/useServerTransport.ts` — Tauri:
   `listen('position', ...)` + status hard-coded to `"open"`. Browser:
-  delegates to the legacy `useWebSocket` composable.
+  delegates to the `useServerStream` composable (SSE / `EventSource`,
+  which auto-reconnects).
 - `apps/client/src/api/{server-config,tarkov-dev}.ts` — Tauri: dynamic
   import of `@tauri-apps/api/core` + `invoke(...)`. Browser: `fetch`.
 
