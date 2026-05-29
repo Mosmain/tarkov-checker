@@ -1,4 +1,8 @@
-import type { Position3D } from './tarkov-api.js';
+export interface Position3D {
+  x: number;
+  y: number;
+  z: number;
+}
 
 export interface Quaternion {
   qx: number;

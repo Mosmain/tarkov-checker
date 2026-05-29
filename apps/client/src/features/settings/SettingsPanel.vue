@@ -5,7 +5,6 @@ import ExtractsSection from './sections/ExtractsSection.vue';
 import PlayerSection from './sections/PlayerSection.vue';
 import OverlaySection from './sections/OverlaySection.vue';
 import HotkeysSection from './sections/HotkeysSection.vue';
-import CacheSection from './sections/CacheSection.vue';
 import LanguageSection from './sections/LanguageSection.vue';
 import PathsSection from './sections/PathsSection.vue';
 
@@ -56,7 +55,6 @@ const open = ref(false);
       <PlayerSection />
       <OverlaySection v-if="overlay.isTauri" />
       <HotkeysSection v-if="overlay.isTauri" />
-      <CacheSection />
 
       <div class="pt-2 mt-2 border-t border-surface-700">
         <p class="mb-3 text-[10px] font-semibold uppercase tracking-wider opacity-50">

@@ -1,5 +1,5 @@
-import type { PositionMessage } from '@shared/ws-messages';
-import { useWebSocket } from './useWebSocket';
+import type { MapChangeMessage, PositionMessage } from '@shared/ws-messages';
+import { useServerStream } from './useServerStream';
 import { dispatchServerEvent } from './useServerEvents';
 
 export type TransportStatus = 'connecting' | 'open' | 'closed';
@@ -10,10 +10,11 @@ export interface UseServerTransport {
 
 const isTauri = '__TAURI_INTERNALS__' in window;
 
-// The Rust side emits the position payload without the discriminator — the
-// event channel name ("position") already carries that information, so the
-// payload shape is PositionMessage minus the literal `type` field.
+// The Rust side emits each payload without its discriminator — the event
+// channel name already carries that information, so the payload shape is the
+// message minus its literal `type` field.
 type PositionPayload = Omit<PositionMessage, 'type'>;
+type MapChangePayload = Omit<MapChangeMessage, 'type'>;
 
 /**
  * Single entry point for "server-pushed" messages — mount once at the app
@@ -21,31 +22,37 @@ type PositionPayload = Omit<PositionMessage, 'type'>;
  * `useServerEvents` bus; subscribers attach with `useServerEvent(type, ...)`
  * without prop-drilling through the component tree.
  *
- * - In Tauri: subscribes to the `position` event emitted by the Rust
- *   screenshot watcher. Status is hardcoded to `"open"` once listeners are
+ * - In Tauri: subscribes to the `position` and `map-change` events emitted
+ *   by the Rust watchers. Status is hardcoded to `"open"` once listeners are
  *   attached — the same process owns both sides, so there isn't any
  *   meaningful "down" state to surface.
- * - In a plain browser (PWA on phone): falls back to the LAN WebSocket
- *   server (Node `apps/server`) on port 3000.
+ * - In a plain browser (e.g. phone on the LAN): falls back to the LAN SSE
+ *   stream (Node `apps/server` `GET /events`) on port 3000.
  */
-export function useServerTransport(wsUrl: string): UseServerTransport {
-  if (!isTauri) return useWebSocket(wsUrl);
+export function useServerTransport(streamUrl: string): UseServerTransport {
+  if (!isTauri) return useServerStream(streamUrl);
 
   const status = ref<TransportStatus>('connecting');
-  let unlisten: (() => void) | null = null;
+  let unlistens: Array<() => void> = [];
 
   onMounted(async () => {
     const { listen } = await import('@tauri-apps/api/event');
-    const handle = await listen<PositionPayload>('position', (event) => {
-      dispatchServerEvent({ type: 'position', ...event.payload });
-    });
-    unlisten = handle;
+    unlistens.push(
+      await listen<PositionPayload>('position', (event) => {
+        dispatchServerEvent({ type: 'position', ...event.payload });
+      }),
+    );
+    unlistens.push(
+      await listen<MapChangePayload>('map-change', (event) => {
+        dispatchServerEvent({ type: 'map-change', ...event.payload });
+      }),
+    );
     status.value = 'open';
   });
 
   onBeforeUnmount(() => {
-    unlisten?.();
-    unlisten = null;
+    for (const off of unlistens) off();
+    unlistens = [];
     status.value = 'closed';
   });
 

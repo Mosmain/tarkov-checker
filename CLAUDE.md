@@ -3,27 +3,31 @@
 ## What each package owns
 
 - `apps/desktop` — Tauri 2 wrapper. Owns the production app: Rust
-  in-process port of the watcher/config/extracts pipeline (under
+  in-process port of the watcher/config pipeline (under
   `src-tauri/src/server/`), plus the IPC commands the webview calls.
   This is what ships as the single 6 MB `.exe`. See "Desktop overlay's
   in-process server" below.
-- `apps/server` — **LAN-only Node/Fastify backend**, kept for the
-  phone/PWA scenario (browser client connects over WS+HTTP to a PC
-  that's running `pnpm dev`). Not bundled into the desktop overlay
-  anymore — same watcher logic lives natively in `apps/desktop`. When
-  changing watcher/parser/cache behaviour, **update both ports** or
-  they'll drift.
-- `apps/client` — Vue PWA + Leaflet map. Runs both inside Tauri and as
-  a plain browser PWA on a phone. `useServerTransport` and the
+- `apps/server` — **LAN-only Node/Fastify backend** for the phone-as-
+  second-screen scenario: serves the built SPA from `apps/client/dist/`
+  via `@fastify/static`, plus `/api/config` and `/events` (SSE). Not
+  bundled into the desktop overlay — the same watcher logic lives
+  natively in `apps/desktop`. When changing watcher/parser/cache
+  behaviour, **update both ports** or they'll drift.
+- `apps/client` — Vue + Leaflet map. Runs both inside Tauri and as a
+  plain browser page on a phone. `useServerTransport` and the
   `api/*.ts` files branch on `"__TAURI_INTERNALS__" in window`: Tauri
-  → `invoke(...)` + `listen('position', ...)`; browser → `fetch
-http://<host>:3000` + `new WebSocket(...)`.
-- `packages/shared` — source of truth for the WS payload shapes
+  → `invoke(...)` + `listen('position', ...)`; browser → same-origin
+  `fetch('/api/*')` + `new EventSource('/events')` (Vite proxies to
+  Fastify in dev; Fastify owns everything in prod).
+- `packages/shared` — source of truth for the position payload shape
   (zod schemas + inferred types, consumed by client + Node server) and
-  for the raw-code → display-name + SVG-filename table in `src/maps.ts`
-  (`bigmap` → `{displayName:"Customs", svgFile:"Customs.svg"}`). The
-  Rust port in `apps/desktop` redeclares the message shapes natively —
-  there's no zod-to-Rust bridge, just hand-kept parity.
+  for the Tarkov map calibration table in `src/maps.ts` — keyed by raw
+  in-game `nameId` (`bigmap`, `factory4_day`, `tarkovstreets`, ...) with
+  per-map `displayName`, `svgFile`, `transform`, `bounds`, `rotation`,
+  `floors`, and a `canonical` field that aliases like `factory4_night`
+  use to resolve back to their base entry. The Rust port in
+  `apps/desktop` redeclares the position payload natively — no zod-to-
+  Rust bridge, just hand-kept parity on that single shape.
 - `apps/client/public/maps/` — git submodule of the community SVG maps
   ([the-hideout/tarkov-dev-svg-maps](https://github.com/the-hideout/tarkov-dev-svg-maps),
   CC BY-NC-SA 4.0). Served as static files by Vite at `/maps/<File>.svg`.
@@ -42,8 +46,14 @@ Two independent dev scenarios:
 - **LAN/phone mode**: `pnpm dev` from repo root runs `turbo run dev` —
   brings up the Node server (`:3000`) and the Vite dev server (`:5173`,
   host `0.0.0.0`) in parallel. Phone on the same LAN visits
-  `http://<pc-ip>:5173` and the client falls back to its WS+HTTP path.
-  This flow does **not** involve the Tauri overlay.
+  `http://<pc-ip>:5173`; Vite proxies `/api/*` and `/events` to the
+  Fastify backend on :3000 (see `server.proxy` in `vite.config.ts`), so
+  the browser only ever sees one origin. **Prod LAN mode** (no Vite):
+  `pnpm build` then `pnpm --filter @tarkov-checker/server start` —
+  Fastify serves the built SPA from `apps/client/dist/` plus its own
+  `/api` + `/events`. Phone hits `http://<pc-ip>:3000` for both. CORS is
+  not configured anywhere because there's never a cross-origin request.
+  Neither flow involves the Tauri overlay.
 
 `apps/desktop/src-tauri/tauri.conf.json` keeps `beforeDevCommand` empty
 so Vite isn't double-spawned when run under Turbo.
@@ -125,19 +135,94 @@ Labs) have floor groups (Basement, Ground_Floor, ...). Any floor-
 switcher UI must consult a per-map allowlist of which group IDs are
 "floors" — don't toggle all top-level groups blindly.
 
-## tarkov.dev API client
+## Extracts dataset (static)
 
-`apps/client/src/api/tarkov-dev.ts` is a thin GraphQL client (plain
-`fetch`, per-language promise cache, zod-validated payloads — no Apollo/
-urql for a handful of queries). Schemas live in
-`packages/shared/src/tarkov-api.ts` so the server can reuse them later
-if needed.
+Source of truth is `apps/client/src/features/map/data/extracts/` — one JSON
+file per canonical map (`bigmap.json`, `tarkovstreets.json`, ...), each a
+flat array of `{key, factions[], position}` entries. Hand-curated, bundled
+into the client, no runtime fetch. Vite's `import.meta.glob('./extracts/
+*.json', { eager: true })` in `data/extracts.ts` indexes the files at
+build time — adding a new map is just dropping a file, no manual list to
+update.
 
-`Map.nameId` from the API matches our raw Tarkov codes (`bigmap`,
-`factory4_day`, `RezervBase`, ...) case-insensitively — see
-`fetchExtractsForMap` for the lookup. The `lang` argument is keyed
-into the cache so refetching after a language switch is just one HTTP
-hit per language per session.
+Only canonical map codes get a file (the keys of `TARKOV_MAPS` with
+`canonical === null`); aliases like `factory4_night` and `sandbox_high`
+resolve through `canonicalMapCode()` from `@shared/maps`, so the data tree
+only stores one record per logical map. Display names — both for the map
+itself and for each extract — live in i18n: `mapNames.<canonicalMapCode>`
+and `extractNames.<canonicalMapCode>.<key>` under
+`apps/client/src/features/i18n/locales/{en,ru}.json`. The JSON files hold
+no strings — adding a language is a locale-only change.
+
+`factions` is an array because one physical exit can serve multiple sides
+(PMC + Scav share the same door). At render time the client **merges
+co-located extracts** that round to the same `(x, z)` bucket — Customs has
+dorms V-Ex (PMC) and old road gate (Scav) ~1m apart, they become a single
+composite marker. See "Map rendering layers" below for how that composite
+icon (45° clip-path slices) and the multi-row tooltip (one row per
+distinct name, faction-coloured stripe) are wired.
+
+Adding a new map: drop a `<canonicalCode>.json` file (flat array of
+`{key, factions[], position}`) into `data/extracts/`, add its display name
+to `mapNames.<code>` and each extract's name to `extractNames.<code>.<key>`
+in both locale files, and ensure the `<code>` exists in `TARKOV_MAPS` with
+SVG/calibration. No script — `import.meta.glob` picks up the file at next
+build.
+
+The dataset was originally seeded from tarkov.dev's GraphQL `maps { nameId
+extracts { name faction position { x y z } } }` (lang `en` + `ru`).
+tarkov.dev's faction tags are known to be wrong on several maps (Streets,
+Ground Zero); the per-map JSONs hold the curated truth. Keep `key` stable
+when correcting names — rename the i18n string, not the JSON id.
+
+**`@intlify/unplugin-vue-i18n` caveat:** locale JSON is pre-compiled by
+the Vite plugin and does NOT re-trigger HMR when the files change on
+disk. After editing `mapNames` / `extractNames` in `locales/{en,ru}.json`,
+restart `vite dev` — otherwise `te()` returns false and `t()` echoes the
+key back in the running app.
+
+## Map rendering layers
+
+`apps/client/src/features/map/` is split into two sibling folders by
+ownership:
+
+- `composables/` — **framework hooks** for Leaflet/Vue plumbing:
+  `useLeafletMap`, `useMapController`, `useFloorSwitcher`,
+  `usePlayerMarker`. Nothing here knows about extracts (or future quest
+  markers, loot, ...) — pure map/Leaflet glue.
+- `layers/<name>/` — **domain layers** rendered on top of the map. Each
+  layer fully owns its concerns: data adapter, icon HTML, tooltip HTML,
+  the composable that wires it into Leaflet. Today there's only one:
+
+      layers/extracts/
+        useExtractMarkers.ts    # Leaflet/Vue glue + public types
+        icon.ts                 # slice geometry + makeIcon (composite via CSS clip-path)
+        tooltip.ts              # buildTooltipHtml + escapeHtml + sortedEntries
+
+  When quest markers (or anything else) get added later, mirror this
+  shape: `layers/quests/{useQuestMarkers,icon,tooltip}.ts`. Don't lump
+  them into `composables/`.
+
+Extract markers are `L.divIcon` instances (not `L.icon`) — the composite
+PNG split via CSS `clip-path: polygon(...)` is built inline as HTML.
+Single-faction = one `<img>`; 2 or 3 factions = stacked `<img>`s with `/`-
+diagonal clip slices (area-balanced thirds for the 3-faction case). The
+icon reacts to the faction filter dynamically: turning Scav off on a
+PMC+Scav exit re-renders the icon as a clean PMC. Tailwind's preflight
+gives `<img>` `max-width: 100%` which collapses the icon to 0 inside
+Leaflet's positioned wrapper, so `styles.css` keeps an override:
+
+```
+.leaflet-extracts-pane .extract-icon-divicon img {
+  max-width: none !important; max-height: none !important;
+}
+```
+
+Tooltip is multi-row (one row per distinct name), each row carries a
+faction-coloured left stripe via `.extract-tooltip-row--{pmc|scav|shared}`
+or `.extract-tooltip-row--multi` when factions share a name. `direction:
+'top'` keeps the tooltip above the icon; `tooltipAnchor` inside the
+icon's top edge gives a few pixels of overlap for visual cohesion.
 
 ## Tarkov path resolution
 
@@ -166,61 +251,53 @@ tooling sometimes sets `PORT=5173` for the whole runner. Don't read
 `PORT` in the Node server. The Rust port doesn't listen on any TCP
 port at all.
 
-`@fastify/cors` (Node side) must whitelist `PUT` explicitly — its
-default methods list is `GET,HEAD,POST` and the preflight responds
-with 204 but the actual PUT then gets dropped silently in the browser.
-
 ## User settings
 
-`apps/client/src/stores/settings.ts` is the single Pinia store. Persisted
-fields (zod-validated, versioned `STORAGE_KEY = "tarkov-checker:settings:v3"`):
+Persisted state lives in **per-feature** Pinia stores, not one big store:
 
-- `apiLang` — `"en" | "ru"`
-- `extractFactions` — array of `"pmc" | "scav" | "shared"`
-- `extractLabelMode` — `"hover" | "always"` (tooltip permanence)
-- `extractLabelSize` — `"sm" | "md" | "lg"` (font-size; applied via the
-  `--extract-label-size` CSS variable on `<html>` from `useLeafletMap`)
-- `playerFollow` — `"off" | "sm" | "md" | "lg"` — auto-recenter + zoom on
-  every fresh position update. Wired in `useLeafletMap.setPlayerFollow`:
-  the composable compares each incoming `(x, z)` against the last followed
-  point and only re-centers when it actually changed (skips spam updates
-  when the player is standing still). Zoom level per step is `initialZoom +
-FOLLOW_ZOOM_DELTA[mode]`.
-- `mapCode` — current Tarkov map
-- `overlayAlwaysOnTop`, `overlayClickThrough`, `overlayOpacity` (0.3–1),
-  `overlayZoom` (`"75" | "100" | "125" | "150"`) — overlay-only, see
-  "Desktop overlay" below
+- `apps/client/src/features/map/store.ts` — map/extract settings:
+  - `mapCode` — current Tarkov map.
+  - `extractFactions` — array of `"pmc" | "scav" | "shared"`.
+  - `extractLabelMode` — `"hover" | "always"` (tooltip permanence).
+  - `extractLabelSize` — `"sm" | "md" | "lg"` (font-size; applied via
+    the `--extract-label-size` CSS variable on `<html>` from
+    `useExtractMarkers.setLabelSize` — which also re-binds tooltips so
+    Leaflet recomputes positions for the new height).
+  - `playerFollow` — `"off" | "sm" | "md" | "lg"` — auto-recenter + zoom on
+    every fresh position update. Wired in `useLeafletMap.setPlayerFollow`;
+    only re-centers when `(x, z)` actually changes (skips spam updates when
+    the player stands still). Zoom step: `initialZoom + FOLLOW_ZOOM_DELTA[mode]`.
+  - `autoMapSwitch` — boolean, default `true`. When on, incoming
+    `map-change` events from the logs watcher flip `mapCode` to whatever
+    the game just loaded (resolved through `canonicalMapCode()` so
+    aliases like `factory4_night` → `factory4_day` collapse). Unknown
+    `rawMapId`s (a fresh BSG map we haven't added to `TARKOV_MAPS` yet)
+    are silently dropped with one `console.warn`. Wiring lives in
+    `features/map/composables/useAutoMapSwitch.ts`, mounted once at
+    `App.vue` root.
+- `apps/client/src/features/i18n/store.ts` — `apiLang` (`"en" | "ru"`).
+  The store's `watch(apiLang, ..., {immediate: true})` mirrors the value
+  into vue-i18n's `locale`; `main.ts` calls `useI18nStore()` eagerly after
+  `app.use(createPinia())` so the persisted language is applied before any
+  component reads `t()`.
+- `apps/client/src/features/hotkeys/store.ts` — per-action hotkey combos.
+- `apps/client/src/features/overlay/store.ts` — Tauri-only:
+  `clickThrough`, `alwaysOnTop`, `opacity` (0.3–1), `zoom`
+  (`"75" | "100" | "125" | "150"`).
 
-Corrupt persisted data → silent fallback to defaults. UI lives in
-`components/SettingsPanel.vue` — gear icon sits in the **top-right** cluster
-next to the WS status pill (App.vue), opens a PrimeVue `Drawer`
-(right-side on desktop, `position="full"` on `<640px`). The drawer is split
-into a top "frequently changed" section (Map / Extracts / Cache) and a
-"СИСТЕМНЫЕ / System" sub-section (Language / Tarkov paths). The Overlay
-fieldset is conditionally rendered only when `useTauriOverlay().isTauri`.
+Each store uses `persistedRef` from `@/shared/persisted-store` with its
+own key (`tc.<feature>.<field>`) — corrupt persisted data falls back to
+defaults silently.
 
-Extract label-size and label-mode are independent. `useLeafletMap.setLabelMode`
-re-binds tooltips (permanent vs sticky), `setLabelSize` just writes
-`--extract-label-size` (no rebind needed — CSS recalcs).
+Settings UI: `apps/client/src/features/settings/SettingsPanel.vue` — gear
+icon in the top-right cluster next to the transport-status pill (`App.vue`),
+opens a PrimeVue `Drawer` (right-side on desktop, `position="full"` on
+`<640px`). Sections in order: Map / Extracts / Player / Overlay (Tauri only)
+/ Hotkeys (Tauri only) — then a "СИСТЕМНЫЕ / System" divider with Language
+and Tarkov paths.
 
 Faction colours come from `FACTION_COLORS` in `packages/shared/src/maps.ts`
-so map icons and tooltip border-lefts never drift. **Tooltips** use Bender
-Bold uppercase + `letter-spacing: 0.08em`, surface-900 background with a
-3px faction-coloured left border (`.extract-tooltip--{pmc|scav|shared}`).
-`useLeafletMap` appends the faction suffix to the tooltip className.
-
-**Extract markers** are `L.marker` with `L.icon` referencing PNGs in
-`public/icons/extracts/extract_{pmc,scav,shared}.png` (26×26 anchored
-center). Earlier `CircleMarker` is gone. The `extracts` Leaflet pane is a
-custom `<div>` (z 500) and needs an explicit CSS override in `styles.css`
-to undo Tailwind preflight's `img { max-width: 100% }` — without it the
-marker img collapses to width:0:
-
-```
-.leaflet-extracts-pane img.leaflet-marker-icon {
-  max-width: none !important; max-height: none !important; width: auto;
-}
-```
+so icons and tooltip stripes never drift across components.
 
 ## Desktop overlay (Tauri)
 
@@ -231,13 +308,13 @@ and no native close button — close is in the app UI, drag is via
 `startDragging()`.
 
 Frontend access to window APIs goes through `useTauriOverlay()`
-(`apps/client/src/composables/useTauriOverlay.ts`). Detection is
-`"__TAURI_INTERNALS__" in window`. In browser context every method is a
-no-op so the same code path serves both.
+(`apps/client/src/features/overlay/composables/useTauriOverlay.ts`).
+Detection is `"__TAURI_INTERNALS__" in window`. In browser context every
+method is a no-op so the same code path serves both.
 
 **Overlay controls** (only rendered when `isTauri`):
 
-- **Drag region** — the WS-status pill in `App.vue`'s top-right cluster.
+- **Drag region** — the transport-status pill in `App.vue`'s top-right cluster.
   Uses an explicit `@mousedown` handler that calls `getCurrentWindow().
 startDragging()` rather than `data-tauri-drag-region` attribute, which
   is flaky on `decorations: false + transparent: true` windows. Child
@@ -303,31 +380,69 @@ modules in `apps/server/src/` 1:1 so cross-checking stays cheap:
 | Node (LAN backend)                         | Rust (in-process)                                     | Purpose                                                                                  |
 | ------------------------------------------ | ----------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | `watchers/screenshots.ts`                  | `server/screenshots.rs`                               | chokidar `awaitWriteFinish` → `notify-debouncer-full` 250 ms                             |
+| `watchers/logs.ts`                         | `server/logs.rs`                                      | tail `* application_NNN.log` in latest `log_*/`; emit `map-change` on `rcid:` / `Location:` hits |
 | `watchers/paths.ts` + `registry.ts`        | `server/paths.rs`                                     | `reg query` subprocess → `winreg` direct                                                 |
 | `config-store.ts`                          | `server/config.rs`                                    | JSON in `apps/server/data/` → `%APPDATA%/tarkov-checker/`                                |
-| `extracts-cache.ts`                        | `server/extracts.rs`                                  | per-lang `inFlight` Map → outer `tokio::sync::Mutex` (single user, serializing is cheap) |
-| `ws.ts` Hub broadcast                      | `app.emit("position", ...)`                           | WS fan-out → Tauri event                                                                 |
-| `GET/PUT /api/config`, `GET /api/extracts` | `commands::{get_config, update_config, get_extracts}` | HTTP routes → IPC commands                                                               |
+| `sse.ts` Hub broadcast                     | `app.emit("position" \| "map-change", ...)`           | SSE fan-out → Tauri event                                                                |
+| `GET/PUT /api/config`                      | `commands::{get_config, update_config}`               | HTTP routes → IPC commands                                                               |
 
 Frontend doesn't know which backend it talks to. Switch is in two
 places only:
 
-- `apps/client/src/composables/useServerTransport.ts` — Tauri:
-  `listen('position', ...)` + status hard-coded to `"open"`. Browser:
-  delegates to the legacy `useWebSocket` composable.
-- `apps/client/src/api/{server-config,tarkov-dev}.ts` — Tauri: dynamic
-  import of `@tauri-apps/api/core` + `invoke(...)`. Browser: `fetch`.
+- `apps/client/src/features/server/composables/useServerTransport.ts` —
+  Tauri: `listen('position', ...)` + status hard-coded to `"open"`.
+  Browser: delegates to the `useServerStream` composable (SSE /
+  `EventSource`, which auto-reconnects).
+- `apps/client/src/features/server/api/transport.ts` — single dispatch
+  for HTTP/IPC calls. Tauri: dynamic import of `@tauri-apps/api/core` +
+  `invoke(...)`. Browser: same-origin `fetch` (Vite proxy → Fastify in
+  dev; Fastify direct in prod).
 
-The Rust port uses `reqwest` with `native-tls` (Windows SChannel) — not
-`rustls-tls`, because `ring`'s cc-rs invocation of `cl.exe` segfaults
-in this environment (`STATUS_ACCESS_VIOLATION` from the C compiler).
-Stay on `native-tls` unless you've verified the rustc/cl spawn issues
-are gone.
+The Rust crate has no HTTP client — `reqwest` was removed along with the
+old `get_extracts` command, since the extracts dataset is now bundled
+into the SPA. The Rust port only watches the filesystem and writes
+config; nothing reaches out to the network.
 
-`PositionPayload` (struct in `screenshots.rs`) and the TS
-`PositionMessage` schema in `packages/shared/src/ws-messages.ts` must
-stay in sync. Same for `MapExtracts` ↔ zod `mapExtracts`. If you add a
-field, update both ports + the zod schema.
+`PositionPayload` (struct in `screenshots.rs`) and `MapChangePayload`
+(struct in `logs.rs`) on the Rust side mirror `PositionMessage` and
+`MapChangeMessage` from `packages/shared/src/ws-messages.ts`. Adding a
+new event type means touching all four declarations (TS schema + TS
+discriminated union + Rust payload + Tauri `listen()` call in
+`useServerTransport.ts`); the file is still called `ws-messages.ts` for
+historical reasons (was the WS schema before the SSE migration).
+
+The logs watcher (`logs.ts` / `logs.rs`) tails the **latest** `log_*/`
+session folder under `logsDir` — picked by sort order (timestamps in the
+folder name). On startup it scans the tail of the active
+`application_NNN.log` (~64 KB window) for the most recent map-load line
+and emits one seed `map-change` so the overlay snaps to whatever map
+Tarkov is currently in (mid-raid or post-extract). After that it tails
+from EOF, watches for new `log_*/` folders (next game launch) and for
+higher-suffix `application_NNN.log` rotations within the active folder.
+The parser regex lives once in `@shared/parse-log.ts` (Node) and is
+mirrored literally in `server/logs.rs` (Rust) — `SCENE_PRESET_RE` +
+`TRANSIT_LOCATION_RE` + `TRACE_LOCATION_RE` — keep them in sync. The
+parser **lowercases its capture group** before returning, so callers
+have a stable key regardless of which line shape produced the hit. Same
+map, three case conventions observed live on 2026-05-30 in patch
+1.0.5.0:
+
+| Line shape | Sample id | Note |
+| --- | --- | --- |
+| `rcid:<id>.scenespreset.asset` | `factory_day` / `city` / `Rezerv_Base` | primary, fires ~30s before raid; case varies per map |
+| `[Transit] Locations:<id>` | `factory4_day` / `TarkovStreets` / `RezervBase` | canonical legacy id, fires after `LocationLoaded` |
+| `Location: <id>, Sid:` (TRACE) | `bigmap` | pre-1.0.5.0 only; line removed in 1.0.5.0 but pattern stays for historical session reads |
+
+Patch 1.0.5.0 also **renamed several scene-preset bundles** (BSG dropped
+the legacy "Factory 4" numbering and the `tarkov` prefix on Streets,
+swapped Reserve's `rezervbase` for `Rezerv_Base`). The `[Transit]`
+`Locations:` field still emits the canonical legacy id, so the parser's
+secondary pattern works as a no-alias fallback. The primary `rcid:` path
+is faster but needs alias maintenance: `TARKOV_MAPS` carries
+`factory_day` / `factory_night` / `city` / `rezerv_base` alias entries
+pointing back to their canonical via the same `canonical:` field already
+used for `factory4_night` and `sandbox_high`. Adding a future rename =
+one new alias entry + one new test case in `parse-log.spec.ts`.
 
 `bundle.active: false` in `tauri.conf.json` — overlay:build skips MSI
 and NSIS, just produces the bare `.exe` at
@@ -453,5 +568,3 @@ yourself debugging local rustc crashes again, push a tag instead.**
   reproducibility matters. `2>&1` in PowerShell with native commands
   wraps stderr as ErrorRecord and trips `$?` even on success; use the
   default stream behaviour and let PS capture both streams to file.
-- PWA icons under `apps/client/public/icons/` (root) are placeholders
-  separate from the Tauri ones in `apps/desktop/src-tauri/icons/`.

@@ -1,0 +1,182 @@
+[
+  {
+    "key": "friendship_bridge_co_op",
+    "factions": ["shared"],
+    "position": {
+      "x": 93.17,
+      "y": 16.57,
+      "z": -843.98
+    }
+  },
+  {
+    "key": "ruaf_gate",
+    "factions": ["pmc"],
+    "position": {
+      "x": -141.730011,
+      "y": -2.37,
+      "z": 446.8
+    }
+  },
+  {
+    "key": "zb_016",
+    "factions": ["pmc"],
+    "position": {
+      "x": -389.159973,
+      "y": 4.147001,
+      "z": 11.0449905
+    }
+  },
+  {
+    "key": "zb_014",
+    "factions": ["pmc"],
+    "position": {
+      "x": 447.24,
+      "y": -13.46346,
+      "z": 57.46
+    }
+  },
+  {
+    "key": "un_roadblock",
+    "factions": ["pmc"],
+    "position": {
+      "x": -536.1243,
+      "y": 1.68126917,
+      "z": 286.7704
+    }
+  },
+  {
+    "key": "bridge_v_ex",
+    "factions": ["pmc"],
+    "position": {
+      "x": -485.325745,
+      "y": 15.5812693,
+      "z": -504.061432
+    }
+  },
+  {
+    "key": "outskirts",
+    "factions": ["scav"],
+    "position": {
+      "x": 347.15567,
+      "y": -11.15,
+      "z": 360.0704
+    }
+  },
+  {
+    "key": "dead_man_s_place",
+    "factions": ["scav"],
+    "position": {
+      "x": 195.550049,
+      "y": -16.6887321,
+      "z": 259.210022
+    }
+  },
+  {
+    "key": "boat",
+    "factions": ["scav"],
+    "position": {
+      "x": 176.640015,
+      "y": -20.72,
+      "z": 215.859985
+    }
+  },
+  {
+    "key": "scav_house",
+    "factions": ["scav"],
+    "position": {
+      "x": 413.685669,
+      "y": -12.5587311,
+      "z": 242.17038
+    }
+  },
+  {
+    "key": "scav_bunker",
+    "factions": ["scav"],
+    "position": {
+      "x": 220.426651,
+      "y": 20.538269,
+      "z": -705.7956
+    }
+  },
+  {
+    "key": "mountain_stash",
+    "factions": ["scav"],
+    "position": {
+      "x": -210.334351,
+      "y": 31.47127,
+      "z": -213.4996
+    }
+  },
+  {
+    "key": "eastern_rocks",
+    "factions": ["scav"],
+    "position": {
+      "x": -509.364319,
+      "y": 23.9912682,
+      "z": -35.3295975
+    }
+  },
+  {
+    "key": "old_railway_depot",
+    "factions": ["scav"],
+    "position": {
+      "x": -517.93,
+      "y": 10.67,
+      "z": 149.19
+    }
+  },
+  {
+    "key": "un_roadblock_2",
+    "factions": ["scav"],
+    "position": {
+      "x": -535.2443,
+      "y": 1.43126917,
+      "z": 287.050385
+    }
+  },
+  {
+    "key": "ruaf_roadblock",
+    "factions": ["scav"],
+    "position": {
+      "x": -135.774353,
+      "y": 0.971269131,
+      "z": 416.2604
+    }
+  },
+  {
+    "key": "outskirts_2",
+    "factions": ["pmc"],
+    "position": {
+      "x": 349.035645,
+      "y": -9.148731,
+      "z": 358.580383
+    }
+  },
+  {
+    "key": "northern_un_roadblock",
+    "factions": ["pmc"],
+    "position": {
+      "x": -557.324341,
+      "y": 9.321269,
+      "z": -67.0496
+    }
+  },
+  {
+    "key": "power_line_passage_flare",
+    "factions": ["pmc"],
+    "position": {
+      "x": 573.985657,
+      "y": -1.7487309,
+      "z": -85.2596
+    }
+  },
+  {
+    "key": "railway_bridge_to_tarkov",
+    "factions": ["pmc"],
+    "position": {
+      "x": -730.43,
+      "y": 8.7,
+      "z": 129.32
+    }
+  }
+]

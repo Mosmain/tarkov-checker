@@ -1,14 +1,12 @@
 import * as path from 'node:path';
+import * as fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
-import cors from '@fastify/cors';
-import websocket from '@fastify/websocket';
-import { z } from 'zod';
+import fastifyStatic from '@fastify/static';
 import { serverConfigUpdateSchema } from '@tarkov-checker/shared';
-import { Hub, registerWebSocket } from './ws.js';
+import { Hub, registerSse } from './sse.js';
 import { resolvePaths, WatcherManager } from './watchers/index.js';
 import { ConfigStore } from './config-store.js';
-import { ExtractsCache } from './extracts-cache.js';
 
 const isDev = process.env['NODE_ENV'] !== 'production';
 // Distinct from Vite's PORT — preview tools sometimes set PORT for the
@@ -18,7 +16,10 @@ const HOST = process.env['HOST'] ?? '0.0.0.0';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_FILE = path.resolve(__dirname, '..', 'data', 'config.json');
-const EXTRACTS_CACHE_FILE = path.resolve(__dirname, '..', 'data', 'extracts-cache.json');
+// apps/server/dist/ → apps/client/dist/. In dev there's no client/dist
+// yet (the user runs `vite dev` separately), so static serving is
+// conditionally registered below.
+const CLIENT_DIST = path.resolve(__dirname, '..', '..', 'client', 'dist');
 
 const app = Fastify({
   logger: isDev
@@ -29,16 +30,10 @@ const app = Fastify({
     : { level: 'info' },
 });
 
-await app.register(cors, {
-  origin: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-});
-await app.register(websocket);
-
 app.get('/health', () => ({ ok: true, t: Date.now() }));
 
 const hub = new Hub();
-await registerWebSocket(app, hub);
+registerSse(app, hub);
 
 const configStore = new ConfigStore(CONFIG_FILE);
 await configStore.load();
@@ -65,34 +60,25 @@ app.put('/api/config', async (req, reply) => {
   return paths;
 });
 
-const extractsCache = new ExtractsCache(EXTRACTS_CACHE_FILE);
-await extractsCache.load();
-
-const langQuerySchema = z.object({
-  lang: z
-    .string()
-    .min(2)
-    .max(8)
-    .regex(/^[a-z-]+$/),
-  refresh: z.union([z.literal('0'), z.literal('1')]).optional(),
-});
-
-app.get('/api/extracts', async (req, reply) => {
-  const parsed = langQuerySchema.safeParse(req.query);
-  if (!parsed.success) {
-    reply.code(400);
-    return { error: parsed.error.flatten() };
-  }
-  const { lang, refresh } = parsed.data;
-  try {
-    const entry =
-      refresh === '1' ? await extractsCache.refresh(lang) : await extractsCache.getOrFetch(lang);
-    return { lang, fetchedAt: entry.fetchedAt, data: entry.data };
-  } catch (err) {
-    reply.code(502);
-    return { error: err instanceof Error ? err.message : String(err) };
-  }
-});
+// Prod path: Fastify owns the whole user-facing surface — built SPA plus
+// the same /api + /events routes the dev Vite server proxies onto us.
+// Dev path (no client/dist yet): Vite serves the SPA on :5173 and proxies
+// us — we just answer /api and /events here.
+if (fs.existsSync(CLIENT_DIST)) {
+  await app.register(fastifyStatic, { root: CLIENT_DIST, wildcard: false });
+  // SPA fallback so vue-router history mode works on hard refresh. Don't
+  // swallow API/SSE 404s — those should stay JSON errors, not HTML.
+  app.setNotFoundHandler((req, reply) => {
+    if (req.url.startsWith('/api') || req.url.startsWith('/events')) {
+      reply.code(404).send({ error: 'not found' });
+      return;
+    }
+    return reply.sendFile('index.html');
+  });
+  app.log.info({ root: CLIENT_DIST }, 'serving built SPA from /');
+} else {
+  app.log.info({ tried: CLIENT_DIST }, 'no built SPA on disk — dev mode, Vite will proxy us');
+}
 
 const shutdown = async (signal: string): Promise<void> => {
   app.log.info({ signal }, 'shutting down');

@@ -12,7 +12,7 @@ const isTauri = '__TAURI_INTERNALS__' in window;
  *
  * In Tauri the URL bar is invisible and route changes don't need to round-trip
  * through the browser history — memory history avoids stale entries when the
- * window is re-opened. The browser/PWA build keeps web history so deep links
+ * window is re-opened. The browser build keeps web history so deep links
  * (e.g. /raid on a phone) survive bookmarking.
  */
 export const router = createRouter({

@@ -3,6 +3,7 @@ import ConfirmationService from 'primevue/confirmationservice';
 import App from './App.vue';
 import { router } from '@/app/router';
 import { i18n } from '@/features/i18n';
+import { useI18nStore } from '@/features/i18n/store';
 import { TarkovPreset } from './theme';
 import './styles.css';
 
@@ -25,6 +26,14 @@ const app = createApp(App);
 app.use(createPinia());
 app.use(router);
 app.use(i18n);
+
+// Eager-init the i18n store so its `watch(apiLang, ..., {immediate: true})`
+// fires now and pushes the persisted locale into vue-i18n before any
+// component mounts. Otherwise the store only initialises when a component
+// happens to read it (e.g. LanguageSection in Settings) — until then
+// `i18n.locale` stays at the createI18n default ('en'), even if the user
+// previously picked RU. Cheap (no I/O), idempotent.
+useI18nStore();
 app.use(ConfirmationService);
 app.use(PrimeVue, {
   theme: {

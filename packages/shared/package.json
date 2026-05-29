@@ -17,10 +17,6 @@
     "./maps": {
       "types": "./dist/maps.d.ts",
       "import": "./dist/maps.js"
-    },
-    "./tarkov-api": {
-      "types": "./dist/tarkov-api.d.ts",
-      "import": "./dist/tarkov-api.js"
     }
   },
   "files": [
