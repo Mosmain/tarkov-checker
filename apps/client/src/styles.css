@@ -92,6 +92,32 @@ html.overlay-window body {
   clip-path: inset(0 round 12px);
 }
 
+/* Overlay opacity is applied here (not at the window level) so the edge
+   border on ::after stays at 100% regardless of the slider value. The CSS
+   variable is set by useTauriOverlay.setOpacity.
+   Scoped to `#app` rather than `body > *` so anything teleported to body
+   (PrimeVue Drawer mask, MapQuickMenu, ConfirmDialog) renders fully opaque
+   — those are explicit interaction surfaces and the user needs to read
+   them regardless of how transparent they've set the overlay. */
+html.overlay-window #app {
+  opacity: var(--overlay-opacity, 1);
+}
+
+/* Unlocked overlay: trace the rounded window edge so the user can find the
+   resize/drag boundary even after they've dialled the map opacity to 0 and
+   the corners are otherwise invisible. ::after sits inside body's clip, so
+   the border lines up with the rounded-rectangle boundary itself. Locked
+   state hides it — the lock indicator already conveys "no interaction". */
+html.overlay-window.overlay-unlocked body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  border: 2px solid rgb(from var(--p-primary-400) r g b / 0.9);
+  border-radius: 12px;
+  pointer-events: none;
+  z-index: 9999;
+}
+
 .leaflet-container {
   /* Fallback for older engines that don't grok relative-color syntax. */
   background: var(--p-surface-950);

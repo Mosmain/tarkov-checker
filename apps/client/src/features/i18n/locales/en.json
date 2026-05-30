@@ -37,7 +37,6 @@
     "heading": "Tarkov paths",
     "gameDir": "Game folder",
     "screenshotsDir": "Screenshots folder",
-    "logsDir": "Logs",
     "save": "Save",
     "saved": "Saved",
     "mobileHint": "Open this page on the machine running Tarkov to configure paths.",
@@ -65,15 +64,16 @@
   "hotkeys": {
     "heading": "Hotkeys",
     "lock": "Toggle lock",
-    "lockHint": "Pressed globally to toggle click-through. F1–F24 work without a modifier; everything else needs Ctrl/Alt/Shift.",
+    "lockHint": "Global shortcuts fire even when the game window is focused. Every binding needs at least one Ctrl / Alt / Shift.",
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
     "floorUp": "Next floor",
     "floorDown": "Previous floor",
+    "airdrop": "Mark airdrop",
     "record": "Change",
     "recording": "Recording…",
     "recordingPrompt": "Press the new combination (Esc to cancel)",
-    "invalid": "Need a modifier (Ctrl/Alt/Shift) — or a bare F-key.",
+    "invalid": "Need at least one modifier (Ctrl/Alt/Shift).",
     "conflict": "This combination is taken by another app. Try another."
   },
   "closeConfirm": {
@@ -81,6 +81,18 @@
     "message": "The window will be closed.",
     "accept": "Close",
     "reject": "Cancel"
+  },
+  "airdrop": {
+    "armedFirst": "Drop tracker armed while facing the airdrop and press PrintScreen",
+    "armedSecond": "Step sideways 5m, then press PrintScreen again",
+    "resultOk": "Predicted touchdown ~{dist}m away — {hotkey} to clear",
+    "failParallel": "Sight-lines parallel — change angle between shots",
+    "failBehind": "Intersection behind the shooter — face the drop on both screenshots",
+    "failTooFar": "Intersection {dist}m away — angle too narrow to triangulate",
+    "confirmClear": "Press {hotkey} again within {seconds}s to clear the drop marker",
+    "settingsHeading": "Airdrop tracker",
+    "radius": "Drop area radius",
+    "radiusHint": "How big the predicted-landing circle is on the map. Two-shot triangulation isn't perfectly precise — the circle just makes the uncertainty honest. Adjust to taste."
   },
   "tray": {
     "toggleLock": "Toggle lock",

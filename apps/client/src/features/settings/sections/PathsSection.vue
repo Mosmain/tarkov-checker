@@ -64,9 +64,6 @@ watch(
             fluid
           />
         </IconField>
-        <p class="mt-1 truncate text-[10px] opacity-50" :title="serverConfig.logsDir.value ?? ''">
-          {{ t('paths.logsDir') }}: {{ serverConfig.logsDir.value ?? '—' }}
-        </p>
       </div>
 
       <div>

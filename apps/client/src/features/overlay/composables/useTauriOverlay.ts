@@ -61,16 +61,15 @@ export function useTauriOverlay(): OverlayApi {
       await win.setIgnoreCursorEvents(on);
     },
     async setOpacity(value) {
-      try {
-        const win = (await loadTauriWindow()) as WindowLike;
-        await win.setOpacity(value);
-        // Native worked — clear any CSS fallback we may have applied earlier.
-        document.documentElement.style.opacity = '';
-      } catch {
-        // Layered-window opacity isn't permitted on this Tauri build — fall
-        // back to CSS so the slider stays visually responsive.
-        document.documentElement.style.opacity = String(value);
-      }
+      // CSS-variable approach instead of Tauri's native Window.setOpacity.
+      // Native layered-window opacity multiplies every pixel uniformly,
+      // which would dim the `body::after` window-edge border the user
+      // relies on to find the resize boundary at low map opacity. Scoping
+      // opacity to `body > *` (see styles.css) leaves the border at 100%.
+      // The transparent: true window bit in tauri.conf.json keeps the
+      // showing-through-the-desktop effect intact — we just fade the
+      // painted content instead of compositing the whole window.
+      document.documentElement.style.setProperty('--overlay-opacity', String(value));
     },
     async setZoom(factor) {
       const wv = (await loadTauriWebview()) as WebviewLike;

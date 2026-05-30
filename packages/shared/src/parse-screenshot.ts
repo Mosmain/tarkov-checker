@@ -17,7 +17,8 @@ export interface ParsedScreenshot {
 }
 
 /**
- * Tarkov F12-overlay screenshots embed the player's world position and
+ * Tarkov position-overlay screenshots (PrintScreen by default) embed the
+ * player's world position and
  * orientation in their filename. Recent builds use:
  *
  *   YYYY-MM-DD[HH-MM-SS]_<x>, <y>, <z>_<qx>, <qy>, <qz>, <qw>_<fov> (<n>).png

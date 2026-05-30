@@ -241,9 +241,9 @@ Same shape, two implementations — change one, change the other:
   screenshot watcher swaps to the new path without a restart.
 
 Priority is identical in both ports: env (`TARKOV_GAME_DIR`,
-`TARKOV_SCREENSHOT_DIR`, `TARKOV_LOG_DIR`) > manual override in the
-config file > registry auto-detect. `logsDir` is always derived from
-`gameDir + "Logs"` when not explicitly set.
+`TARKOV_SCREENSHOT_DIR`) > manual override in the config file > registry
+auto-detect. `logsDir` is always `gameDir + "Logs"` — no separate env or
+manual override, since the BSG layout pins it there.
 
 `SERVER_PORT` is the Fastify port (default 3000) and only applies to
 `apps/server`. Deliberately distinct from `PORT` because preview/dev

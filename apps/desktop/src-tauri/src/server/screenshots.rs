@@ -48,7 +48,7 @@ fn basename(p: &Path) -> Option<&str> {
     p.file_name().and_then(|n| n.to_str())
 }
 
-/// Parse the Tarkov F12-overlay screenshot filename. See the TS original
+/// Parse the Tarkov PrintScreen-overlay screenshot filename. See the TS original
 /// for the format reference.
 pub fn parse_screenshot_filename(path: &Path) -> Option<ParsedScreenshot> {
     let base = basename(path)?;
@@ -104,8 +104,8 @@ pub struct ScreenshotWatcher {
     _debouncer: Debouncer<notify::RecommendedWatcher, FileIdMap>,
 }
 
-/// Start watching `dir` non-recursively. New .png files matching the F12
-/// overlay pattern emit a `position` event on the AppHandle.
+/// Start watching `dir` non-recursively. New .png files matching the
+/// PrintScreen-overlay pattern emit a `position` event on the AppHandle.
 ///
 /// chokidar's `awaitWriteFinish: { stabilityThreshold: 250 }` is mirrored
 /// here by the debouncer's 250 ms timeout — only events that have been

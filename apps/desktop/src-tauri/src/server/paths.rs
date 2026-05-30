@@ -77,19 +77,15 @@ pub fn resolve(manual: &ManualOverrides) -> ResolvedPaths {
         .or_else(|| normalize(manual.game_dir.as_deref()).map(|v| ResolvedPath::from(Some(v), PathSource::Manual)))
         .unwrap_or_else(|| ResolvedPath::from(detected_game.clone(), PathSource::Detected));
 
-    let logs = match read_env("TARKOV_LOG_DIR") {
-        Some(v) => ResolvedPath::from(Some(v), PathSource::Env),
-        None => {
-            // Derived from gameDir; inherits its source for the badge.
-            let derived = game
-                .value
-                .as_deref()
-                .map(|g| PathBuf::from(g).join("Logs").to_string_lossy().into_owned());
-            match derived {
-                Some(p) => ResolvedPath::from(Some(p), game.source),
-                None => ResolvedPath::from(None, PathSource::Missing),
-            }
-        }
+    // Logs always live at `<gameDir>/Logs` — no separate override path.
+    // Source badge inherits from `gameDir` so the UI shows one origin.
+    let logs = match game
+        .value
+        .as_deref()
+        .map(|g| PathBuf::from(g).join("Logs").to_string_lossy().into_owned())
+    {
+        Some(p) => ResolvedPath::from(Some(p), game.source),
+        None => ResolvedPath::from(None, PathSource::Missing),
     };
 
     let detected_screenshots = detected_documents.as_ref().map(|docs| {

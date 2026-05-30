@@ -37,7 +37,9 @@ async function startDrag(event: MouseEvent): Promise<void> {
 
 <template>
   <div class="absolute top-3 right-3 z-[1000] flex items-center gap-2">
+    <!-- Unlocked: full pill with status dot + map name, also the drag handle. -->
     <span
+      v-if="!overlayClickThrough"
       class="inline-flex items-center gap-2 rounded-md bg-surface-800/70 px-3 py-1 text-sm font-medium text-surface-0 backdrop-blur select-none"
       :class="isTauri ? 'cursor-grab active:cursor-grabbing' : 'pointer-events-none'"
       @mousedown="startDrag"
@@ -48,6 +50,17 @@ async function startDrag(event: MouseEvent): Promise<void> {
         aria-hidden="true"
       />
       <span class="pointer-events-none">{{ mapDisplayName }}</span>
+    </span>
+    <!-- Locked overlay: collapse the pill to a single status dot. Map name
+         is redundant once the player has set up the overlay; only the
+         connection state is worth pixel-budget when the window is otherwise
+         frozen. -->
+    <span
+      v-else
+      class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-surface-800/70 backdrop-blur pointer-events-none"
+      :title="'ws: ' + status"
+    >
+      <i :class="['text-[10px]', statusIconClass]" aria-hidden="true" />
     </span>
     <SettingsPanel v-if="!overlayClickThrough" />
     <Button
