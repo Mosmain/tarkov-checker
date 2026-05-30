@@ -4,16 +4,16 @@ A live in-raid map companion for Escape from Tarkov. The overlay watches your Ta
 
 ## Features
 
-| Feature | Desktop Overlay | LAN / Phone |
-|---------|:---------------:|:-----------:|
-| Live player position tracking | ✓ | ✓ |
-| Auto-switch maps on raid start | ✓ | ✓ |
-| Extract locations with faction filter | ✓ | ✓ |
-| Airdrop triangulation & landing prediction | ✓ | — |
-| Multi-floor map switcher (Factory, Reserve, etc.) | ✓ | ✓ |
-| Click-through lock & global hotkeys | ✓ | — |
-| Window opacity & always-on-top control | ✓ | — |
-| Bilingual UI (English / Russian) | ✓ | ✓ |
+| Feature                                           | Desktop Overlay | LAN / Phone |
+| ------------------------------------------------- | :-------------: | :---------: |
+| Live player position tracking                     |        ✓        |      ✓      |
+| Auto-switch maps on raid start                    |        ✓        |      ✓      |
+| Extract locations with faction filter             |        ✓        |      ✓      |
+| Airdrop triangulation & landing prediction        |        ✓        |      —      |
+| Multi-floor map switcher (Factory, Reserve, etc.) |        ✓        |      ✓      |
+| Click-through lock & global hotkeys               |        ✓        |      —      |
+| Window opacity & always-on-top control            |        ✓        |      —      |
+| Bilingual UI (English / Russian)                  |        ✓        |      ✓      |
 
 ## Deployment Modes
 
@@ -43,12 +43,14 @@ pnpm install
 ```
 
 **Desktop overlay dev** (most common):
+
 ```bash
 pnpm --filter @tarkov-checker/client dev      # Terminal 1
 pnpm --filter @tarkov-checker/desktop tauri:dev   # Terminal 2
 ```
 
 **LAN / phone dev** (Node server on :3000, Vite on :5173):
+
 ```bash
 pnpm dev
 ```
@@ -82,7 +84,8 @@ If auto-detect fails, fill in **Game folder** in Settings and click **Save**. Wa
 
 **Multi-floor maps**: Factory, Reserve, Interchange, Streets, and The Lab have floor switchers. Navigate with UI buttons or hotkeys to toggle between levels.
 
-**Window controls** (desktop overlay only): 
+**Window controls** (desktop overlay only):
+
 - **Drag** the transport-status pill in the top-right to move the overlay
 - **Click-through lock** (Ctrl+Alt+L) — toggle whether mouse clicks pass through to the game underneath
 - **Always-on-top** — keep the overlay above Tarkov even when the game window is focused
@@ -128,16 +131,16 @@ See [LICENSE](./LICENSE).
 
 ## Возможности
 
-| Функция | Десктоп-оверлей | LAN / Телефон |
-|---------|:---------------:|:-------------:|
-| Отслеживание позиции игрока в реальном времени | ✓ | ✓ |
-| Автосмена карты при начале рейда | ✓ | ✓ |
-| Локации выходов с фильтром по фракциям | ✓ | ✓ |
-| Триангуляция и предсказание точки приземления дропа | ✓ | — |
-| Переключатель этажей (Factory, Reserve и т.д.) | ✓ | ✓ |
-| Блокировка клика и глобальные хоткеи | ✓ | — |
-| Управление прозрачностью и режимом поверх всех окон | ✓ | — |
-| Двуязычный интерфейс (English / Русский) | ✓ | ✓ |
+| Функция                                             | Десктоп-оверлей | LAN / Телефон |
+| --------------------------------------------------- | :-------------: | :-----------: |
+| Отслеживание позиции игрока в реальном времени      |        ✓        |       ✓       |
+| Автосмена карты при начале рейда                    |        ✓        |       ✓       |
+| Локации выходов с фильтром по фракциям              |        ✓        |       ✓       |
+| Триангуляция и предсказание точки приземления дропа |        ✓        |       —       |
+| Переключатель этажей (Factory, Reserve и т.д.)      |        ✓        |       ✓       |
+| Блокировка клика и глобальные хоткеи                |        ✓        |       —       |
+| Управление прозрачностью и режимом поверх всех окон |        ✓        |       —       |
+| Двуязычный интерфейс (English / Русский)            |        ✓        |       ✓       |
 
 ## Режимы развертывания
 
@@ -167,12 +170,14 @@ pnpm install
 ```
 
 **Разработка десктоп-оверлея** (наиболее частый сценарий):
+
 ```bash
 pnpm --filter @tarkov-checker/client dev      # Терминал 1
 pnpm --filter @tarkov-checker/desktop tauri:dev   # Терминал 2
 ```
 
 **Разработка LAN / телефона** (Node-сервер на :3000, Vite на :5173):
+
 ```bash
 pnpm dev
 ```
@@ -207,6 +212,7 @@ pnpm dev
 **Многоэтажные карты**: Factory, Reserve, Interchange, Streets и The Lab имеют переключатели этажей. Навигируй кнопками UI или хоткеями между уровнями.
 
 **Управление окном** (только десктоп-оверлей):
+
 - **Перетаскивание**: транспортный статус в правом верхнем углу — перетащи, чтобы переместить оверлей
 - **Блокировка клика** (Ctrl+Alt+L) — переключай, проходят ли клики мышки сквозь окно в игру
 - **Поверх всех окон** — держи оверлей над Tarkov, даже когда окно игры в фокусе

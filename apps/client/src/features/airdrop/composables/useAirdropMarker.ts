@@ -44,8 +44,7 @@ export function useAirdropMarker(map: ShallowRef<LeafletMap | null>): void {
 
   // The circle stays through `confirmingClear` — the user is about to wipe
   // it, they should see exactly what they're about to lose.
-  const showDrop = (): boolean =>
-    store.phase === 'result' || store.phase === 'confirmingClear';
+  const showDrop = (): boolean => store.phase === 'result' || store.phase === 'confirmingClear';
 
   watch(
     () => store.phase,
