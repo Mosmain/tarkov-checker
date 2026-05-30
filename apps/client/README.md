@@ -21,12 +21,13 @@ Specifics about Tauri internals, Windows build quirks, and dev workflow live in 
 app/        Composition root — router config.
 pages/      File-based routes. Add a *.vue here → it becomes a route. typed-router.d.ts is regenerated on dev/build.
 features/   One folder per business feature, each fully owns its slice:
-  map/         Leaflet map, extracts/floors/player composables, MapView component, static extracts dataset (data/extracts/<code>.json — one file per canonical map, indexed via import.meta.glob)
-  overlay/     Tauri overlay window controls, opacity/zoom sync, tray icon, overlay-specific components
+  map/         Leaflet map framework (useLeafletMap, useFloorSwitcher), layers registry + built-in layers (extracts/player/airdrop), MapView component, static extracts dataset (data/extracts/<code>.json — one file per canonical map)
+  airdrop/     Airdrop triangulation state machine, screenshot tracker, settings section
+  overlay/     Tauri overlay window controls, opacity/zoom/mapOpacity sync, tray icon, overlay-specific components
   hotkeys/     Global shortcuts, HotkeyRecorder, accelerator parser
   server/      SSE/HTTP transport, typed IPC contract, server event bus, /api/config client
   i18n/        createI18n instance, store (apiLang persisted), locales/<code>.json files
-  settings/    SettingsPanel.vue + section sub-components — UI for stores owned by other features
+  settings/    Settings registry, SettingsPanel.vue, section sub-components
 shared/     Cross-feature utilities (persisted-store, config) — no business logic
 App.vue     Tiny: <RouterView/> + ConfirmDialog + MapQuickMenu + side effects (transport, tray, lock hotkey)
 main.ts     createApp → pinia + router + i18n + PrimeVue
@@ -85,7 +86,24 @@ For nested or dynamic routes (`/raids/[id]`), see [Vue Router file-based docs](h
 2. Inside the feature: `./X` and `../X` imports.
 3. Other features depend on yours via `@/features/<name>/<thing>`.
 4. If the feature has persisted user settings — create `store.ts` using [`persistedRef`](./src/shared/persisted-store.ts) from `@/shared/persisted-store`. Each setting gets its own key like `tc.<name>.<field>`.
-5. If the feature has its own settings UI — add a `XxxSection.vue` under [`features/settings/sections/`](./src/features/settings/sections/) and import it in [`SettingsPanel.vue`](./src/features/settings/SettingsPanel.vue).
+5. If the feature has its own settings UI:
+   - Create a section component `XxxSection.vue` under [`features/settings/sections/`](./src/features/settings/sections/).
+   - Create `src/features/<name>/settings.ts` that calls `registerSettingsSection()`:
+     ```ts
+     import { registerSettingsSection } from '@/features/settings/registry';
+     registerSettingsSection({
+       id: '<name>',
+       group: 'main',      // or 'system'
+       order: 30,          // multiples of 10
+       visible: 'always',  // or 'tauri', 'desktop-or-tauri'
+       component: XxxSection,
+     });
+     ```
+   - That's it — `main.ts` auto-discovers the file via `import.meta.glob('@/features/*/settings.ts', { eager: true })`.
+6. If the feature adds a map layer (new extract/player marker/etc):
+   - Create `src/features/map/layers/<name>/` with `useXxxLayer.ts` and `index.ts`.
+   - Call `registerMapLayer({ id, mount: useXxxLayer })` in `index.ts`.
+   - `main.ts` auto-discovers via `import.meta.glob('@/features/map/layers/*/index.ts', { eager: true })`.
 
 ### Add a new locale
 
@@ -163,9 +181,13 @@ Tauri overlay dev needs both this Vite server (port 5173) and `pnpm --filter @ta
 
 ## Where things connect
 
-- **Server-pushed messages** (position only) — schema in [`@shared/ws-messages`](../../packages/shared/src/ws-messages.ts). Node server pushes over SSE, Rust port emits as a Tauri event; client uses the same Zod schema either way.
+- **Tauri detection** — centralized in [`shared/tauri.ts`](./src/shared/tauri.ts) as `isTauri` const. Checked at module load time, safe for non-DOM contexts. Used by transport layer, router, overlay composables, and settings visibility logic.
+- **Server-pushed messages** — schema in [`@shared/ws-messages`](../../packages/shared/src/ws-messages.ts). Position + map-change events; Node server pushes over SSE, Rust port emits as Tauri events. Client uses the same Zod schema either way.
 - **Tarkov map calibration** (CRS, bounds, rotation) — [`@shared/maps`](../../packages/shared/src/maps.ts). Modifying calibration affects both desktop and browser.
-- **HTTP / IPC** — single dispatch in [`features/server/api/transport.ts`](./src/features/server/api/transport.ts). Tauri detection via `"__TAURI_INTERNALS__" in window`.
+- **Map localization** — `useMapI18n()` composable in [`features/map/composables/useMapI18n.ts`](./src/features/map/composables/useMapI18n.ts) provides `localizedMapName(code)` with `te → t → displayName` fallback chain. Used in MapView + MapSection to stay in sync.
+- **HTTP / IPC** — single dispatch in [`features/server/api/transport.ts`](./src/features/server/api/transport.ts).
+- **Settings registry** — `registerSettingsSection()` in [`features/settings/registry.ts`](./src/features/settings/registry.ts). Each feature calls this at module load via `features/<name>/settings.ts`. Auto-discovered by `main.ts`.
+- **Map layers registry** — `registerMapLayer()` in [`features/map/layers/registry.ts`](./src/features/map/layers/registry.ts). Each layer calls this via `features/map/layers/<name>/index.ts`. Auto-discovered by `main.ts`; mounted by `MapView.vue` in setup().
 
 ## See also
 

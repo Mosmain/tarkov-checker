@@ -10,6 +10,14 @@ const props = defineProps<Props>();
 defineEmits<{ lock: [] }>();
 
 const lockHotkeyParts = computed(() => formatHotkeyParts(props.lockHotkey));
+
+// When click-through is on the lock button itself isn't clickable, so screen
+// readers need the keyboard escape route spelled out in the label.
+const lockAriaLabel = computed(() =>
+  props.overlayClickThrough
+    ? `Locked — press ${lockHotkeyParts.value.join(' + ')} to unlock`
+    : 'Lock interaction',
+);
 </script>
 
 <template>
@@ -28,7 +36,7 @@ const lockHotkeyParts = computed(() => formatHotkeyParts(props.lockHotkey));
       rounded
       :severity="overlayClickThrough ? 'primary' : 'secondary'"
       class="!bg-surface-800/80 hover:!bg-surface-800 !border-surface-700 backdrop-blur"
-      :aria-label="overlayClickThrough ? 'Locked' : 'Lock interaction'"
+      :aria-label="lockAriaLabel"
       @click="$emit('lock')"
     >
       <template #icon>

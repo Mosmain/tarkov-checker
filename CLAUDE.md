@@ -187,21 +187,34 @@ key back in the running app.
 ownership:
 
 - `composables/` — **framework hooks** for Leaflet/Vue plumbing:
-  `useLeafletMap`, `useMapController`, `useFloorSwitcher`,
-  `usePlayerMarker`. Nothing here knows about extracts (or future quest
-  markers, loot, ...) — pure map/Leaflet glue.
+  `useLeafletMap`, `useFloorSwitcher`. Nothing here knows about extracts,
+  player markers, or future quest markers — pure map/Leaflet glue.
 - `layers/<name>/` — **domain layers** rendered on top of the map. Each
   layer fully owns its concerns: data adapter, icon HTML, tooltip HTML,
-  the composable that wires it into Leaflet. Today there's only one:
+  the composable that wires it into Leaflet. All layers use a registry
+  pattern: `layers/registry.ts` exports `registerMapLayer()` and
+  `useMapLayers()`. Currently:
 
       layers/extracts/
-        useExtractMarkers.ts    # Leaflet/Vue glue + public types
+        useExtractsLayer.ts     # Leaflet/Vue glue, data load, marker sync
         icon.ts                 # slice geometry + makeIcon (composite via CSS clip-path)
         tooltip.ts              # buildTooltipHtml + escapeHtml + sortedEntries
+        index.ts                # registerMapLayer call
+      layers/player/
+        usePlayerLayer.ts       # player position marker + follow logic
+        index.ts                # registerMapLayer call
+      layers/airdrop/
+        useAirdropLayer.ts      # purple uncertainty circle around the predicted drop
+        index.ts                # registerMapLayer call
 
-  When quest markers (or anything else) get added later, mirror this
-  shape: `layers/quests/{useQuestMarkers,icon,tooltip}.ts`. Don't lump
-  them into `composables/`.
+  Each `index.ts` calls `registerMapLayer({ id, mount })` at module load;
+  `main.ts` loads all index files via `import.meta.glob('@/features/map/layers/*/index.ts', { eager: true })`.
+  `MapView.vue` reads the registry with `useMapLayers()` and calls
+  `mount(ctx)` for each layer in setup(). When quest markers (or anything
+  else) get added later, create `layers/quests/{useQuestMarkers,icon,tooltip,index}.ts`
+  following the same pattern — no manual list to update. Airdrop's state
+  machine, tracker, and banner live in `features/airdrop/` — only the
+  Leaflet circle moved here. See "Airdrop feature" below.
 
 Extract markers are `L.divIcon` instances (not `L.icon`) — the composite
 PNG split via CSS `clip-path: polygon(...)` is built inline as HTML.
@@ -223,6 +236,40 @@ faction-coloured left stripe via `.extract-tooltip-row--{pmc|scav|shared}`
 or `.extract-tooltip-row--multi` when factions share a name. `direction:
 'top'` keeps the tooltip above the icon; `tooltipAnchor` inside the
 icon's top edge gives a few pixels of overlap for visual cohesion.
+
+**Player marker** (`layers/player/usePlayerLayer.ts`) subscribes to
+`useServerEvent('position', ...)` directly and renders one `L.divIcon`
+marker — an SVG arrow (rotated by `yaw + mapRotation + yawOffset`) or
+a circle fallback when `yaw === null`. The marker isn't created until
+the first position arrives. On every position update with changed
+`(x, z, yaw)` and `playerFollow !== 'off'`, the map recenters and zooms
+to `initialZoom + FOLLOW_ZOOM_DELTA[mode]` — that's why `initialZoom`
+sits in `MapLayerContext`.
+
+## Airdrop feature
+
+Two-shot airdrop triangulation. The player snaps a screenshot while the
+crate is still in the air ("ranging shot"), then a second one a moment
+later from the same position — the system reads the two screenshot
+filenames, runs `triangulateDropPoint` from `@shared/triangulate`, and
+renders the predicted touchdown as a purple uncertainty circle whose
+radius is configurable in Settings. Ownership splits deliberately
+across two folders:
+
+- `features/airdrop/` — state machine (`store.ts`), screenshot-event
+  tracker (`composables/useAirdropTracker.ts`), banner UI
+  (`components/AirdropStatusBanner.vue`), and the Settings section. No
+  Leaflet imports anywhere under this folder.
+- `features/map/layers/airdrop/useAirdropLayer.ts` — the `L.circle`
+  that renders the predicted drop area, mirroring the
+  `layers/extracts/` convention. Subscribes to the store's `phase`,
+  `outcome`, and `dropMarkerRadius` and reconciles the circle on every
+  change. Mounted from `MapView.vue` alongside extracts.
+
+Math lives in `@shared/triangulate` (pure function, fully tested in
+`src/__tests__/triangulate.spec.ts`). The position payload feed comes
+from the same `useServerEvent('position', ...)` bus the rest of the
+map uses — no separate transport, no separate dataset.
 
 ## Tarkov path resolution
 
@@ -261,10 +308,10 @@ Persisted state lives in **per-feature** Pinia stores, not one big store:
   - `extractLabelMode` — `"hover" | "always"` (tooltip permanence).
   - `extractLabelSize` — `"sm" | "md" | "lg"` (font-size; applied via
     the `--extract-label-size` CSS variable on `<html>` from
-    `useExtractMarkers.setLabelSize` — which also re-binds tooltips so
-    Leaflet recomputes positions for the new height).
+    `useExtractsLayer` in `layers/extracts/useExtractsLayer.ts` — which also
+    re-binds tooltips so Leaflet recomputes positions for the new height).
   - `playerFollow` — `"off" | "sm" | "md" | "lg"` — auto-recenter + zoom on
-    every fresh position update. Wired in `useLeafletMap.setPlayerFollow`;
+    every fresh position update. Wired in `layers/player/usePlayerLayer.ts`;
     only re-centers when `(x, z)` actually changes (skips spam updates when
     the player stands still). Zoom step: `initialZoom + FOLLOW_ZOOM_DELTA[mode]`.
   - `autoMapSwitch` — boolean, default `true`. When on, incoming
@@ -282,19 +329,47 @@ Persisted state lives in **per-feature** Pinia stores, not one big store:
   component reads `t()`.
 - `apps/client/src/features/hotkeys/store.ts` — per-action hotkey combos.
 - `apps/client/src/features/overlay/store.ts` — Tauri-only:
-  `clickThrough`, `alwaysOnTop`, `opacity` (0.3–1), `zoom`
-  (`"75" | "100" | "125" | "150"`).
+  `alwaysOnTop`, `opacity` (0.3–1), `mapOpacity` (0–1), `zoom`
+  (`"75" | "100" | "125" | "150"`), plus a deliberately session-only
+  `clickThrough` (plain `ref()`, not `persistedRef` — see note below).
+- `apps/client/src/features/airdrop/store.ts` — `dropMarkerRadius` (game
+  meters, slider-bound in Settings). Wraps the airdrop state machine —
+  `phase` and `outcome` are derived runtime state, not persisted.
 
 Each store uses `persistedRef` from `@/shared/persisted-store` with its
 own key (`tc.<feature>.<field>`) — corrupt persisted data falls back to
 defaults silently.
 
-Settings UI: `apps/client/src/features/settings/SettingsPanel.vue` — gear
-icon in the top-right cluster next to the transport-status pill (`App.vue`),
-opens a PrimeVue `Drawer` (right-side on desktop, `position="full"` on
-`<640px`). Sections in order: Map / Extracts / Player / Overlay (Tauri only)
-/ Hotkeys (Tauri only) — then a "СИСТЕМНЫЕ / System" divider with Language
-and Tarkov paths.
+**Session-only state.** `overlayClickThrough` intentionally does NOT
+use `persistedRef`. Booting into a locked overlay with a broken hotkey
+would be unrecoverable, so `App.vue` resets the value to `false` on
+every Tauri startup. Reach for plain `ref()` (not `persistedRef`) any
+time boot-time recoverability matters more than user-visible
+continuity; default to `persistedRef` everywhere else.
+
+## Settings UI registry
+
+Settings sections use a registry pattern similar to map layers: each feature
+that owns settings registers its UI section via `registerSettingsSection()`.
+
+- `features/settings/registry.ts` — `registerSettingsSection()` and
+  `useSettingsSections(group)`. Visibility logic: `'always'` (desktop +
+  phone, default), `'tauri'` (overlay only), `'desktop-or-tauri'` (phone at
+  ≥640px or overlay). Order uses multiples of 10. Currently:
+  - main: 10 map, 20 extracts, 30 player, 40 airdrop (tauri-only), 50 overlay (tauri-only), 60 hotkeys (tauri-only)
+  - system: 10 language, 20 paths (desktop-or-tauri)
+- `features/<name>/settings.ts` — each feature with settings calls
+  `registerSettingsSection({ id, group, order, visible, component })` at
+  module load. Currently: `map`, `airdrop`, `overlay`, `hotkeys`, `i18n`,
+  `server` (each maps to a section component under
+  `features/settings/sections/`).
+- `main.ts` loads all registration files via
+  `import.meta.glob('@/features/*/settings.ts', { eager: true })`.
+- `SettingsPanel.vue` — gear icon in the top-right cluster next to the
+  transport-status pill (`App.vue`), opens a PrimeVue `Drawer` (right-side on
+  desktop, `position="full"` on `<640px`). Iterates `useSettingsSections('main')`
+  and `useSettingsSections('system')` to build the drawer — no hard-coded list
+  of sections.
 
 Faction colours come from `FACTION_COLORS` in `packages/shared/src/maps.ts`
 so icons and tooltip stripes never drift across components.
@@ -309,8 +384,12 @@ and no native close button — close is in the app UI, drag is via
 
 Frontend access to window APIs goes through `useTauriOverlay()`
 (`apps/client/src/features/overlay/composables/useTauriOverlay.ts`).
-Detection is `"__TAURI_INTERNALS__" in window`. In browser context every
-method is a no-op so the same code path serves both.
+Detection is the `isTauri` const exported from
+`apps/client/src/shared/tauri.ts` (`typeof window !== 'undefined' &&
+'__TAURI_INTERNALS__' in window`) — one source of truth, imported by
+the transport layer, the router, and the overlay composable so the
+SSR-safety guard never drifts. In browser context every overlay method
+is a no-op so the same code path serves both.
 
 **Overlay controls** (only rendered when `isTauri`):
 

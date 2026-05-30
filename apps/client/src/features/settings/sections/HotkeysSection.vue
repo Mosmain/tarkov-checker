@@ -16,7 +16,7 @@ const { t } = useI18n();
       <HotkeyRecorder v-model="floorUpHotkey" :label="t('hotkeys.floorUp')" />
       <HotkeyRecorder v-model="floorDownHotkey" :label="t('hotkeys.floorDown')" />
       <HotkeyRecorder v-model="airdropHotkey" :label="t('hotkeys.airdrop')" />
-      <p class="text-[10px] leading-relaxed opacity-50">{{ t('hotkeys.lockHint') }}</p>
+      <p class="text-[10px] leading-relaxed opacity-70">{{ t('hotkeys.lockHint') }}</p>
     </div>
   </Fieldset>
 </template>

@@ -18,7 +18,7 @@ const langOptions = computed(() => [
       option-label="label"
       option-value="value"
       :allow-empty="false"
-      aria-label="API language"
+      :aria-label="t('language')"
       class="w-full"
     />
   </Fieldset>

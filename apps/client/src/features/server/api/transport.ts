@@ -11,9 +11,8 @@
  */
 
 import { apiBase } from '@/shared/config';
+import { isTauri } from '@/shared/tauri';
 import type { IpcContract } from './ipc-contract';
-
-const isTauri = '__TAURI_INTERNALS__' in window;
 
 export interface HttpCall {
   method?: 'GET' | 'PUT' | 'POST' | 'DELETE';

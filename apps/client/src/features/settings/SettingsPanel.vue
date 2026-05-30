@@ -1,18 +1,11 @@
 <script setup lang="ts">
-import { useTauriOverlay } from '@/features/overlay/composables/useTauriOverlay';
-import MapSection from './sections/MapSection.vue';
-import ExtractsSection from './sections/ExtractsSection.vue';
-import PlayerSection from './sections/PlayerSection.vue';
-import AirdropSection from './sections/AirdropSection.vue';
-import OverlaySection from './sections/OverlaySection.vue';
-import HotkeysSection from './sections/HotkeysSection.vue';
-import LanguageSection from './sections/LanguageSection.vue';
-import PathsSection from './sections/PathsSection.vue';
+import { useSettingsSections } from './registry';
 
 const { t } = useI18n();
-const overlay = useTauriOverlay();
-const isDesktop = useMediaQuery('(min-width: 640px)');
+const mainSections = useSettingsSections('main');
+const systemSections = useSettingsSections('system');
 const open = ref(false);
+const isDesktop = useMediaQuery('(min-width: 640px)');
 </script>
 
 <template>
@@ -51,21 +44,15 @@ const open = ref(false);
     :class="isDesktop ? '!w-[26rem]' : ''"
   >
     <div class="space-y-4">
-      <MapSection />
-      <ExtractsSection />
-      <PlayerSection />
-      <AirdropSection v-if="overlay.isTauri" />
-      <OverlaySection v-if="overlay.isTauri" />
-      <HotkeysSection v-if="overlay.isTauri" />
+      <component :is="sec.component" v-for="sec in mainSections" :key="sec.id" />
 
-      <div class="pt-2 mt-2 border-t border-surface-700">
-        <p class="mb-3 text-[10px] font-semibold uppercase tracking-wider opacity-50">
+      <div v-if="systemSections.length" class="pt-2 mt-2 border-t border-surface-700">
+        <p class="mb-3 text-[10px] font-semibold uppercase tracking-wider opacity-70">
           {{ t('systemSection') }}
         </p>
 
         <div class="space-y-4">
-          <LanguageSection />
-          <PathsSection :drawer-open="open" />
+          <component :is="sec.component" v-for="sec in systemSections" :key="sec.id" />
         </div>
       </div>
     </div>

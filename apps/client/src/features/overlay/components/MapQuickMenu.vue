@@ -1,16 +1,11 @@
 <script setup lang="ts">
-import { useOverlayStore } from '../store';
-import { opacityPercentBinding } from '../lib/opacity';
+import { useOverlaySync } from '../composables/useOverlaySync';
 
-const { opacity: overlayOpacity, mapOpacity: overlayMapOpacity } = storeToRefs(useOverlayStore());
 const { t } = useI18n();
+const { opacityPercent, mapOpacityPercent, mapOpacityDisabled } = useOverlaySync();
 
 const position = ref<{ x: number; y: number } | null>(null);
 const panelRef = ref<HTMLElement | null>(null);
-
-const opacityPercent = opacityPercentBinding(overlayOpacity, 30, 100);
-const mapOpacityPercent = opacityPercentBinding(overlayMapOpacity, 0, 100);
-const mapOpacityDisabled = computed(() => overlayOpacity.value >= 1);
 
 /** Panel dimensions used to clamp the opening position to the viewport. The
  * Slider component is reactive in height, so these are a generous overestimate
@@ -57,7 +52,8 @@ defineExpose({ open, close });
         ref="panelRef"
         class="fixed z-[2000] w-60 origin-top-left rounded-md border border-surface-700 bg-surface-900/95 p-3 shadow-xl backdrop-blur"
         :style="{ left: position.x + 'px', top: position.y + 'px' }"
-        role="menu"
+        role="dialog"
+        :aria-label="t('overlay.quickMenuTitle')"
       >
         <p class="mb-2 text-[10px] font-semibold uppercase tracking-wider opacity-60">
           {{ t('overlay.quickMenuTitle') }}

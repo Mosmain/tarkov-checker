@@ -53,7 +53,7 @@ const overlayZoomOptions = computed(() => [
           input-id="overlay-map-opacity"
           class="w-full"
         />
-        <p v-if="mapOpacityDisabled" class="mt-1.5 text-[10px] leading-relaxed opacity-50">
+        <p v-if="mapOpacityDisabled" class="mt-1.5 text-[10px] leading-relaxed opacity-70">
           {{ t('overlay.mapOpacityHint') }}
         </p>
       </div>

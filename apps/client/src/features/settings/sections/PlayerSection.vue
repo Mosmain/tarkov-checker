@@ -24,6 +24,6 @@ const playerFollowOptions = computed(() => [
       size="small"
       class="w-full"
     />
-    <p class="mt-1.5 text-[10px] leading-relaxed opacity-50">{{ t('playerFollowHint') }}</p>
+    <p class="mt-1.5 text-[10px] leading-relaxed opacity-70">{{ t('playerFollowHint') }}</p>
   </Fieldset>
 </template>

@@ -14,10 +14,16 @@ export interface UseServerPaths {
   gameDirLocked: ComputedRef<boolean>;
   screenshotsDirLocked: ComputedRef<boolean>;
   canSavePaths: ComputedRef<boolean>;
-  loadPaths: () => Promise<void>;
   savePaths: () => Promise<void>;
   statusIconClass: (slot: PathSlot) => string;
 }
+
+// Module-level cache: server config is fetched once per session and reused
+// across PathsSection remounts (PrimeVue Drawer uses v-if, so each settings
+// open is a fresh mount). Save invalidates by replacing with the PUT
+// response. External edits to the config file by Rust would only show after
+// a page reload — acceptable: Tauri is the only writer besides this UI.
+let cachedConfig: ServerConfigResponse | null = null;
 
 /**
  * Owns the Tarkov-paths CRUD UX: load + save the server config, track
@@ -49,18 +55,23 @@ export function useServerPaths(canEditPaths: Ref<boolean>): UseServerPaths {
       canEditPaths.value && !pathsSaving.value && (gameDirDirty.value || screenshotsDirDirty.value),
   );
 
-  function syncInputsFromConfig(cfg: ServerConfigResponse): void {
+  function applyConfig(cfg: ServerConfigResponse): void {
+    serverConfig.value = cfg;
     gameDirInput.value = cfg.gameDir.value ?? '';
     screenshotsDirInput.value = cfg.screenshotsDir.value ?? '';
   }
 
   async function loadPaths(): Promise<void> {
+    if (cachedConfig) {
+      applyConfig(cachedConfig);
+      return;
+    }
     pathsLoading.value = true;
     pathsError.value = null;
     try {
       const cfg = await fetchServerConfig();
-      serverConfig.value = cfg;
-      syncInputsFromConfig(cfg);
+      cachedConfig = cfg;
+      applyConfig(cfg);
     } catch (err) {
       pathsError.value = err instanceof Error ? err.message : String(err);
     } finally {
@@ -80,8 +91,8 @@ export function useServerPaths(canEditPaths: Ref<boolean>): UseServerPaths {
           : { screenshotsDir: screenshotsDirInput.value.trim() || null }),
       };
       const cfg = await putServerConfig(patch);
-      serverConfig.value = cfg;
-      syncInputsFromConfig(cfg);
+      cachedConfig = cfg;
+      applyConfig(cfg);
       pathsJustSaved.value = true;
       setTimeout(() => {
         pathsJustSaved.value = false;
@@ -116,7 +127,6 @@ export function useServerPaths(canEditPaths: Ref<boolean>): UseServerPaths {
     gameDirLocked,
     screenshotsDirLocked,
     canSavePaths,
-    loadPaths,
     savePaths,
     statusIconClass,
   };
