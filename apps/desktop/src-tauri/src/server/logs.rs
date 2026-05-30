@@ -105,10 +105,18 @@ fn pick_latest_application_log(folder: &Path) -> Option<(PathBuf, u32)> {
             continue;
         }
         let name = entry.file_name();
-        let Some(name_str) = name.to_str() else { continue };
-        let Some(caps) = APPLICATION_LOG_RE.captures(name_str) else { continue };
-        let Some(suffix_str) = caps.get(1).map(|m| m.as_str()) else { continue };
-        let Ok(suffix) = suffix_str.parse::<u32>() else { continue };
+        let Some(name_str) = name.to_str() else {
+            continue;
+        };
+        let Some(caps) = APPLICATION_LOG_RE.captures(name_str) else {
+            continue;
+        };
+        let Some(suffix_str) = caps.get(1).map(|m| m.as_str()) else {
+            continue;
+        };
+        let Ok(suffix) = suffix_str.parse::<u32>() else {
+            continue;
+        };
         if best.as_ref().map_or(true, |(_, s)| suffix > *s) {
             best = Some((entry.path(), suffix));
         }
@@ -172,11 +180,7 @@ fn emit_map_change(
 
 /// Seek + read appended bytes for the currently-tailed log file, parse line
 /// by line, emit on hit. Idempotent — safe to call on every poll tick.
-fn read_appended(
-    app: &AppHandle,
-    state: &Mutex<State>,
-    event_tx: &broadcast::Sender<ServerEvent>,
-) {
+fn read_appended(app: &AppHandle, state: &Mutex<State>, event_tx: &broadcast::Sender<ServerEvent>) {
     // Snapshot the path + offset under the lock so the actual I/O happens
     // outside it.
     let snapshot: Option<(PathBuf, u64, String)> = {
@@ -190,7 +194,9 @@ fn read_appended(
         return;
     };
 
-    let Ok(metadata) = fs::metadata(&path) else { return };
+    let Ok(metadata) = fs::metadata(&path) else {
+        return;
+    };
     let size = metadata.len();
     if size < offset {
         // Truncation / rotation — restart from the top.
@@ -201,7 +207,9 @@ fn read_appended(
         return;
     }
 
-    let Ok(mut file) = File::open(&path) else { return };
+    let Ok(mut file) = File::open(&path) else {
+        return;
+    };
     if file.seek(SeekFrom::Start(offset)).is_err() {
         return;
     }
@@ -294,8 +302,12 @@ fn check_within_session_rotation(state: &Mutex<State>) {
             (folder, current_suffix)
         })
     };
-    let Some((folder, current_suffix)) = snapshot else { return };
-    let Some((new_path, new_suffix)) = pick_latest_application_log(&folder) else { return };
+    let Some((folder, current_suffix)) = snapshot else {
+        return;
+    };
+    let Some((new_path, new_suffix)) = pick_latest_application_log(&folder) else {
+        return;
+    };
     if current_suffix.is_some_and(|s| new_suffix <= s) {
         return;
     }
@@ -330,7 +342,9 @@ fn check_new_session_folder(
     logs_dir: &Path,
 ) {
     let folders = list_session_folders(logs_dir);
-    let Some(latest) = folders.last().cloned() else { return };
+    let Some(latest) = folders.last().cloned() else {
+        return;
+    };
     let current = {
         let guard = state.lock().expect("logs state poisoned");
         guard.active_folder.clone()
@@ -470,7 +484,8 @@ mod tests {
 
     #[test]
     fn parse_log_line_scene_preset_factory_day() {
-        let line = "00:00:00.000 - Log  |  Application (tarkov): rcid:factory_day.scenespreset.asset";
+        let line =
+            "00:00:00.000 - Log  |  Application (tarkov): rcid:factory_day.scenespreset.asset";
         let result = parse_log_line(line);
         assert_eq!(result, Some("factory_day".to_string()));
     }

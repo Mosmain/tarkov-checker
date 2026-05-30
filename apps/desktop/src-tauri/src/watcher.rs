@@ -5,8 +5,8 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 
 use tauri::AppHandle;
-use tokio::sync::Mutex as AsyncMutex;
 use tokio::sync::broadcast;
+use tokio::sync::Mutex as AsyncMutex;
 
 use crate::server::events::{self, ServerEvent};
 use crate::server::logs::{self, LogsWatcher};
@@ -79,7 +79,10 @@ impl WatcherSlot {
 pub async fn apply_resolved(app: &AppHandle, slot: &WatcherSlot, resolved: &ResolvedPaths) {
     let _guard = slot.apply_lock.lock().await;
 
-    let screenshots_dir = match (&resolved.screenshots_dir.value, resolved.screenshots_dir.exists) {
+    let screenshots_dir = match (
+        &resolved.screenshots_dir.value,
+        resolved.screenshots_dir.exists,
+    ) {
         (Some(v), true) => Some(PathBuf::from(v)),
         _ => None,
     };

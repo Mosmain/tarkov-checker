@@ -119,8 +119,8 @@ pub fn start(
     event_tx: tokio::sync::broadcast::Sender<crate::server::events::ServerEvent>,
 ) -> Result<ScreenshotWatcher> {
     let (tx, rx) = mpsc::channel::<notify_debouncer_full::DebounceEventResult>();
-    let mut debouncer = new_debouncer(Duration::from_millis(250), None, tx)
-        .context("create fs debouncer")?;
+    let mut debouncer =
+        new_debouncer(Duration::from_millis(250), None, tx).context("create fs debouncer")?;
     debouncer
         .watcher()
         .watch(&dir, RecursiveMode::NonRecursive)
@@ -228,9 +228,8 @@ mod tests {
         // ORIENTATION_RE: _x,y,z_qx,qy,qz,qw_
         // POSITION_RE:    _x,y,z_
         // Both anchors are underscores, so the pattern is _3nums_4nums_.
-        let path = Path::new(
-            "2026-05-30 12-34-56_-100.5, 50.0, 200.3_0.0, 0.0, 0.7071, 0.7071_.png",
-        );
+        let path =
+            Path::new("2026-05-30 12-34-56_-100.5, 50.0, 200.3_0.0, 0.0, 0.7071, 0.7071_.png");
         let result = parse_screenshot_filename(path);
         assert!(result.is_some(), "expected Some, got None");
         let parsed = result.unwrap();
@@ -325,10 +324,7 @@ mod tests {
             qw: half.cos(),
         };
         let yaw = quaternion_to_yaw_degrees(q);
-        assert!(
-            (yaw - 90.0).abs() < 1e-4,
-            "expected ~90°, got {yaw}"
-        );
+        assert!((yaw - 90.0).abs() < 1e-4, "expected ~90°, got {yaw}");
     }
 
     // 180° yaw: qy = 1, qw = 0.
@@ -358,9 +354,6 @@ mod tests {
             qw: half.cos(),
         };
         let yaw = quaternion_to_yaw_degrees(q);
-        assert!(
-            (yaw - (-90.0)).abs() < 1e-4,
-            "expected ~-90°, got {yaw}"
-        );
+        assert!((yaw - (-90.0)).abs() < 1e-4, "expected ~-90°, got {yaw}");
     }
 }

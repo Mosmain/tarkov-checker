@@ -34,22 +34,22 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use axum::{
-    Extension, Router,
     extract::{Request, State},
-    http::{HeaderValue, Method, StatusCode, header},
+    http::{header, HeaderValue, Method, StatusCode},
     middleware::Next,
     response::{
-        Json, Response,
         sse::{Event, KeepAlive, Sse},
+        Json, Response,
     },
     routing::get,
+    Extension, Router,
 };
 use futures_util::stream::{Stream, StreamExt};
-use tokio_stream::wrappers::{BroadcastStream, errors::BroadcastStreamRecvError};
 use serde::Serialize;
 use subtle::ConstantTimeEq;
 use tauri::AppHandle;
 use tokio::sync::broadcast;
+use tokio_stream::wrappers::{errors::BroadcastStreamRecvError, BroadcastStream};
 use tower_http::cors::{AllowOrigin, CorsLayer};
 
 use crate::server::config::{ConfigPatch, ConfigStore};
@@ -305,7 +305,7 @@ pub fn spawn(deps: Deps) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::body::{Body, to_bytes};
+    use axum::body::{to_bytes, Body};
     use axum::http::Request as HttpRequest;
     use axum::middleware;
     use tower::ServiceExt;
@@ -441,7 +441,11 @@ mod tests {
             .await
             .unwrap();
         // CorsLayer answers preflight directly; status is 200 OK.
-        assert!(response.status().is_success(), "status: {}", response.status());
+        assert!(
+            response.status().is_success(),
+            "status: {}",
+            response.status()
+        );
         let acao = response
             .headers()
             .get(header::ACCESS_CONTROL_ALLOW_ORIGIN)

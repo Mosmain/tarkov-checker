@@ -193,6 +193,12 @@ function emitRustFile(destPath, sourceTsPath, constants, headerComment) {
     '',
   ];
   for (const { name, rustPattern } of constants) {
+    // `#[rustfmt::skip]` keeps rustfmt from reformatting the long raw
+    // string literal across multiple lines. Without it `cargo fmt
+    // --check` in CI fights with the codegen, and `pnpm
+    // shared:gen-rust-regex:check` ends up disagreeing with `cargo fmt
+    // --all -- --check` on every push.
+    lines.push('#[rustfmt::skip]');
     lines.push(`pub const ${name}: &str = r#"${rustPattern}"#;`);
   }
   lines.push('');

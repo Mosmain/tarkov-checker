@@ -37,9 +37,8 @@ pub fn run() {
             // Block-on the async load — we want the config ready before
             // the webview starts running its onMounted hooks. Tiny JSON;
             // this is in the millisecond range.
-            let store = tauri::async_runtime::block_on(ConfigStore::load(
-                data_dir.join("config.json"),
-            ))?;
+            let store =
+                tauri::async_runtime::block_on(ConfigStore::load(data_dir.join("config.json")))?;
             let store = Arc::new(store);
 
             // Arc-wrap up front so the same instance can be reached via

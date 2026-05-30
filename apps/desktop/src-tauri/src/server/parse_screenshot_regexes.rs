@@ -6,5 +6,7 @@
 // NUM is expanded inline — no runtime format!() call needed.
 // Consumed by screenshots.rs via `Regex::new(parse_screenshot_regexes::NAME_STR)`.
 
+#[rustfmt::skip]
 pub const POSITION_RE_STR: &str = r#"_(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)_"#;
+#[rustfmt::skip]
 pub const ORIENTATION_RE_STR: &str = r#"_(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)_(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)_"#;

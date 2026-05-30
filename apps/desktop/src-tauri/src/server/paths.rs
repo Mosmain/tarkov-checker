@@ -60,7 +60,11 @@ pub struct ManualOverrides {
 fn read_env(key: &str) -> Option<String> {
     std::env::var(key).ok().and_then(|v| {
         let t = v.trim();
-        if t.is_empty() { None } else { Some(t.to_string()) }
+        if t.is_empty() {
+            None
+        } else {
+            Some(t.to_string())
+        }
     })
 }
 
@@ -91,7 +95,10 @@ pub fn resolve(manual: &ManualOverrides) -> ResolvedPaths {
 
     let game = read_env("TARKOV_GAME_DIR")
         .map(|v| ResolvedPath::from(Some(v), PathSource::Env))
-        .or_else(|| normalize(manual.game_dir.as_deref()).map(|v| ResolvedPath::from(Some(v), PathSource::Manual)))
+        .or_else(|| {
+            normalize(manual.game_dir.as_deref())
+                .map(|v| ResolvedPath::from(Some(v), PathSource::Manual))
+        })
         .unwrap_or_else(|| ResolvedPath::from(detected_game.clone(), PathSource::Detected));
 
     // Logs always live at `<gameDir>/Logs` — no separate override path.
@@ -150,7 +157,10 @@ pub fn detect_tarkov_game_dir() -> Option<String> {
     use winreg::enums::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE};
     use winreg::RegKey;
     let candidates: &[(winreg::HKEY, &str)] = &[
-        (HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\Battlestate Games\EFT"),
+        (
+            HKEY_LOCAL_MACHINE,
+            r"SOFTWARE\WOW6432Node\Battlestate Games\EFT",
+        ),
         (HKEY_LOCAL_MACHINE, r"SOFTWARE\Battlestate Games\EFT"),
         (HKEY_CURRENT_USER, r"Software\Battlestate Games\EFT"),
     ];

@@ -113,9 +113,7 @@ fn normalize(v: Option<String>) -> Result<Option<String>, String> {
                 return Ok(None);
             }
             if t.starts_with("\\\\") || t.starts_with("//") {
-                return Err(format!(
-                    "UNC paths are not supported: {t}"
-                ));
+                return Err(format!("UNC paths are not supported: {t}"));
             }
             Ok(Some(t.to_string()))
         }
