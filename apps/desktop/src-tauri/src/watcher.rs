@@ -5,17 +5,49 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 
 use tauri::AppHandle;
+use tokio::sync::Mutex as AsyncMutex;
+use tokio::sync::broadcast;
 
+use crate::server::events::{self, ServerEvent};
 use crate::server::logs::{self, LogsWatcher};
 use crate::server::paths::ResolvedPaths;
 use crate::server::screenshots::{self, ScreenshotWatcher};
 
 /// Tauri-managed state. Cheap to clone, but we don't — we expose it via
 /// `State<'_, WatcherSlot>` which gives a `&WatcherSlot`.
-#[derive(Default)]
+///
+/// `apply_lock` serialises concurrent `apply_resolved` calls so the
+/// stop-then-start sequence for each watcher is never interleaved with a
+/// parallel call. Without it two concurrent `update_config` IPC commands
+/// could each start their own watcher before either has dropped the
+/// previous one, producing duplicate file events.
+///
+/// `event_tx` is the broadcast channel that fan-outs `ServerEvent`s to
+/// every connected HTTP `/events` SSE subscriber. The watcher modules
+/// receive clones of it to push events from their background threads.
+/// The Tauri webview still gets the same events via `app.emit(…)`; both
+/// channels are pumped in parallel from the same call site.
+///
+/// The per-resource `Mutex<Option<…>>` guards the field access within a
+/// single `apply_resolved` call and remains `std::sync::Mutex` (not
+/// `tokio::sync::Mutex`) because they are only held for the duration of
+/// a field swap — no await points inside the lock.
 pub struct WatcherSlot {
+    apply_lock: AsyncMutex<()>,
     screenshots: Mutex<Option<ScreenshotWatcher>>,
     logs: Mutex<Option<LogsWatcher>>,
+    event_tx: broadcast::Sender<ServerEvent>,
+}
+
+impl Default for WatcherSlot {
+    fn default() -> Self {
+        Self {
+            apply_lock: AsyncMutex::new(()),
+            screenshots: Mutex::new(None),
+            logs: Mutex::new(None),
+            event_tx: events::channel(),
+        }
+    }
 }
 
 impl WatcherSlot {
@@ -30,18 +62,29 @@ impl WatcherSlot {
         let mut guard = self.logs.lock().expect("logs slot poisoned");
         *guard = w;
     }
+    /// Clone the broadcast sender — used by the HTTP server to derive a
+    /// fresh subscriber per SSE connection. Cheap (an Arc bump).
+    pub fn event_sender(&self) -> broadcast::Sender<ServerEvent> {
+        self.event_tx.clone()
+    }
 }
 
 /// Apply the resolved paths: start each watcher if its path is usable,
 /// otherwise stop any existing one. Errors are logged but don't propagate —
 /// the UI already reflects path state via the badge.
-pub fn apply_resolved(app: &AppHandle, slot: &WatcherSlot, resolved: &ResolvedPaths) {
+///
+/// Acquires `apply_lock` for the full duration so that concurrent calls
+/// (e.g. two rapid `update_config` IPC commands) are serialised rather
+/// than interleaved — preventing duplicate watcher instances.
+pub async fn apply_resolved(app: &AppHandle, slot: &WatcherSlot, resolved: &ResolvedPaths) {
+    let _guard = slot.apply_lock.lock().await;
+
     let screenshots_dir = match (&resolved.screenshots_dir.value, resolved.screenshots_dir.exists) {
         (Some(v), true) => Some(PathBuf::from(v)),
         _ => None,
     };
     match screenshots_dir {
-        Some(dir) => match screenshots::start(dir, app.clone()) {
+        Some(dir) => match screenshots::start(dir, app.clone(), slot.event_tx.clone()) {
             Ok(w) => slot.replace_screenshots(Some(w)),
             Err(err) => {
                 eprintln!("[watcher] screenshots start failed: {err:#}");
@@ -56,7 +99,7 @@ pub fn apply_resolved(app: &AppHandle, slot: &WatcherSlot, resolved: &ResolvedPa
         _ => None,
     };
     match logs_dir {
-        Some(dir) => match logs::start(dir, app.clone()) {
+        Some(dir) => match logs::start(dir, app.clone(), slot.event_tx.clone()) {
             Ok(w) => slot.replace_logs(Some(w)),
             Err(err) => {
                 eprintln!("[watcher] logs start failed: {err:#}");

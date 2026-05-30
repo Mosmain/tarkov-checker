@@ -13,8 +13,12 @@ import { isTauri } from '@/shared/tauri';
  * through the browser history — memory history avoids stale entries when the
  * window is re-opened. The browser build keeps web history so deep links
  * (e.g. /raid on a phone) survive bookmarking.
+ *
+ * `import.meta.env.BASE_URL` (`/` for local builds, `/tarkov-checker/` for
+ * the GitHub Pages project page — see `vite.config.ts`) prefixes every
+ * route so deep links land under the right subpath.
  */
 export const router = createRouter({
-  history: isTauri ? createMemoryHistory() : createWebHistory(),
+  history: isTauri ? createMemoryHistory() : createWebHistory(import.meta.env.BASE_URL),
   routes,
 });

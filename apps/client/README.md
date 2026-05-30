@@ -164,7 +164,7 @@ import { useToast } from 'primevue/usetoast';
    }
    ```
 2. Write a wrapper in `features/server/api/` calling `callBackend({ tauri: { cmd: "get_loot", ... }, http: { ... }, parse: ... })`. The literal `cmd` value narrows args + result types automatically.
-3. On the Rust side, add the matching `#[tauri::command]` in [`apps/desktop/src-tauri/src/commands.rs`](../desktop/src-tauri/src/commands.rs). On the Node side, add a Fastify route in `apps/server/src/`.
+3. On the Rust side, add the matching `#[tauri::command]` in [`apps/desktop/src-tauri/src/commands.rs`](../desktop/src-tauri/src/commands.rs) for the Tauri IPC path, and an `axum` route in [`apps/desktop/src-tauri/src/http_server.rs`](../desktop/src-tauri/src/http_server.rs) for the browser-frontend path.
 
 ## Commands
 

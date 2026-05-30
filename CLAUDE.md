@@ -2,32 +2,29 @@
 
 ## What each package owns
 
-- `apps/desktop` — Tauri 2 wrapper. Owns the production app: Rust
-  in-process port of the watcher/config pipeline (under
-  `src-tauri/src/server/`), plus the IPC commands the webview calls.
-  This is what ships as the single 6 MB `.exe`. See "Desktop overlay's
-  in-process server" below.
-- `apps/server` — **LAN-only Node/Fastify backend** for the phone-as-
-  second-screen scenario: serves the built SPA from `apps/client/dist/`
-  via `@fastify/static`, plus `/api/config` and `/events` (SSE). Not
-  bundled into the desktop overlay — the same watcher logic lives
-  natively in `apps/desktop`. When changing watcher/parser/cache
-  behaviour, **update both ports** or they'll drift.
-- `apps/client` — Vue + Leaflet map. Runs both inside Tauri and as a
-  plain browser page on a phone. `useServerTransport` and the
-  `api/*.ts` files branch on `"__TAURI_INTERNALS__" in window`: Tauri
-  → `invoke(...)` + `listen('position', ...)`; browser → same-origin
-  `fetch('/api/*')` + `new EventSource('/events')` (Vite proxies to
-  Fastify in dev; Fastify owns everything in prod).
+- `apps/desktop` — Tauri 2 wrapper. The production artifact: Rust
+  watcher/config pipeline (`src-tauri/src/server/`), the Tauri IPC
+  commands the webview calls, AND an in-process HTTP server (axum) on
+  `127.0.0.1:47474` exposing `/api/ping`, `/api/config` (GET+PUT) and
+  `/events` (SSE). Single 6 MB `.exe` that ships as both the overlay
+  and the local HTTP backend for any browser pointed at the same
+  origin. See "In-process HTTP server" below.
+- `apps/client` — Vue + Leaflet map. Two transports, one codebase.
+  Inside the Tauri webview: `invoke(...)` + `listen('position', ...)`.
+  Inside any other browser tab (hosted-frontend future or LAN-phone):
+  same-origin `fetch('/api/*')` + `new EventSource('/events')`, where
+  the helper's HTTP server is the actual target. The transport split
+  lives in `useServerTransport` / `api/transport.ts`, both branching on
+  `"__TAURI_INTERNALS__" in window`.
 - `packages/shared` — source of truth for the position payload shape
-  (zod schemas + inferred types, consumed by client + Node server) and
-  for the Tarkov map calibration table in `src/maps.ts` — keyed by raw
-  in-game `nameId` (`bigmap`, `factory4_day`, `tarkovstreets`, ...) with
-  per-map `displayName`, `svgFile`, `transform`, `bounds`, `rotation`,
-  `floors`, and a `canonical` field that aliases like `factory4_night`
-  use to resolve back to their base entry. The Rust port in
-  `apps/desktop` redeclares the position payload natively — no zod-to-
-  Rust bridge, just hand-kept parity on that single shape.
+  (zod schemas + inferred types, consumed by the client) and for the
+  Tarkov map calibration table in `src/maps.ts` — keyed by raw in-game
+  `nameId` (`bigmap`, `factory4_day`, `tarkovstreets`, ...) with per-map
+  `displayName`, `svgFile`, `transform`, `bounds`, `rotation`, `floors`,
+  and a `canonical` field that aliases like `factory4_night` use to
+  resolve back to their base entry. The Rust side mirrors the position
+  payload via a JSON-fixture-driven test, not a zod-to-Rust bridge —
+  see "Cross-port parsers" below.
 - `apps/client/public/maps/` — git submodule of the community SVG maps
   ([the-hideout/tarkov-dev-svg-maps](https://github.com/the-hideout/tarkov-dev-svg-maps),
   CC BY-NC-SA 4.0). Served as static files by Vite at `/maps/<File>.svg`.
@@ -35,25 +32,22 @@
 
 ## Dev workflow
 
-Two independent dev scenarios:
+One scenario, two processes:
 
-- **Desktop overlay** (most common): one terminal — `pnpm --filter
-@tarkov-checker/desktop tauri:dev`. This builds the Rust side, runs
-  Vite under the hood (via `beforeDevCommand: ""` + Tauri's built-in
-  devUrl wiring — wait, `beforeDevCommand` is empty, so you also need
-  a Vite up). In practice: open a second terminal first and run
-  `pnpm --filter @tarkov-checker/client dev`, then start Tauri.
-- **LAN/phone mode**: `pnpm dev` from repo root runs `turbo run dev` —
-  brings up the Node server (`:3000`) and the Vite dev server (`:5173`,
-  host `0.0.0.0`) in parallel. Phone on the same LAN visits
-  `http://<pc-ip>:5173`; Vite proxies `/api/*` and `/events` to the
-  Fastify backend on :3000 (see `server.proxy` in `vite.config.ts`), so
-  the browser only ever sees one origin. **Prod LAN mode** (no Vite):
-  `pnpm build` then `pnpm --filter @tarkov-checker/server start` —
-  Fastify serves the built SPA from `apps/client/dist/` plus its own
-  `/api` + `/events`. Phone hits `http://<pc-ip>:3000` for both. CORS is
-  not configured anywhere because there's never a cross-origin request.
-  Neither flow involves the Tauri overlay.
+- **Vite dev server**: `pnpm --filter @tarkov-checker/client dev`
+  serves the SPA at `http://localhost:5173`. Its `server.proxy` config
+  forwards same-origin `/api/*` and `/events` to the Rust helper at
+  `127.0.0.1:47474`, so the browser only ever sees one origin and CORS
+  stays simple.
+- **Tauri overlay**: `pnpm --filter @tarkov-checker/desktop tauri:dev`
+  builds the Rust side and loads `http://localhost:5173` into a
+  WebView2 window. The Rust process is also the HTTP server backing
+  the Vite proxy — both transports talk to the same in-process state.
+
+Order matters: start Vite first (Tauri's `beforeDevCommand` is empty),
+then `tauri:dev`. The Rust HTTP server binds on `127.0.0.1` only by
+default; LAN exposure for the phone-as-second-screen scenario is a
+future opt-in toggle (see "Future architecture").
 
 `apps/desktop/src-tauri/tauri.conf.json` keeps `beforeDevCommand` empty
 so Vite isn't double-spawned when run under Turbo.
@@ -273,30 +267,29 @@ map uses — no separate transport, no separate dataset.
 
 ## Tarkov path resolution
 
-Same shape, two implementations — change one, change the other:
+`apps/desktop/src-tauri/src/server/paths.rs` reads the registry via
+`winreg`, looks at env vars, applies manual overrides from
+`%APPDATA%/tarkov-checker/config.json`, and returns the resolved triple
+(`gameDir`, `logsDir`, `screenshotsDir`) with `source` + `exists` flags.
 
-- **Node** (`apps/server/src/watchers/paths.ts`) — uses `reg query` +
-  `chcp 65001` to decode Cyrillic Documents paths from the registry.
-  Manual overrides live in `apps/server/data/config.json`. HTTP
-  `GET/PUT /api/config` reads/writes them; PUT re-applies watchers
-  atomically through `WatcherManager.apply()`.
-- **Rust** (`apps/desktop/src-tauri/src/server/paths.rs`) — uses
-  `winreg` directly (no subprocess, no codepage dance). Manual
-  overrides live in `%APPDATA%/tarkov-checker/config.json`. Tauri
-  commands `get_config` / `update_config` are the API; the
-  `update_config` command re-runs `watcher::apply_resolved` so the
-  screenshot watcher swaps to the new path without a restart.
+Priority: env (`TARKOV_GAME_DIR`, `TARKOV_SCREENSHOT_DIR`) > manual
+override in the config file > registry auto-detect. `logsDir` is always
+`gameDir + "Logs"` — no separate env or manual override, since the BSG
+layout pins it there.
 
-Priority is identical in both ports: env (`TARKOV_GAME_DIR`,
-`TARKOV_SCREENSHOT_DIR`) > manual override in the config file > registry
-auto-detect. `logsDir` is always `gameDir + "Logs"` — no separate env or
-manual override, since the BSG layout pins it there.
+Two surfaces read/write this state:
 
-`SERVER_PORT` is the Fastify port (default 3000) and only applies to
-`apps/server`. Deliberately distinct from `PORT` because preview/dev
-tooling sometimes sets `PORT=5173` for the whole runner. Don't read
-`PORT` in the Node server. The Rust port doesn't listen on any TCP
-port at all.
+- **Tauri IPC**: `get_config` / `update_config` commands. The webview
+  uses these via `invoke()`. `update_config` re-runs
+  `watcher::apply_resolved` so the screenshot watcher swaps to the new
+  path without a restart.
+- **HTTP**: `GET /api/config` / `PUT /api/config` on the in-process
+  axum server (see "In-process HTTP server" below). Same behaviour as
+  the IPC commands, same `ResolvedPaths` shape.
+
+The HTTP server binds on `127.0.0.1:47474` — fixed port, no TCP
+exposure beyond loopback. LAN exposure is a future opt-in toggle
+(see "Future architecture").
 
 ## User settings
 
@@ -451,56 +444,81 @@ the JS side has no obvious feedback unless you check the webview console.
    `var(--p-surface-950)` background, so the map area stays solid; only
    the strip around the map is see-through.
 
-## Desktop overlay's in-process server
+## In-process HTTP server
 
-Lives under `apps/desktop/src-tauri/src/server/`. Mirrors the Node
-modules in `apps/server/src/` 1:1 so cross-checking stays cheap:
+Lives under `apps/desktop/src-tauri/src/`. The Rust crate hosts an
+axum-based HTTP server alongside the Tauri IPC layer, so the same
+process backs both the webview (via IPC) and any browser tab on the
+machine (via HTTP). One source of state, two transports.
 
-| Node (LAN backend)                  | Rust (in-process)                           | Purpose                                                                                          |
-| ----------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `watchers/screenshots.ts`           | `server/screenshots.rs`                     | chokidar `awaitWriteFinish` → `notify-debouncer-full` 250 ms                                     |
-| `watchers/logs.ts`                  | `server/logs.rs`                            | tail `* application_NNN.log` in latest `log_*/`; emit `map-change` on `rcid:` / `Location:` hits |
-| `watchers/paths.ts` + `registry.ts` | `server/paths.rs`                           | `reg query` subprocess → `winreg` direct                                                         |
-| `config-store.ts`                   | `server/config.rs`                          | JSON in `apps/server/data/` → `%APPDATA%/tarkov-checker/`                                        |
-| `sse.ts` Hub broadcast              | `app.emit("position" \| "map-change", ...)` | SSE fan-out → Tauri event                                                                        |
-| `GET/PUT /api/config`               | `commands::{get_config, update_config}`     | HTTP routes → IPC commands                                                                       |
+| Module                          | Role                                                                                  |
+| ------------------------------- | ------------------------------------------------------------------------------------- |
+| `http_server.rs`                | axum routes, CorsLayer, SSE handler, listens on `127.0.0.1:47474`                     |
+| `server/screenshots.rs`         | `notify-debouncer-full` watcher (250 ms `awaitWriteFinish` equivalent); parses filename → position |
+| `server/logs.rs`                | poll-tails latest `log_*/application_NNN.log`; emits `map-change` on `rcid:` / `Location:` hits     |
+| `server/paths.rs`               | env → manual override → `winreg` auto-detect; returns `ResolvedPaths`                 |
+| `server/config.rs`              | reads/writes `%APPDATA%/tarkov-checker/config.json`; rejects UNC paths                |
+| `server/events.rs`              | `ServerEvent` enum + `tokio::sync::broadcast` channel for HTTP-side fan-out           |
+| `watcher.rs`                    | `WatcherSlot` state holder + `apply_resolved` that atomically swaps watcher handles   |
+| `auth.rs`                       | bearer-token storage in Windows Credential Manager (dormant; LAN-mode wiring later)   |
+| `commands.rs`                   | Tauri `#[tauri::command]` adapters mirroring the HTTP routes                          |
 
-Frontend doesn't know which backend it talks to. Switch is in two
-places only:
+**HTTP routes** (all under `127.0.0.1:47474`):
+
+- `GET /api/ping` — public health probe (`{name, version, status}`).
+- `GET /api/config` — current `ResolvedPaths`. Origin-allowlisted via
+  `CorsLayer` (`http://localhost:5173` + future hosted-frontend
+  origin); same JSON shape as the Tauri `get_config` IPC command.
+- `PUT /api/config` — apply `ConfigPatch`, re-run `apply_resolved`,
+  return the new `ResolvedPaths`. UNC → 400 with `{error: "..."}`.
+- `GET /events` — Server-Sent Events stream. `ServerEvent` (tagged
+  enum) frames; one `data: { type: "position"|"map-change", ... }`
+  per watcher emission. Keep-alive `: ping` every 25 s.
+
+Events are fan-out twice in parallel by each watcher emit-site:
+
+```
+filesystem change
+  ├─→ app.emit("position", ...)         // Tauri webview gets it via listen()
+  └─→ event_tx.send(ServerEvent::...)   // HTTP /events subscribers get it
+```
+
+Frontend chooses the transport in two places only:
 
 - `apps/client/src/features/server/composables/useServerTransport.ts` —
   Tauri: `listen('position', ...)` + status hard-coded to `"open"`.
-  Browser: delegates to the `useServerStream` composable (SSE /
-  `EventSource`, which auto-reconnects).
+  Browser: delegates to `useServerStream` (`EventSource('/events')`
+  with auto-reconnect).
 - `apps/client/src/features/server/api/transport.ts` — single dispatch
-  for HTTP/IPC calls. Tauri: dynamic import of `@tauri-apps/api/core` +
-  `invoke(...)`. Browser: same-origin `fetch` (Vite proxy → Fastify in
-  dev; Fastify direct in prod).
-
-The Rust crate has no HTTP client — `reqwest` was removed along with the
-old `get_extracts` command, since the extracts dataset is now bundled
-into the SPA. The Rust port only watches the filesystem and writes
-config; nothing reaches out to the network.
+  for HTTP/IPC calls. Tauri: dynamic import of `@tauri-apps/api/core`
+  + `invoke(...)`. Browser: same-origin `fetch('/api/*')` (Vite proxy
+  in dev; direct on `127.0.0.1:47474` in the future hosted-frontend
+  scenario where `https://<your-domain>` page hits localhost across
+  origins, allowed by the browser localhost-exception in the Secure
+  Contexts spec).
 
 `PositionPayload` (struct in `screenshots.rs`) and `MapChangePayload`
 (struct in `logs.rs`) on the Rust side mirror `PositionMessage` and
-`MapChangeMessage` from `packages/shared/src/ws-messages.ts`. Adding a
-new event type means touching all four declarations (TS schema + TS
-discriminated union + Rust payload + Tauri `listen()` call in
-`useServerTransport.ts`); the file is still called `ws-messages.ts` for
-historical reasons (was the WS schema before the SSE migration).
+`MapChangeMessage` from `packages/shared/src/ws-messages.ts`. The
+HTTP-side `ServerEvent` enum (in `server/events.rs`) is the tagged-
+union wire format for SSE. Adding a new event type touches four
+declarations (TS schema, TS discriminated union, Rust payload struct,
+new `ServerEvent` variant); the file is still called `ws-messages.ts`
+for historical reasons (was the WS schema before the SSE migration).
 
-The logs watcher (`logs.ts` / `logs.rs`) tails the **latest** `log_*/`
-session folder under `logsDir` — picked by sort order (timestamps in the
-folder name). On startup it scans the tail of the active
-`application_NNN.log` (~64 KB window) for the most recent map-load line
-and emits one seed `map-change` so the overlay snaps to whatever map
-Tarkov is currently in (mid-raid or post-extract). After that it tails
-from EOF, watches for new `log_*/` folders (next game launch) and for
-higher-suffix `application_NNN.log` rotations within the active folder.
-The parser regex lives once in `@shared/parse-log.ts` (Node) and is
-mirrored literally in `server/logs.rs` (Rust) — `SCENE_PRESET_RE` +
-`TRANSIT_LOCATION_RE` + `TRACE_LOCATION_RE` — keep them in sync. The
+The logs watcher (`server/logs.rs`) tails the **latest** `log_*/`
+session folder under `logsDir` — picked by sort order (timestamps in
+the folder name). On startup it scans the tail of the active
+`application_NNN.log` (~64 KB window) for the most recent map-load
+line and emits one seed `map-change` so the overlay snaps to whatever
+map Tarkov is currently in (mid-raid or post-extract). After that it
+tails from EOF, watches for new `log_*/` folders (next game launch)
+and for higher-suffix `application_NNN.log` rotations within the
+active folder. The parser regex lives once in `@shared/parse-log.ts`
+and is generated into `server/parse_log_regexes.rs` by
+`packages/shared/scripts/gen-rust-regex.mjs` (run via
+`pnpm shared:gen-rust-regex`). Both ports use the same regex strings;
+forget to regenerate and the `rust-regex-sync` CI job turns red. The
 parser **lowercases its capture group** before returning, so callers
 have a stable key regardless of which line shape produced the hit. Same
 map, three case conventions observed live on 2026-05-30 in patch

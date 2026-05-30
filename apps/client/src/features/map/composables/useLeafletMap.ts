@@ -164,7 +164,10 @@ export function useLeafletMap(
   async function loadSvgIntoMap(instance: LeafletMap): Promise<void> {
     try {
       mapError.value = null;
-      const svgUrl = mapSvgPath(mapCode);
+      // BASE_URL is `/` for local/Tauri builds and `/tarkov-checker/` on
+      // GitHub Pages — runtime fetches need the prefix manually since
+      // Vite only rewrites build-time asset references in HTML/CSS.
+      const svgUrl = mapSvgPath(mapCode, `${import.meta.env.BASE_URL}maps`);
       const { svg, width, height, floors: floorGroups } = await fetchSvg(svgUrl);
       L.svgOverlay(svg, bounds, { interactive: false }).addTo(instance);
       loaded.value = { width, height, floors: floorGroups };
