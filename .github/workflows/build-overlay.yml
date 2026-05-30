@@ -30,7 +30,7 @@ jobs:
       contents: write # softprops/action-gh-release needs this to create Releases
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           # apps/client/public/maps is a git submodule (the SVG maps).
           # Vite bundles them as static assets — without the submodule
