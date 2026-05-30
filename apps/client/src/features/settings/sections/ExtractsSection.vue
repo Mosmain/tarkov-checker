@@ -51,7 +51,7 @@ const labelSizeOptions = computed(() => [
         size="small"
         class="w-full"
       />
-      <p class="mt-1.5 text-[10px] leading-relaxed opacity-50">{{ t('labelHint') }}</p>
+      <p class="mt-1.5 text-[10px] leading-relaxed opacity-70">{{ t('labelHint') }}</p>
     </div>
 
     <div class="mt-3">

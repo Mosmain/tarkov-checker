@@ -50,6 +50,7 @@ async function startDrag(event: MouseEvent): Promise<void> {
         aria-hidden="true"
       />
       <span class="pointer-events-none">{{ mapDisplayName }}</span>
+      <span class="sr-only" aria-live="polite">Connection: {{ status }}</span>
     </span>
     <!-- Locked overlay: collapse the pill to a single status dot. Map name
          is redundant once the player has set up the overlay; only the
@@ -61,6 +62,7 @@ async function startDrag(event: MouseEvent): Promise<void> {
       :title="'ws: ' + status"
     >
       <i :class="['text-[10px]', statusIconClass]" aria-hidden="true" />
+      <span class="sr-only" aria-live="polite">Connection: {{ status }}</span>
     </span>
     <SettingsPanel v-if="!overlayClickThrough" />
     <Button

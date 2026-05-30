@@ -78,18 +78,19 @@ If auto-detect fails, fill in **Game folder** in Settings and click **Save**. Wa
 
 **Auto-map switching**: The overlay tails your active Tarkov session log and detects scene-preset and Transit-location lines. When you load into a raid, it automatically flips the displayed map to match. This includes aliases for maps renamed in patch 1.0.5.0 (Factory, Reserve, Interchange). Toggle in Settings; enabled by default.
 
-**Airdrop triangulation**: Press a configurable hotkey (default **Ctrl+Alt+D**) while looking at a falling airdrop to record its bearing. Sidestep ~5 meters and press the hotkey again. The overlay triangulates the intersection and marks the landing spot with a parachute icon and uncertainty circle. Same hotkey clears the marker with a 3-second countdown.
+**Airdrop triangulation**: Press a configurable hotkey (default **Ctrl+Alt+D**) to arm the tracker. Take a PrintScreen while looking at a falling airdrop to record its bearing. Sidestep ~5 meters and take another PrintScreen to capture a second angle. The overlay triangulates the intersection and marks the landing spot with an uncertainty circle. Press the hotkey again to clear the marker with a 3-second countdown confirmation.
 
 **Extracts overlay**: displays every known extract on every map with faction filtering (PMC / Scav / Shared) and label customization (always visible or on hover). Uses the same faction-color scheme across all UI elements.
 
-**Multi-floor maps**: Factory, Reserve, Interchange, Streets, and The Lab have floor switchers. Navigate with UI buttons or hotkeys to toggle between levels.
+**Multi-floor maps**: Most maps have floor switchers (Customs, Factory, Shoreline, Reserve, Interchange, Streets, The Lab, Ground Zero). Woods and Lighthouse are single-level. Navigate with UI buttons or hotkeys to toggle between levels.
 
 **Window controls** (desktop overlay only):
 
 - **Drag** the transport-status pill in the top-right to move the overlay
 - **Click-through lock** (Ctrl+Alt+L) — toggle whether mouse clicks pass through to the game underneath
 - **Always-on-top** — keep the overlay above Tarkov even when the game window is focused
-- **Opacity slider** — adjust window transparency; map area stays solid, edges are see-through
+- **Opacity slider** — adjust overall window transparency (30–100%). Map area and other UI elements fade uniformly.
+- **Map opacity slider** — independently adjust map transparency while keeping UI controls solid (0–100%, Tauri only)
 - **Zoom** — scale the entire UI
 - **Close** button with confirmation to prevent accidental exits
 
@@ -205,18 +206,19 @@ pnpm dev
 
 **Автосмена карт**: оверлей отслеживает активный лог сессии Tarkov и ловит строки scene-preset и Transit-location. Когда ты загружаешься в рейд, отображаемая карта автоматически переключается. Это включает поддержку переименованных в патче 1.0.5.0 карт (Factory, Reserve, Interchange). Включается в Settings; по умолчанию включено.
 
-**Триангуляция дропа**: нажми настраиваемый хоткей (по умолчанию **Ctrl+Alt+D**), смотря на падающий дроп, чтобы записать его пеленг. Отойди в сторону на ~5 метров и нажми хоткей снова. Оверлей триангулирует пересечение и отметит точку приземления иконкой парашюта с кругом неопределённости. Тот же хоткей убирает отметку с обратным отсчётом в 3 секунды.
+**Триангуляция дропа**: нажми настраиваемый хоткей (по умолчанию **Ctrl+Alt+D**) для активирования. Сделай PrintScreen, смотря на падающий дроп, чтобы записать его пеленг. Отойди в сторону на ~5 метров и сделай второй PrintScreen для захвата второго угла. Оверлей триангулирует пересечение и отметит точку приземления кругом неопределённости. Нажми хоткей снова для удаления отметки с подтверждением обратного отсчёта в 3 секунды.
 
 **Оверлей выходов**: отображает все известные выходы на каждой карте с фильтром по фракциям (PMC / Scav / Shared) и настройкой видимости подписей (всегда или при наведении). Использует одну цветовую схему фракций по всему интерфейсу.
 
-**Многоэтажные карты**: Factory, Reserve, Interchange, Streets и The Lab имеют переключатели этажей. Навигируй кнопками UI или хоткеями между уровнями.
+**Многоэтажные карты**: на большинстве карт есть переключатели этажей (Customs, Factory, Shoreline, Reserve, Interchange, Streets, The Lab, Ground Zero). Woods и Lighthouse одноуровневые. Навигируй кнопками UI или хоткеями между уровнями.
 
 **Управление окном** (только десктоп-оверлей):
 
 - **Перетаскивание**: транспортный статус в правом верхнем углу — перетащи, чтобы переместить оверлей
 - **Блокировка клика** (Ctrl+Alt+L) — переключай, проходят ли клики мышки сквозь окно в игру
 - **Поверх всех окон** — держи оверлей над Tarkov, даже когда окно игры в фокусе
-- **Ползунок прозрачности** — изменяй видимость окна; область карты остаётся непрозрачной, края полупрозрачны
+- **Ползунок прозрачности** — изменяй общую видимость окна (30–100%). Карта и весь интерфейс исчезают равномерно.
+- **Ползунок прозрачности карты** — независимо изменяй видимость карты, сохраняя UI элементы непрозрачными (0–100%, только Tauri)
 - **Масштаб** — меняй размер всего интерфейса
 - **Кнопка закрытия** с подтверждением, чтобы не закрыть случайно
 

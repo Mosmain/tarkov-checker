@@ -3,6 +3,8 @@
  * same component code works in both contexts.
  */
 
+import { isTauri } from '@/shared/tauri';
+
 interface OverlayApi {
   readonly isTauri: boolean;
   setAlwaysOnTop: (on: boolean) => Promise<void>;
@@ -10,8 +12,6 @@ interface OverlayApi {
   setOpacity: (value: number) => Promise<void>;
   setZoom: (factor: number) => Promise<void>;
 }
-
-const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 
 let cachedApi: OverlayApi | null = null;
 

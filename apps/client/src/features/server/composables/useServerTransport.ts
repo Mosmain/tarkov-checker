@@ -1,4 +1,10 @@
-import type { MapChangeMessage, PositionMessage } from '@shared/ws-messages';
+import {
+  mapChangeMessage,
+  positionMessage,
+  type MapChangeMessage,
+  type PositionMessage,
+} from '@shared/ws-messages';
+import { isTauri } from '@/shared/tauri';
 import { useServerStream } from './useServerStream';
 import { dispatchServerEvent } from './useServerEvents';
 
@@ -7,8 +13,6 @@ export type TransportStatus = 'connecting' | 'open' | 'closed';
 export interface UseServerTransport {
   status: Ref<TransportStatus>;
 }
-
-const isTauri = '__TAURI_INTERNALS__' in window;
 
 // The Rust side emits each payload without its discriminator — the event
 // channel name already carries that information, so the payload shape is the
@@ -37,14 +41,20 @@ export function useServerTransport(streamUrl: string): UseServerTransport {
 
   onMounted(async () => {
     const { listen } = await import('@tauri-apps/api/event');
+    // The Tauri payload type is hand-kept in parity with the Rust side
+    // (see CLAUDE.md "Desktop overlay's in-process server"). Validate at the
+    // boundary so a shape drift surfaces as a dropped event, not as
+    // `undefined.toFixed()` deep in downstream code.
     unlistens.push(
       await listen<PositionPayload>('position', (event) => {
-        dispatchServerEvent({ type: 'position', ...event.payload });
+        const parsed = positionMessage.safeParse({ type: 'position', ...event.payload });
+        if (parsed.success) dispatchServerEvent(parsed.data);
       }),
     );
     unlistens.push(
       await listen<MapChangePayload>('map-change', (event) => {
-        dispatchServerEvent({ type: 'map-change', ...event.payload });
+        const parsed = mapChangeMessage.safeParse({ type: 'map-change', ...event.payload });
+        if (parsed.success) dispatchServerEvent(parsed.data);
       }),
     );
     status.value = 'open';

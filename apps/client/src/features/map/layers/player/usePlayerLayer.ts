@@ -1,20 +1,10 @@
-import L, { type Map as LeafletMap, type LatLngExpression } from 'leaflet';
+import L, { type LatLngExpression } from 'leaflet';
+import { useServerEvent } from '@/features/server/composables/useServerEvents';
+import { useMapSettingsStore } from '@/features/map/store';
+import type { MapLayerContext } from '../registry';
 
 export type PlayerFollow = 'off' | 'sm' | 'md' | 'lg';
 
-interface Position3D {
-  readonly x: number;
-  readonly y: number;
-  readonly z: number;
-}
-
-export interface UsePlayerMarker {
-  setPlayerPosition: (pos: Position3D, yaw?: number | null) => void;
-  clearPlayerPosition: () => void;
-  setPlayerFollow: (mode: PlayerFollow) => void;
-}
-
-/** Zoom levels (delta from initialZoom) for each follow mode; clamped to maxZoom. */
 const FOLLOW_ZOOM_DELTA: Readonly<Record<Exclude<PlayerFollow, 'off'>, number>> = {
   sm: 1,
   md: 2,
@@ -28,40 +18,28 @@ function buildPlayerIconHtml(displayYaw: number | null): string {
   return `<svg viewBox="-18 -18 36 36" xmlns="http://www.w3.org/2000/svg"><path class="player-marker" d="M 0,-13 L 9,9 L 0,4 L -9,9 Z" transform="rotate(${displayYaw})" /></svg>`;
 }
 
-/**
- * Manages the player marker — a div-icon arrow (or dot when yaw is unknown)
- * placed on the same custom `extracts` pane as extract markers. Implements
- * the auto-follow logic: when the player actually moves (skipping spam
- * updates for a stationary player), recenter and zoom in by the configured
- * step.
- */
-export function usePlayerMarker(
-  map: ShallowRef<LeafletMap | null>,
-  mapRotation: number,
-  yawOffset: number,
-  initialZoom: Ref<number>,
-): UsePlayerMarker {
+export function usePlayerLayer(ctx: MapLayerContext): void {
+  const { map, mapInfo, initialZoom } = ctx;
+  const mapRotation = mapInfo.rotation;
+  const yawOffset = mapInfo.yawOffset ?? 0;
+
+  const { playerFollow } = storeToRefs(useMapSettingsStore());
+
   let playerLayer: L.LayerGroup | null = null;
   let playerCore: L.Marker | null = null;
-  let mode: PlayerFollow = 'off';
   let lastX = Number.NaN;
   let lastZ = Number.NaN;
   let lastYaw: number | null = Number.NaN;
 
-  function setPlayerFollow(next: PlayerFollow): void {
-    mode = next;
-  }
-
-  function setPlayerPosition(pos: Position3D, yaw: number | null = null): void {
+  function setPlayerPosition(
+    pos: { readonly x: number; readonly y: number; readonly z: number },
+    yaw: number | null = null,
+  ): void {
     if (!map.value) return;
     const latLng: LatLngExpression = [pos.z, pos.x];
     if (!playerLayer) {
       playerLayer = L.layerGroup().addTo(map.value);
     }
-    // The in-game yaw must be rotated by the map's own coordinateRotation
-    // so the arrow points where the player is looking in the rendered view.
-    // `yawOffset` is a per-map fudge factor for cases where in-game world
-    // axes diverge from extract calibration (see TarkovMapInfo.yawOffset).
     const displayYaw = yaw === null ? null : yaw + mapRotation + yawOffset;
     const icon = L.divIcon({
       html: buildPlayerIconHtml(displayYaw),
@@ -83,9 +61,9 @@ export function usePlayerMarker(
     }
 
     const changed = pos.x !== lastX || pos.z !== lastZ || yaw !== lastYaw;
-    if (changed && mode !== 'off') {
+    if (changed && playerFollow.value !== 'off') {
       const targetZoom = Math.min(
-        initialZoom.value + FOLLOW_ZOOM_DELTA[mode],
+        initialZoom.value + FOLLOW_ZOOM_DELTA[playerFollow.value],
         map.value.getMaxZoom(),
       );
       map.value.setView(latLng, targetZoom, { animate: true, duration: 0.4 });
@@ -97,13 +75,15 @@ export function usePlayerMarker(
     }
   }
 
-  function clearPlayerPosition(): void {
+  useServerEvent('position', (msg) => {
+    setPlayerPosition({ x: msg.x, y: msg.y, z: msg.z }, msg.yaw ?? null);
+  });
+
+  onBeforeUnmount(() => {
     if (playerLayer && map.value) {
       map.value.removeLayer(playerLayer);
     }
     playerLayer = null;
     playerCore = null;
-  }
-
-  return { setPlayerPosition, clearPlayerPosition, setPlayerFollow };
+  });
 }

@@ -1,25 +1,19 @@
 import L, { type Map as LeafletMap, type CRS } from 'leaflet';
 import { mapInfo, mapSvgPath, type TarkovMapCode } from '@shared/maps';
-import {
-  useExtractMarkers,
-  type UseExtractMarkers,
-  type LabelMode,
-  type LabelSize,
-} from '../layers/extracts/useExtractMarkers';
-import { usePlayerMarker, type UsePlayerMarker, type PlayerFollow } from './usePlayerMarker';
 import { useFloorSwitcher, type UseFloorSwitcher, type LoadedMap } from './useFloorSwitcher';
 
-export type { LabelMode, LabelSize, PlayerFollow, LoadedMap };
+export type { LoadedMap };
 
-interface UseLeafletMapResult extends UseExtractMarkers, UsePlayerMarker, UseFloorSwitcher {
+interface UseLeafletMapResult extends UseFloorSwitcher {
   map: ShallowRef<LeafletMap | null>;
   loaded: ShallowRef<LoadedMap | null>;
   mapError: Ref<string | null>;
+  initialZoom: Ref<number>;
   zoomIn: () => void;
   zoomOut: () => void;
+  reload: () => void;
 }
 
-/** How much of the map bounds the user is allowed to pan past (0.15 = 15%). */
 const PAN_PAD = 0.15;
 
 function applyRotation(latLng: L.LatLng, rotationDeg: number): L.LatLng {
@@ -97,13 +91,6 @@ async function fetchSvg(url: string): Promise<{
   return { svg, width, height, floors };
 }
 
-/**
- * Initializes the Leaflet map with a custom CRS that bakes per-map rotation
- * into the projection, fetches the community SVG overlay, and orchestrates
- * the three feature composables (extract markers, player marker, floor
- * switcher). They share the `map` shallowRef so they can attach layers and
- * events without round-tripping through this orchestrator.
- */
 export function useLeafletMap(
   containerRef: Ref<HTMLElement | null>,
   mapCode: TarkovMapCode,
@@ -117,8 +104,6 @@ export function useLeafletMap(
   const crs = buildCRS(info.transform, info.rotation);
   const bounds = mapLatLngBounds(info.bounds);
 
-  const extracts = useExtractMarkers(map);
-  const player = usePlayerMarker(map, info.rotation, info.yawOffset ?? 0, initialZoom);
   const floor = useFloorSwitcher(loaded, info.floors, info.defaultFloor);
   let resizeObserver: ResizeObserver | null = null;
   let resizeWindowHandler: (() => void) | null = null;
@@ -130,38 +115,14 @@ export function useLeafletMap(
       crs,
       attributionControl: false,
       zoomControl: false,
-      // applyFitZoom() ratchets minZoom up to the actual fit on every container
-      // resize. The static value here is just the floor used temporarily
-      // during recalculation — see MIN_ZOOM_FLOOR constant below.
       minZoom: -5,
       maxZoom: 4,
       zoomSnap: 0.25,
       maxBoundsViscosity: 1.0,
     });
     map.value = instance;
-    // Custom pane for overlay markers — sits above the default overlayPane
-    // (z 400) where L.svgOverlay lands, so markers stay visible after a map
-    // switch even though the SVG is fetched asynchronously and lands later.
     const markersPane = instance.createPane('extracts');
     markersPane.style.zIndex = '500';
-    // The zoom level at which the full map bounds fit in the current
-    // container. Used as minZoom (so the user can't zoom past "whole map
-    // visible") and as the base for player-follow zoom-in deltas. Recomputed
-    // on container resize because a shrunk window needs a lower fit zoom —
-    // otherwise minZoom stays at the initial larger value and zoom-out
-    // hits an invisible floor.
-    //
-    // We also auto-refit the view when the user was AT fit zoom before the
-    // resize — when they hadn't deliberately zoomed in, they expect the map
-    // to keep tracking the container. A manually-zoomed user is left alone:
-    // a window resize shouldn't yank them out of a detail they're inspecting.
-    // Pre-fit zoom floor — matches the `minZoom` we pass to `L.map(..)` above.
-    // We temporarily relax `minZoom` to this value before calling
-    // `getBoundsZoom`, then ratchet it back up to the freshly-computed fit
-    // zoom. Why: Leaflet's `getBoundsZoom` clamps its result to the current
-    // `minZoom`, so a previous fit (e.g. 2.25 on a wide window) would
-    // permanently lock zoom-out at that level — the very bug the user hit
-    // when shrinking the window.
     const MIN_ZOOM_FLOOR = -5;
 
     function applyFitZoom(): void {
@@ -179,20 +140,6 @@ export function useLeafletMap(
     applyFitZoom();
     instance.setMaxBounds(bounds.pad(PAN_PAD));
 
-    // Keep Leaflet's internal size cache in sync with the actual container.
-    // Triggers on overlay window resize (Tauri), browser viewport resize, the
-    // Settings drawer pushing the map sideways, and the WebView2 zoom factor
-    // change (setZoom rescales the document, which the observer catches as a
-    // content-rect change). Without this, the map renders at the initial size
-    // and tiles/markers drift out of place.
-    //
-    // Two listeners, intentionally redundant: ResizeObserver catches CSS-
-    // driven container changes (Settings drawer push, WebView zoom) but is
-    // unreliable on shrink under WebView2 inside a transparent/frameless
-    // Tauri window — it only fires when the observed element grows. The
-    // window-level `resize` event is the dependable fallback for the
-    // Tauri overlay-window case. Calls are idempotent (invalidateSize +
-    // applyFitZoom converge on the same target).
     function syncToContainer(): void {
       instance.invalidateSize({ animate: false, pan: false });
       applyFitZoom();
@@ -200,9 +147,6 @@ export function useLeafletMap(
 
     let initialBoxObserved = false;
     resizeObserver = new ResizeObserver(() => {
-      // Skip the synthetic event the browser fires right after observe() — it
-      // arrives with the container's current dimensions and would just call
-      // invalidateSize on a freshly-sized map.
       if (!initialBoxObserved) {
         initialBoxObserved = true;
         return;
@@ -214,7 +158,12 @@ export function useLeafletMap(
     resizeWindowHandler = syncToContainer;
     window.addEventListener('resize', resizeWindowHandler);
 
+    await loadSvgIntoMap(instance);
+  });
+
+  async function loadSvgIntoMap(instance: LeafletMap): Promise<void> {
     try {
+      mapError.value = null;
       const svgUrl = mapSvgPath(mapCode);
       const { svg, width, height, floors: floorGroups } = await fetchSvg(svgUrl);
       L.svgOverlay(svg, bounds, { interactive: false }).addTo(instance);
@@ -225,7 +174,11 @@ export function useLeafletMap(
     } catch (err) {
       mapError.value = err instanceof Error ? err.message : String(err);
     }
-  });
+  }
+
+  function reload(): void {
+    if (map.value) void loadSvgIntoMap(map.value);
+  }
 
   function zoomIn(): void {
     map.value?.zoomIn();
@@ -250,10 +203,10 @@ export function useLeafletMap(
     map,
     loaded,
     mapError,
-    ...extracts,
-    ...player,
+    initialZoom,
     ...floor,
     zoomIn,
     zoomOut,
+    reload,
   };
 }

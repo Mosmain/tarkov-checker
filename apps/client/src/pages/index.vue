@@ -28,7 +28,6 @@ const confirmClose = useCloseConfirm();
 
 const mapDisplayName = ref<string>('…');
 const mapError = ref<string | null>(null);
-const extractsError = ref<string | null>(null);
 
 // Template ref to MapView — its imperative methods are exposed via
 // defineExpose. `?.` keeps every shortcut handler safe to call before the
@@ -48,7 +47,6 @@ useGlobalShortcut(isTauri, airdropHotkey, () => airdropStore.press());
     :map-code="mapCode"
     @map-name="mapDisplayName = $event"
     @map-error="mapError = $event"
-    @extracts-error="extractsError = $event"
   />
 
   <OverlayHeader
@@ -59,7 +57,11 @@ useGlobalShortcut(isTauri, airdropHotkey, () => airdropStore.press());
     @close="confirmClose"
   />
 
-  <OverlayErrors :map-error="mapError" :extracts-error="extractsError" />
+  <OverlayErrors
+    :map-error="mapError"
+    @dismiss-map="mapError = null"
+    @retry="mapRef?.reload()"
+  />
 
   <AirdropStatusBanner />
 

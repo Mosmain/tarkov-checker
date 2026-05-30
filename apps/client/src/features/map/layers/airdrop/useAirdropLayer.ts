@@ -1,5 +1,6 @@
-import L, { type Map as LeafletMap } from 'leaflet';
-import { useAirdropStore } from '../store';
+import L from 'leaflet';
+import { useAirdropStore } from '@/features/airdrop/store';
+import type { MapLayerContext } from '../registry';
 
 /**
  * Renders the airdrop tracker's only visual artefact: a purple uncertainty
@@ -16,7 +17,8 @@ import { useAirdropStore } from '../store';
  * The circle goes on the existing `extracts` pane so it stacks above
  * extract icons but below the player marker.
  */
-export function useAirdropMarker(map: ShallowRef<LeafletMap | null>): void {
+export function useAirdropLayer(ctx: MapLayerContext): void {
+  const { map } = ctx;
   const store = useAirdropStore();
   let dropAreaCircle: L.Circle | null = null;
 

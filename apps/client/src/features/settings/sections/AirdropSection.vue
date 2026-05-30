@@ -20,7 +20,7 @@ const { t } = useI18n();
         input-id="airdrop-radius"
         class="w-full"
       />
-      <p class="mt-1.5 text-[10px] leading-relaxed opacity-50">{{ t('airdrop.radiusHint') }}</p>
+      <p class="mt-1.5 text-[10px] leading-relaxed opacity-70">{{ t('airdrop.radiusHint') }}</p>
     </div>
   </Fieldset>
 </template>

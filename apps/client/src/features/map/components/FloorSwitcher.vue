@@ -59,7 +59,13 @@ onBeforeUnmount(() => {
       leave-from-class="opacity-100 translate-y-0"
       leave-to-class="opacity-0 translate-y-1"
     >
-      <div v-if="open" class="absolute bottom-12 left-0 flex flex-col gap-1.5">
+      <div
+        v-if="open"
+        class="absolute bottom-12 left-0 flex flex-col gap-1.5"
+        role="listbox"
+        aria-orientation="vertical"
+        :aria-label="t('floor')"
+      >
         <Button
           v-for="floor in floors"
           :key="floor.id"
@@ -67,7 +73,8 @@ onBeforeUnmount(() => {
           size="small"
           :severity="floor.id === current ? 'primary' : 'secondary'"
           :label="floor.label"
-          :aria-pressed="floor.id === current"
+          role="option"
+          :aria-selected="floor.id === current"
           :aria-label="'Floor ' + floor.label"
           @click="select(floor.id)"
         />
@@ -79,6 +86,7 @@ onBeforeUnmount(() => {
       severity="secondary"
       class="!bg-surface-800/80 hover:!bg-surface-800 !border-surface-700 backdrop-blur"
       :aria-expanded="open"
+      aria-haspopup="listbox"
       :aria-label="t('floor')"
       @click="toggle"
     >

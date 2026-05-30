@@ -1,4 +1,4 @@
-interface TarkovMapInfo {
+export interface TarkovMapInfo {
   readonly displayName: string;
   readonly svgFile: string;
   /**

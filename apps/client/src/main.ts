@@ -7,6 +7,15 @@ import { useI18nStore } from '@/features/i18n/store';
 import { TarkovPreset } from './theme';
 import './styles.css';
 
+// IMPORTANT: side-effect import — populates the settings registry before
+// createApp(). Each features/<name>/settings.ts calls registerSettingsSection
+// at module load. Removing this line silently empties the Settings drawer.
+import.meta.glob('@/features/*/settings.ts', { eager: true });
+
+// IMPORTANT: side-effect import — populates the map layer registry before
+// createApp(). Removing this line silently empties the map.
+import.meta.glob('@/features/map/layers/*/index.ts', { eager: true });
+
 // Tauri's IPC layer logs a warning on every HMR-replaced JS callback because
 // Rust can no longer find the JS handler it had a promise on. These are pure
 // dev-mode noise — production builds have no HMR. Suppress only the specific

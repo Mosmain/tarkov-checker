@@ -65,7 +65,11 @@ export default defineConfig(({ mode }) => ({
     VueI18nPlugin({
       include: [fileURLToPath(new URL('./src/features/i18n/locales/**', import.meta.url))],
       strictMessage: false,
-      runtimeOnly: false,
+      // All locale messages under `include` are precompiled by this plugin
+      // at build time; setLocaleMessage in features/i18n/index.ts receives
+      // those precompiled functions on lazy-load. No runtime message
+      // compilation needed → drop the compiler (~15 KB gzip) from the bundle.
+      runtimeOnly: true,
     }),
     tailwindcss(),
     // `pnpm --filter @tarkov-checker/client analyze` runs `vite build --mode analyze`

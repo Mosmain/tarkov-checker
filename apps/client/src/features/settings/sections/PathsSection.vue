@@ -2,17 +2,9 @@
 import { useTauriOverlay } from '@/features/overlay/composables/useTauriOverlay';
 import { useServerPaths } from '@/features/server/composables/useServerPaths';
 
-const props = defineProps<{
-  /** Toggled by the parent drawer. Used as a retry trigger when the eager
-   *  initial load inside useServerPaths failed. */
-  drawerOpen: boolean;
-}>();
-
 const overlay = useTauriOverlay();
 const { t } = useI18n();
 
-// Tarkov paths are unreachable from a phone over LAN (the browser can't see
-// C:\EFT), but the Tauri overlay always runs on the same machine as Tarkov.
 const isDesktop = useMediaQuery('(min-width: 640px)');
 const canEditPaths = computed(() => overlay.isTauri || isDesktop.value);
 
@@ -27,17 +19,9 @@ const {
   gameDirLocked,
   screenshotsDirLocked,
   canSavePaths,
-  loadPaths,
   savePaths,
   statusIconClass,
 } = useServerPaths(canEditPaths);
-
-watch(
-  () => props.drawerOpen,
-  (isOpen) => {
-    if (isOpen && !serverConfig.value) void loadPaths();
-  },
-);
 </script>
 
 <template>
@@ -97,7 +81,7 @@ watch(
         />
       </div>
 
-      <p v-else class="text-[10px] leading-relaxed opacity-50">
+      <p v-else class="text-[10px] leading-relaxed opacity-70">
         {{ t('paths.mobileHint') }}
       </p>
     </div>
