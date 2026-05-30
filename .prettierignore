@@ -23,6 +23,3 @@ apps/client/.eslintrc-auto-import.json
 
 # Claude Code local tooling (launch config, vendored skills)
 .claude/**
-
-# Server runtime state (gitignored anyway, defensive)
-apps/server/data/**

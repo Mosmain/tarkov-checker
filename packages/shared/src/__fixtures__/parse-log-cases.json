@@ -1,0 +1,127 @@
+[
+  {
+    "name": "scene preset — pre-1.0.5.0 Customs (bigmap)",
+    "line": "2026-05-24 21:06:56.632|1.0.4.9.45133|Info|application|scene preset path:maps/customs_preset.bundle rcid:bigmap.scenespreset.asset",
+    "expected": { "rawMapId": "bigmap" }
+  },
+  {
+    "name": "scene preset — Ground Zero high tier (sandbox_high)",
+    "line": "2026-05-24 23:59:49.615|1.0.4.9.45133|Info|application|scene preset path:maps/sandbox_high_preset.bundle rcid:sandbox_high.scenespreset.asset",
+    "expected": { "rawMapId": "sandbox_high" }
+  },
+  {
+    "name": "scene preset — Factory renamed bundle in 1.0.5.0 (factory_day)",
+    "line": "2026-05-30 00:37:17.561|1.0.5.0.45272|Info|application|scene preset path:maps/factory_day_preset.bundle rcid:factory_day.scenespreset.asset",
+    "expected": { "rawMapId": "factory_day" }
+  },
+  {
+    "name": "scene preset — Streets renamed bundle in 1.0.5.0 (city)",
+    "line": "2026-05-30 00:46:20.393|1.0.5.0.45272|Info|application|scene preset path:maps/city_preset.bundle rcid:city.scenespreset.asset",
+    "expected": { "rawMapId": "city" }
+  },
+  {
+    "name": "scene preset — Reserve PascalCase rcid lowercased (Rezerv_Base -> rezerv_base)",
+    "line": "2026-05-30 01:01:23.704|1.0.5.0.45272|Info|application|scene preset path:maps/rezerv_base_preset.bundle rcid:Rezerv_Base.scenespreset.asset",
+    "expected": { "rawMapId": "rezerv_base" }
+  },
+  {
+    "name": "scene preset — Lighthouse unchanged in 1.0.5.0",
+    "line": "2026-05-30 01:11:02.660|1.0.5.0.45272|Info|application|scene preset path:maps/lighthouse_preset.bundle rcid:lighthouse.scenespreset.asset",
+    "expected": { "rawMapId": "lighthouse" }
+  },
+  {
+    "name": "scene preset — Interchange PascalCase ScenesPreset.asset variant",
+    "line": "2026-05-30 02:57:23.234|1.0.5.0.45272|Info|application|scene preset path:maps/shopping_mall.bundle rcid:Shopping_Mall.ScenesPreset.asset",
+    "expected": { "rawMapId": "shopping_mall" }
+  },
+  {
+    "name": "transit — Factory non-transit raid (factory4_day, empty destination)",
+    "line": "2026-05-30 00:37:32.803|1.0.5.0.45272|Info|application|[Transit] Flag:None, RaidId:6a1a0706068ed468b5025472, Count:0, Locations:factory4_day -> ",
+    "expected": { "rawMapId": "factory4_day" }
+  },
+  {
+    "name": "transit — Streets PascalCase lowercased (TarkovStreets -> tarkovstreets)",
+    "line": "2026-05-30 00:47:26.960|1.0.5.0.45272|Info|application|[Transit] Flag:None, RaidId:6a1a0956f18e63144509b658, Count:0, Locations:TarkovStreets -> ",
+    "expected": { "rawMapId": "tarkovstreets" }
+  },
+  {
+    "name": "transit — Reserve PascalCase lowercased (RezervBase -> rezervbase)",
+    "line": "2026-05-30 01:02:01.363|1.0.5.0.45272|Info|application|[Transit] Flag:None, RaidId:6a1a0cc19a8239cecd052cd8, Count:0, Locations:RezervBase -> ",
+    "expected": { "rawMapId": "rezervbase" }
+  },
+  {
+    "name": "transit — Ground Zero high tier (Sandbox_high -> sandbox_high)",
+    "line": "2026-05-25 00:00:19.100|1.0.4.9.45133|Info|application|[Transit] Flag:None, RaidId:6a1366d3875fd4b56d072ec8, Count:0, Locations:Sandbox_high -> ",
+    "expected": { "rawMapId": "sandbox_high" }
+  },
+  {
+    "name": "transit — Interchange canonical id direct",
+    "line": "2026-05-30 02:58:22.690|1.0.5.0.45272|Info|application|[Transit] Flag:None, RaidId:6a1a28064edfc272cf0d55d8, Count:0, Locations:Interchange -> ",
+    "expected": { "rawMapId": "interchange" }
+  },
+  {
+    "name": "trace — pre-1.0.5.0 TRACE-NetworkGameCreate Location: line (bigmap)",
+    "line": "2026-05-24 21:07:29.056|1.0.4.9.45133|Debug|application|TRACE-NetworkGameCreate profileStatus: 'Profileid: 66a5fb25243385abc70a191a, Status: Busy, RaidMode: Online, Ip: 87.242.110.44, Port: 17000, Location: bigmap, Sid: RU-MSK03G039_6a133dea142495fdaf1eecaa_24.05.26_21-05-30, GameMode: deathmatch, shortId: FMSX90'",
+    "expected": { "rawMapId": "bigmap" }
+  },
+  {
+    "name": "negative — numeric TRACE-NetworkGameCreate sentinel",
+    "line": "2026-05-24 21:07:28.896|1.0.4.9.45133|Debug|application|TRACE-NetworkGameCreate 0",
+    "expected": null
+  },
+  {
+    "name": "negative — LocationLoaded timing line (no map id)",
+    "line": "2026-05-24 21:07:28.861|1.0.4.9.45133|Info|application|LocationLoaded:18.31 real:33.01 diff:14.69",
+    "expected": null
+  },
+  {
+    "name": "negative — MatchingCompleted timing line",
+    "line": "2026-05-24 21:07:12.029|1.0.4.9.45133|Info|application|MatchingCompleted:11.23 real:16.17 diff:4.94",
+    "expected": null
+  },
+  {
+    "name": "negative — GameStarted timing line",
+    "line": "2026-05-24 21:08:48.695|1.0.4.9.45133|Info|application|GameStarted:91.37(10.7) real:112.84(12.02) diff:21.46",
+    "expected": null
+  },
+  {
+    "name": "negative — BEClient exit (bare)",
+    "line": "2026-05-30 00:41:25.672|1.0.5.0.45272|Info|application|BEClient exit",
+    "expected": null
+  },
+  {
+    "name": "negative — BEClient exit successfully",
+    "line": "2026-05-30 00:41:25.773|1.0.5.0.45272|Info|application|BEClient exit successfully",
+    "expected": null
+  },
+  {
+    "name": "negative — matching cancelled line",
+    "line": "2026-05-30 00:44:31.621|1.0.5.0.45272|Info|application|Local game matching cancelled.",
+    "expected": null
+  },
+  {
+    "name": "negative — config dump SdTarkovStreets JSON key",
+    "line": "  \"SdTarkovStreets\": true,",
+    "expected": null
+  },
+  {
+    "name": "negative — config dump MusicOnRaidEnd JSON key",
+    "line": "  \"MusicOnRaidEnd\": true,",
+    "expected": null
+  },
+  {
+    "name": "negative — empty input",
+    "line": "",
+    "expected": null
+  },
+  {
+    "name": "negative — totally unrelated log line",
+    "line": "totally unrelated log line",
+    "expected": null
+  },
+  {
+    "name": "priority — scene preset wins over Transit when both present on same line",
+    "line": "scene preset path:maps/customs_preset.bundle rcid:bigmap.scenespreset.asset [Transit] Flag:None, Locations:woods -> ",
+    "expected": { "rawMapId": "bigmap" }
+  }
+]

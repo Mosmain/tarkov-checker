@@ -1,8 +1,9 @@
-//! Port of `apps/server/src/config-store.ts` + the `serverConfigUpdateSchema`.
+//! User-overrides store for Tarkov directory paths.
 //!
-//! Persisted in `%APPDATA%/tarkov-checker/config.json`. The shape stays
-//! compatible with the existing JSON file: `{ gameDir?, screenshotsDir? }`,
-//! both nullable.
+//! Persisted in `%APPDATA%/tarkov-checker/config.json`. JSON shape:
+//! `{ gameDir?, screenshotsDir? }`, both nullable. UNC paths are
+//! rejected at the validation layer (see `normalize`) — they cannot be
+//! watched reliably and would be a privacy-leak surface if accepted.
 
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
@@ -60,13 +61,25 @@ impl ConfigStore {
     }
 
     pub async fn apply(&self, patch: ConfigPatch) -> Result<()> {
+        // Validate all fields before acquiring the lock so a rejected UNC path
+        // never partially mutates state (e.g. game_dir updated but
+        // screenshots_dir rejected would otherwise leave an in-memory orphan).
+        let game_dir = match patch.game_dir {
+            Some(v) => Some(normalize(v).map_err(|e| anyhow::anyhow!(e))?),
+            None => None,
+        };
+        let screenshots_dir = match patch.screenshots_dir {
+            Some(v) => Some(normalize(v).map_err(|e| anyhow::anyhow!(e))?),
+            None => None,
+        };
+
         {
             let mut s = self.state.lock().await;
-            if let Some(v) = patch.game_dir {
-                s.game_dir = normalize(v);
+            if let Some(v) = game_dir {
+                s.game_dir = v;
             }
-            if let Some(v) = patch.screenshots_dir {
-                s.screenshots_dir = normalize(v);
+            if let Some(v) = screenshots_dir {
+                s.screenshots_dir = v;
             }
         }
         self.persist().await
@@ -87,15 +100,86 @@ impl ConfigStore {
     }
 }
 
-fn normalize(v: Option<String>) -> Option<String> {
-    v.and_then(|s| {
-        let t = s.trim();
-        if t.is_empty() { None } else { Some(t.to_string()) }
-    })
+/// Trim whitespace, reject UNC paths (`\\server\share` / `//server/share`),
+/// and return `None` for empty strings. Mirrors the TS `normalize()` in
+/// `config-store.ts` which added UNC rejection to prevent the watcher from
+/// navigating to an SMB share.
+fn normalize(v: Option<String>) -> Result<Option<String>, String> {
+    match v {
+        None => Ok(None),
+        Some(s) => {
+            let t = s.trim();
+            if t.is_empty() {
+                return Ok(None);
+            }
+            if t.starts_with("\\\\") || t.starts_with("//") {
+                return Err(format!(
+                    "UNC paths are not supported: {t}"
+                ));
+            }
+            Ok(Some(t.to_string()))
+        }
+    }
 }
 
 pub fn data_dir() -> Result<PathBuf> {
     let appdata = std::env::var("APPDATA").context("APPDATA env var unset")?;
     let dir = Path::new(&appdata).join("tarkov-checker");
     Ok(dir)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // --- normalize -----------------------------------------------------------
+
+    #[test]
+    fn normalize_none_returns_ok_none() {
+        assert_eq!(normalize(None), Ok(None));
+    }
+
+    #[test]
+    fn normalize_empty_string_returns_ok_none() {
+        assert_eq!(normalize(Some(String::new())), Ok(None));
+    }
+
+    #[test]
+    fn normalize_whitespace_only_returns_ok_none() {
+        assert_eq!(normalize(Some("   ".to_string())), Ok(None));
+    }
+
+    #[test]
+    fn normalize_plain_path_preserved() {
+        assert_eq!(
+            normalize(Some(r"D:\Tarkov".to_string())),
+            Ok(Some(r"D:\Tarkov".to_string()))
+        );
+    }
+
+    #[test]
+    fn normalize_trims_surrounding_whitespace() {
+        assert_eq!(
+            normalize(Some(r"  D:\Tarkov  ".to_string())),
+            Ok(Some(r"D:\Tarkov".to_string()))
+        );
+    }
+
+    #[test]
+    fn normalize_unc_backslash_rejected() {
+        let result = normalize(Some(r"\\server\share".to_string()));
+        assert!(
+            result.is_err(),
+            "UNC backslash path should be rejected, got {result:?}"
+        );
+    }
+
+    #[test]
+    fn normalize_unc_forward_slash_rejected() {
+        let result = normalize(Some("//server/share".to_string()));
+        assert!(
+            result.is_err(),
+            "UNC forward-slash path should be rejected, got {result:?}"
+        );
+    }
 }

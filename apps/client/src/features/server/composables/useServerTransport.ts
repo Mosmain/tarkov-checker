@@ -30,8 +30,9 @@ type MapChangePayload = Omit<MapChangeMessage, 'type'>;
  *   by the Rust watchers. Status is hardcoded to `"open"` once listeners are
  *   attached — the same process owns both sides, so there isn't any
  *   meaningful "down" state to surface.
- * - In a plain browser (e.g. phone on the LAN): falls back to the LAN SSE
- *   stream (Node `apps/server` `GET /events`) on port 3000.
+ * - In a plain browser (the hosted-frontend or LAN-phone scenario):
+ *   falls back to the local Rust helper's SSE stream
+ *   (`GET /events` on `127.0.0.1:47474`, Vite-proxied in dev).
  */
 export function useServerTransport(streamUrl: string): UseServerTransport {
   if (!isTauri) return useServerStream(streamUrl);

@@ -8,13 +8,30 @@ import { PrimeVueResolver } from '@primevue/auto-import-resolver';
 import tailwindcss from '@tailwindcss/vite';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { fileURLToPath, URL } from 'node:url';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 const sharedSrc = fileURLToPath(new URL('../../packages/shared/src', import.meta.url));
 const clientSrc = fileURLToPath(new URL('./src', import.meta.url));
 
-export default defineConfig(({ mode }) => ({
+/**
+ * GitHub Pages project-page builds need every URL prefixed with the repo
+ * slug — the site lives at `https://<user>.github.io/<repo>/`. CI sets
+ * GITHUB_PAGES=true (see `.github/workflows/deploy-pages.yml`). Local
+ * `pnpm build` for the Tauri overlay leaves the env unset and the base
+ * stays at `/`, so the bundled dist works straight off the Tauri webview.
+ *
+ * Change the slug here if the repo gets renamed or moved under a custom
+ * domain (custom domain → keep `/`).
+ */
+const GITHUB_PAGES_BASE = '/tarkov-checker/';
+
+export default defineConfig(({ mode, command }) => ({
   // Tauri prints its own dev-server progress; don't let Vite wipe it.
   clearScreen: false,
+  // Asset URL prefix. Pages project-page → `/tarkov-checker/`; every
+  // other build (dev, Tauri overlay, local pnpm build) → `/`.
+  base: command === 'build' && process.env.GITHUB_PAGES === 'true' ? GITHUB_PAGES_BASE : '/',
   // Lets the frontend read TAURI_ENV_* (target triple, debug flag) via import.meta.env.
   envPrefix: ['VITE_', 'TAURI_ENV_*'],
   // App code is 100% Composition API, but PrimeVue 4 itself is implemented
@@ -82,6 +99,26 @@ export default defineConfig(({ mode }) => ({
         brotliSize: true,
         template: 'treemap',
       }) as PluginOption),
+    // GitHub Pages SPA-history workaround: Pages has no server-side
+    // rewrite, so a deep link like `/tarkov-checker/raid` 404s. Serving
+    // the same content as 404.html lets Vue Router pick the URL up
+    // client-side on a fresh navigation. Cross-platform copy via Node
+    // fs — avoids the bash-only `cp` step in package.json scripts.
+    process.env.GITHUB_PAGES === 'true' &&
+      ({
+        name: 'github-pages-spa-fallback',
+        apply: 'build',
+        closeBundle() {
+          const dist = fileURLToPath(new URL('./dist', import.meta.url));
+          const src = path.join(dist, 'index.html');
+          const dst = path.join(dist, '404.html');
+          if (fs.existsSync(src)) {
+            fs.copyFileSync(src, dst);
+            // eslint-disable-next-line no-console
+            console.log(`[github-pages] copied index.html → 404.html`);
+          }
+        },
+      } satisfies PluginOption),
   ],
   resolve: {
     alias: [
@@ -100,14 +137,18 @@ export default defineConfig(({ mode }) => ({
     watch: {
       ignored: ['**/src-tauri/**'],
     },
-    // One-origin dev: page is served by Vite (:5173), backend by Fastify
-    // (:3000), but the browser sees both at :5173. Removes CORS entirely
-    // (was previously needed for /api/* preflights and the hijacked /events
-    // response). http-proxy passes through chunked transfer-encoding, so
-    // the SSE stream survives the hop without buffering.
+    // One-origin dev: page is served by Vite (:5173), backend by the Rust
+    // helper inside Tauri (`apps/desktop/src-tauri`, listening on
+    // `127.0.0.1:47474`). The browser only ever talks to :5173.
+    // http-proxy passes through chunked transfer-encoding, so the SSE
+    // stream survives the hop without buffering.
+    //
+    // The production hosted-frontend scenario will hit :47474 directly
+    // and rely on the helper's `CorsLayer` for CORS; the proxy here is
+    // purely a dev-mode convenience that keeps origin parity with prod.
     proxy: {
-      '/api': { target: 'http://localhost:3000', changeOrigin: false },
-      '/events': { target: 'http://localhost:3000', changeOrigin: false },
+      '/api': { target: 'http://localhost:47474', changeOrigin: false },
+      '/events': { target: 'http://localhost:47474', changeOrigin: false },
     },
   },
   build: {

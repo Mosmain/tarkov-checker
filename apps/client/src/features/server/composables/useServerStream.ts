@@ -8,10 +8,11 @@ interface UseServerStreamResult {
 }
 
 /**
- * Browser transport: a Server-Sent Events stream from the LAN Node server
- * (apps/server `GET /events`). EventSource reconnects automatically on
- * transport errors — that built-in retry is the whole point of moving off the
- * old WebSocket composable, which had no reconnect.
+ * Browser transport: a Server-Sent Events stream from the local Rust
+ * helper (`apps/desktop/src-tauri` exposes `GET /events` on
+ * `127.0.0.1:47474`; in dev mode Vite proxies same-origin `/events`
+ * onto it). EventSource reconnects automatically on transport errors —
+ * that built-in retry is the whole point of using SSE here.
  */
 export function useServerStream(url: string): UseServerStreamResult {
   const status = ref<StreamStatus>('connecting');

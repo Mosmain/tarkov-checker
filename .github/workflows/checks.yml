@@ -71,7 +71,7 @@ jobs:
       - uses: ./.github/actions/install-js
 
       # turbo's `typecheck` task dependsOn `^build`, so shared/dist is
-      # built automatically before client/server typecheck.
+      # built automatically before client typecheck.
       - run: pnpm typecheck
 
   test:
@@ -84,8 +84,7 @@ jobs:
       - uses: ./.github/actions/install-js
 
       # turbo's `test` task dependsOn `^build` — shared gets built
-      # before vitest runs in client. Server has no tests yet; turbo
-      # silently skips packages without a test script.
+      # before vitest runs in client.
       - run: pnpm test
 
   build:
@@ -102,7 +101,26 @@ jobs:
 
       - uses: ./.github/actions/install-js
 
-      # JS-only build: shared (tsc) + client (vue-tsc + vite build) +
-      # server (tsc). The Tauri .exe build lives in build-overlay.yml
-      # because it needs windows-latest and a Rust toolchain.
+      # JS-only build: shared (tsc) + client (vue-tsc + vite build).
+      # The Tauri .exe build lives in build-overlay.yml because it needs
+      # windows-latest and a Rust toolchain.
       - run: pnpm build
+
+  rust-regex-sync:
+    # Guard: verify that the generated Rust regex files are up-to-date with
+    # their TS sources. If a developer edits parse-log.ts or parse-screenshot.ts
+    # and forgets to run `pnpm shared:gen-rust-regex`, this job turns red.
+    if: github.event_name != 'workflow_dispatch' || github.ref != 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/install-js
+
+      # Re-generate and fail if the committed .rs files differ. `git diff
+      # --exit-code` returns 1 when the working tree is dirty (content
+      # changed after the codegen ran), which GH Actions treats as a
+      # failing step.
+      - name: Check Rust regex files are up to date
+        run: pnpm shared:gen-rust-regex:check

@@ -102,16 +102,15 @@ Customs, Factory (Day/Night), Woods, Shoreline, Reserve, Interchange, Lighthouse
 
 The project consists of:
 
-- **Tauri 2 desktop wrapper** (`apps/desktop`) — native window management, file watchers, screenshot parser, log tailer, IPC bridge to the web UI
-- **Vue 3 + Leaflet map** (`apps/client`) — interactive map rendering, extract markers, player position arrow, UI controls
-- **Node/Fastify backend** (`apps/server`) — optional LAN server for phone/second-monitor mode; mirrors the Tauri watchers
+- **Tauri 2 desktop wrapper** (`apps/desktop`) — native window management, file watchers, screenshot parser, log tailer, in-process HTTP server (Rust + axum) on `127.0.0.1:47474`, IPC bridge to the web UI
+- **Vue 3 + Leaflet map** (`apps/client`) — interactive map rendering, extract markers, player position arrow, UI controls; talks to the helper via Tauri IPC inside the overlay and via HTTP + SSE when opened in a regular browser
 - **Shared modules** (`packages/shared`) — map calibration data, position/event schemas, log parser, type definitions
 
 Screenshots and logs are processed locally with no external API calls during gameplay. Extracts data is bundled into the app at build time.
 
 ## Architecture Details
 
-See [CLAUDE.md](CLAUDE.md) for in-depth engineering documentation: dev workflow, Tauri overlay configuration, multi-version logs parsing, Windows build quirks, CI/release procedures, and how the in-process Rust server mirrors the Node backend.
+See [CLAUDE.md](CLAUDE.md) for in-depth engineering documentation: dev workflow, Tauri overlay configuration, multi-version logs parsing, Windows build quirks, CI/release procedures, and the in-process Rust HTTP server (`/api/config`, `/events`).
 
 ## Credits
 
@@ -230,16 +229,15 @@ Customs, Factory (День/Ночь), Woods, Shoreline, Reserve, Interchange, Li
 
 Проект состоит из:
 
-- **Tauri 2 десктоп-обёртка** (`apps/desktop`) — управление окнами, слежение за файлами, парсинг скриншотов, отслеживание логов, IPC-мост к веб-интерфейсу
-- **Vue 3 + Leaflet карта** (`apps/client`) — интерактивный рендеринг карты, маркеры выходов, стрелка позиции игрока, управление UI
-- **Node/Fastify бэкенд** (`apps/server`) — опциональный LAN-сервер для режима телефона/второго монитора; зеркалит Tauri-слежение
+- **Tauri 2 десктоп-обёртка** (`apps/desktop`) — управление окнами, слежение за файлами, парсинг скриншотов, отслеживание логов, in-process HTTP-сервер (Rust + axum) на `127.0.0.1:47474`, IPC-мост к веб-интерфейсу
+- **Vue 3 + Leaflet карта** (`apps/client`) — интерактивный рендеринг карты, маркеры выходов, стрелка позиции игрока, управление UI; внутри оверлея общается с хелпером через Tauri IPC, в обычном браузере — через HTTP + SSE
 - **Общие модули** (`packages/shared`) — калибровка карт, схемы позиций/событий, парсер логов, определения типов
 
 Скриншоты и логи обрабатываются локально без внешних API-вызовов во время игры. Данные выходов встроены в приложение на этапе сборки.
 
 ## Архитектурные детали
 
-Смотри [CLAUDE.md](CLAUDE.md) для подробной инженерной документации: dev workflow, конфигурация Tauri-оверлея, парсинг многоверсионных логов, подводные камни Windows-сборки, процедуры CI/релиза, и как Rust-сервер в одном процессе зеркалит Node-бэкенд.
+Смотри [CLAUDE.md](CLAUDE.md) для подробной инженерной документации: dev workflow, конфигурация Tauri-оверлея, парсинг многоверсионных логов, подводные камни Windows-сборки, процедуры CI/релиза, и in-process Rust HTTP-сервер (`/api/config`, `/events`).
 
 ## Благодарности
 

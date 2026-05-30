@@ -50,7 +50,27 @@ jobs:
         with:
           workspaces: apps/desktop/src-tauri -> target
 
+      # Check that the Rust code is formatted according to rustfmt's rules.
+      # Run before the full build so format errors surface quickly without
+      # waiting 8-12 minutes for a complete compile.
+      - name: Rust fmt check
+        working-directory: apps/desktop/src-tauri
+        run: cargo fmt --all -- --check
+
       - run: pnpm overlay:build
+
+      # Lint all targets (lib + bin + tests) in release mode.  The
+      # --release flag reuses the already-compiled artifacts from
+      # pnpm overlay:build, so this step is nearly instant on cache hits.
+      - name: Rust clippy
+        working-directory: apps/desktop/src-tauri
+        run: cargo clippy --all-targets --release -- -D warnings
+
+      # Run unit tests compiled in release mode.  --no-fail-fast keeps
+      # going after the first failure so all broken tests show up at once.
+      - name: Rust tests
+        working-directory: apps/desktop/src-tauri
+        run: cargo test --release --no-fail-fast
 
       # Always upload as workflow artifact — lets manual/PR runs grab the
       # .exe from the run page without going through Releases.
