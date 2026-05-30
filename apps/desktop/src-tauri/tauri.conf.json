@@ -6,7 +6,7 @@
   "build": {
     "frontendDist": "../../client/dist",
     "devUrl": "http://localhost:5173",
-    "beforeDevCommand": "",
+    "beforeDevCommand": "pnpm --filter @tarkov-checker/client dev",
     "beforeBuildCommand": "pnpm --filter @tarkov-checker/client build"
   },
   "app": {

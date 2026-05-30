@@ -32,25 +32,34 @@
 
 ## Dev workflow
 
-One scenario, two processes:
+One command:
 
-- **Vite dev server**: `pnpm --filter @tarkov-checker/client dev`
-  serves the SPA at `http://localhost:5173`. Its `server.proxy` config
-  forwards same-origin `/api/*` and `/events` to the Rust helper at
-  `127.0.0.1:47474`, so the browser only ever sees one origin and CORS
-  stays simple.
-- **Tauri overlay**: `pnpm --filter @tarkov-checker/desktop tauri:dev`
-  builds the Rust side and loads `http://localhost:5173` into a
-  WebView2 window. The Rust process is also the HTTP server backing
-  the Vite proxy — both transports talk to the same in-process state.
+```
+pnpm --filter @tarkov-checker/desktop tauri:dev
+```
 
-Order matters: start Vite first (Tauri's `beforeDevCommand` is empty),
-then `tauri:dev`. The Rust HTTP server binds on `127.0.0.1` only by
-default; LAN exposure for the phone-as-second-screen scenario is a
-future opt-in toggle (see "Future architecture").
+Tauri's `beforeDevCommand` is wired to `pnpm --filter
+@tarkov-checker/client dev`, so the Vite dev server starts as a child
+of `tauri dev`. When Tauri exits, Vite gets a clean shutdown too.
 
-`apps/desktop/src-tauri/tauri.conf.json` keeps `beforeDevCommand` empty
-so Vite isn't double-spawned when run under Turbo.
+Flow:
+
+- **Vite** serves the SPA at `http://localhost:5173`. Its `server.proxy`
+  config forwards same-origin `/api/*` and `/events` to the Rust helper
+  at `127.0.0.1:47474`, so the browser only ever sees one origin and
+  CORS stays simple in development.
+- **Tauri overlay** loads `http://localhost:5173` into a WebView2
+  window. The Rust process is also the HTTP server backing the Vite
+  proxy — both transports talk to the same in-process state.
+
+The Rust HTTP server binds on `127.0.0.1` only by default; LAN
+exposure for the phone-as-second-screen scenario is a future opt-in
+toggle (see "Future architecture").
+
+For pure browser-mode work (just the SPA, no Tauri shell) run
+`pnpm --filter @tarkov-checker/client dev` directly — but `/api/*` and
+`/events` then need the helper to be running separately (e.g. via
+`tauri:dev` in another terminal).
 
 The repo must live on an **ASCII path** (currently `C:\git-repos\tarkov-checker`)
 — `cargo metadata` segfaults on a Cyrillic CWD, which is what made the
