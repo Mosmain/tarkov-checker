@@ -9,9 +9,7 @@ export type PathSlot = 'gameDir' | 'screenshotsDir' | 'logsDir';
  * not started `tarkov-checker.exe` yet — the panel renders a friendly
  * "start the helper" message instead of the raw fetch error.
  */
-export type PathsError =
-  | { kind: 'no-helper' }
-  | { kind: 'other'; detail: string };
+export type PathsError = { kind: 'no-helper' } | { kind: 'other'; detail: string };
 
 export interface UseServerPaths {
   serverConfig: Ref<ServerConfigResponse | null>;
