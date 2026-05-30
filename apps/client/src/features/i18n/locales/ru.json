@@ -39,6 +39,7 @@
     "screenshotsDir": "Папка скриншотов",
     "save": "Сохранить",
     "saved": "Сохранено",
+    "loading": "Подключаемся к хелперу…",
     "mobileHint": "Открой эту страницу на машине с Tarkov, чтобы настроить пути.",
     "source": {
       "env": "из .env",
@@ -48,7 +49,12 @@
     },
     "missingTooltip": "Папка пока не существует.",
     "placeholderGameDir": "D:\\EFT",
-    "placeholderScreenshotsDir": "Documents\\Escape from Tarkov\\Screenshots"
+    "placeholderScreenshotsDir": "Documents\\Escape from Tarkov\\Screenshots",
+    "errors": {
+      "noHelperTitle": "Хелпер не запущен",
+      "noHelperBody": "Запусти tarkov-checker.exe на той же машине что и Tarkov, чтобы настроить или синхронизировать папки игры. После запуска хелпера обнови эту страницу.",
+      "otherTitle": "Не удалось загрузить пути Tarkov"
+    }
   },
   "overlay": {
     "heading": "Оверлей",

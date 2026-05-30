@@ -26,10 +26,28 @@ const {
 
 <template>
   <Fieldset :legend="t('paths.heading')">
-    <Message v-if="pathsError" severity="error" size="small" :closable="false">
-      {{ pathsError }}
+    <Message
+      v-if="pathsError"
+      :severity="pathsError.kind === 'no-helper' ? 'warn' : 'error'"
+      size="small"
+      :closable="false"
+    >
+      <template v-if="pathsError.kind === 'no-helper'">
+        <div class="text-xs font-medium">{{ t('paths.errors.noHelperTitle') }}</div>
+        <p class="mt-1 text-[11px] leading-relaxed opacity-90">
+          {{ t('paths.errors.noHelperBody') }}
+        </p>
+      </template>
+      <template v-else>
+        <div class="text-xs font-medium">{{ t('paths.errors.otherTitle') }}</div>
+        <p class="mt-1 break-all text-[11px] leading-relaxed opacity-90">
+          {{ pathsError.detail }}
+        </p>
+      </template>
     </Message>
-    <p v-if="pathsLoading && !serverConfig" class="text-xs opacity-60">…</p>
+    <p v-if="pathsLoading && !serverConfig" class="text-xs opacity-60">
+      {{ t('paths.loading') }}
+    </p>
 
     <div v-if="serverConfig" class="space-y-3">
       <div>

@@ -3,19 +3,53 @@ import { fetchServerConfig, putServerConfig } from '@/features/server/api/server
 
 export type PathSlot = 'gameDir' | 'screenshotsDir' | 'logsDir';
 
+/**
+ * Typed UI-state for path-API failures. `no-helper` is the common case
+ * when the SPA runs in a browser (hosted or LAN-phone) and the user has
+ * not started `tarkov-checker.exe` yet — the panel renders a friendly
+ * "start the helper" message instead of the raw fetch error.
+ */
+export type PathsError =
+  | { kind: 'no-helper' }
+  | { kind: 'other'; detail: string };
+
 export interface UseServerPaths {
   serverConfig: Ref<ServerConfigResponse | null>;
   gameDirInput: Ref<string>;
   screenshotsDirInput: Ref<string>;
   pathsLoading: Ref<boolean>;
   pathsSaving: Ref<boolean>;
-  pathsError: Ref<string | null>;
+  pathsError: Ref<PathsError | null>;
   pathsJustSaved: Ref<boolean>;
   gameDirLocked: ComputedRef<boolean>;
   screenshotsDirLocked: ComputedRef<boolean>;
   canSavePaths: ComputedRef<boolean>;
   savePaths: () => Promise<void>;
   statusIconClass: (slot: PathSlot) => string;
+}
+
+/**
+ * Classify a thrown error as "the helper is not reachable" vs anything
+ * else. Two paths into the same outcome:
+ *  - direct fetch from the hosted page to `http://localhost:47474`:
+ *    `fetch` itself throws a `TypeError` when connection is refused;
+ *  - dev mode through Vite's proxy: upstream-unreachable surfaces as
+ *    HTTP 502/503/504 from the proxy, which `transport.ts` rewraps as
+ *    `Error("... HTTP 502 — ...")`. The helper itself doesn't emit
+ *    these codes, so a 5xx with that family is the proxy's signal.
+ */
+function isNoHelperError(err: unknown): boolean {
+  if (err instanceof TypeError) return true;
+  if (err instanceof Error) return /HTTP 5(02|03|04)\b/.test(err.message);
+  return false;
+}
+
+function toPathsError(err: unknown): PathsError {
+  if (isNoHelperError(err)) return { kind: 'no-helper' };
+  return {
+    kind: 'other',
+    detail: err instanceof Error ? err.message : String(err),
+  };
 }
 
 // Module-level cache: server config is fetched once per session and reused
@@ -39,7 +73,7 @@ export function useServerPaths(canEditPaths: Ref<boolean>): UseServerPaths {
   const screenshotsDirInput = ref('');
   const pathsLoading = ref(false);
   const pathsSaving = ref(false);
-  const pathsError = ref<string | null>(null);
+  const pathsError = ref<PathsError | null>(null);
   const pathsJustSaved = ref(false);
 
   const gameDirLocked = computed(() => serverConfig.value?.gameDir.source === 'env');
@@ -73,7 +107,7 @@ export function useServerPaths(canEditPaths: Ref<boolean>): UseServerPaths {
       cachedConfig = cfg;
       applyConfig(cfg);
     } catch (err) {
-      pathsError.value = err instanceof Error ? err.message : String(err);
+      pathsError.value = toPathsError(err);
     } finally {
       pathsLoading.value = false;
     }
@@ -98,7 +132,7 @@ export function useServerPaths(canEditPaths: Ref<boolean>): UseServerPaths {
         pathsJustSaved.value = false;
       }, 2_000);
     } catch (err) {
-      pathsError.value = err instanceof Error ? err.message : String(err);
+      pathsError.value = toPathsError(err);
     } finally {
       pathsSaving.value = false;
     }

@@ -223,7 +223,14 @@ mod tests {
 
     // Full filename with position triple then quaternion quadruple — the real
     // BSG PrintScreen-overlay format: date_x,y,z_qx,qy,qz,qw_.png
+    //
+    // `clippy::approx_constant` flags `0.7071` as an approximation of
+    // `FRAC_1_SQRT_2` and suggests using the constant directly. Here it's
+    // intentional — the literal in the filename's quaternion field IS
+    // `0.7071` (truncated to 4 decimals by BSG's screenshot tool), so the
+    // assertion checks parsing of that exact string, not a math identity.
     #[test]
+    #[allow(clippy::approx_constant)]
     fn parse_screenshot_filename_full_with_orientation() {
         // ORIENTATION_RE: _x,y,z_qx,qy,qz,qw_
         // POSITION_RE:    _x,y,z_

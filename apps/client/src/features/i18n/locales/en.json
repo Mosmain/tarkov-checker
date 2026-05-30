@@ -39,6 +39,7 @@
     "screenshotsDir": "Screenshots folder",
     "save": "Save",
     "saved": "Saved",
+    "loading": "Connecting to the helper…",
     "mobileHint": "Open this page on the machine running Tarkov to configure paths.",
     "source": {
       "env": "from .env",
@@ -48,7 +49,12 @@
     },
     "missingTooltip": "Folder doesn't exist on disk yet.",
     "placeholderGameDir": "D:\\EFT",
-    "placeholderScreenshotsDir": "Documents\\Escape from Tarkov\\Screenshots"
+    "placeholderScreenshotsDir": "Documents\\Escape from Tarkov\\Screenshots",
+    "errors": {
+      "noHelperTitle": "The helper isn't running",
+      "noHelperBody": "Start tarkov-checker.exe on the same machine as Tarkov to configure or sync game folders here. Refresh this page once the helper is up.",
+      "otherTitle": "Couldn't load Tarkov paths"
+    }
   },
   "overlay": {
     "heading": "Overlay",
