@@ -2,7 +2,7 @@
 import HotkeyRecorder from '@/features/hotkeys/components/HotkeyRecorder.vue';
 import { useHotkeysStore } from '@/features/hotkeys/store';
 
-const { lockHotkey, zoomInHotkey, zoomOutHotkey, floorUpHotkey, floorDownHotkey } =
+const { lockHotkey, zoomInHotkey, zoomOutHotkey, floorUpHotkey, floorDownHotkey, airdropHotkey } =
   storeToRefs(useHotkeysStore());
 const { t } = useI18n();
 </script>
@@ -15,6 +15,7 @@ const { t } = useI18n();
       <HotkeyRecorder v-model="zoomOutHotkey" :label="t('hotkeys.zoomOut')" />
       <HotkeyRecorder v-model="floorUpHotkey" :label="t('hotkeys.floorUp')" />
       <HotkeyRecorder v-model="floorDownHotkey" :label="t('hotkeys.floorDown')" />
+      <HotkeyRecorder v-model="airdropHotkey" :label="t('hotkeys.airdrop')" />
       <p class="text-[10px] leading-relaxed opacity-50">{{ t('hotkeys.lockHint') }}</p>
     </div>
   </Fieldset>

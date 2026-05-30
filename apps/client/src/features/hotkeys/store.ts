@@ -1,16 +1,12 @@
 import { z } from 'zod';
 import { persistedRef } from '@/shared/persisted-store';
 
-// Validates a Tauri global-shortcut accelerator string. Either:
-//   * one+ modifier(s) followed by any non-empty main-key token, OR
-//   * a bare F1..F24 key (allowed without modifiers — rarely used for typing).
-// Other reserved system shortcuts aren't policed here — if register() rejects
-// the combo the watcher surfaces the error and the previous shortcut stays.
+// One or more modifiers + a non-empty main key. Bare keys (incl. F-row)
+// are rejected because Tarkov claims them via DirectInput and Tauri's
+// RegisterHotKey loses the race.
 const hotkeySchema = z
   .string()
-  .regex(
-    /^((CommandOrControl|Control|Ctrl|Alt|Shift|Meta|Super)\+)+[^+\s]+$|^F([1-9]|1[0-9]|2[0-4])$/,
-  );
+  .regex(/^((CommandOrControl|Control|Ctrl|Alt|Shift|Meta|Super)\+)+[^+\s]+$/);
 
 export const useHotkeysStore = defineStore('hotkeys', () => {
   const lockHotkey = persistedRef('tc.hotkeys.lock', hotkeySchema, 'CommandOrControl+Alt+L');
@@ -26,6 +22,16 @@ export const useHotkeysStore = defineStore('hotkeys', () => {
     hotkeySchema,
     'CommandOrControl+Shift+-',
   );
+  // Hotkey only arms/clears at boundaries — sample capture is driven by
+  // the screenshot-watcher's `position` events, not this binding.
+  const airdropHotkey = persistedRef('tc.hotkeys.airdrop', hotkeySchema, 'CommandOrControl+Alt+D');
 
-  return { lockHotkey, zoomInHotkey, zoomOutHotkey, floorUpHotkey, floorDownHotkey };
+  return {
+    lockHotkey,
+    zoomInHotkey,
+    zoomOutHotkey,
+    floorUpHotkey,
+    floorDownHotkey,
+    airdropHotkey,
+  };
 });

@@ -62,12 +62,14 @@ export async function resolvePaths(manual: ManualOverrides = {}): Promise<Resolv
       ? asResolved(gameManual, 'manual')
       : asResolved(detectedGame, 'detected');
 
-  const logsEnv = readEnv('TARKOV_LOG_DIR');
+  // Logs always live at `<gameDir>/Logs` — there's no separate override.
+  // The source badge inherits from `gameDir` so the UI shows the same
+  // origin (env/manual/detected) for both.
   const logsFromGame = gameDir.value ? path.join(gameDir.value, 'Logs') : null;
-  const logsDir: ResolvedPath = logsEnv
-    ? asResolved(logsEnv, 'env')
-    : // Derived from gameDir, so it inherits gameDir's source for the badge.
-      asResolved(logsFromGame, logsFromGame ? gameDir.source : 'missing');
+  const logsDir: ResolvedPath = asResolved(
+    logsFromGame,
+    logsFromGame ? gameDir.source : 'missing',
+  );
 
   const screenshotsEnv = readEnv('TARKOV_SCREENSHOT_DIR');
   const screenshotsManual = manual.screenshotsDir?.trim() || null;

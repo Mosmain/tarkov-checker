@@ -5,7 +5,7 @@ import { extractsForMap } from '../data/extracts';
 import { mapInfo, type TarkovMapCode } from '@shared/maps';
 import { useMapSettingsStore } from '../store';
 import { useServerEvent } from '@/features/server/composables/useServerEvents';
-import { provideMapController } from '../composables/useMapController';
+import { useAirdropMarker } from '@/features/airdrop/composables/useAirdropMarker';
 import FloorSwitcher from './FloorSwitcher.vue';
 
 const props = defineProps<{
@@ -37,6 +37,7 @@ function localizedMapName(): string {
 
 const mapContainer = ref<HTMLElement | null>(null);
 const {
+  map,
   mapError,
   currentFloor,
   addExtractMarkers,
@@ -52,11 +53,15 @@ const {
   prevFloor,
 } = useLeafletMap(mapContainer, props.mapCode);
 
+useAirdropMarker(map);
+
 const hasFloors = computed(() => info.floors.length > 1);
 
-// Publish imperative actions to ancestors via provide/inject so OverlayView's
-// hotkeys can drive the map without ref-forwarding through every wrapper.
-provideMapController({ zoomIn, zoomOut, nextFloor, prevFloor });
+// Expose imperative actions to the parent (index.vue) so its globally-bound
+// hotkeys can drive the map. provide/inject doesn't work here — it only
+// flows ancestor → descendant, and the hotkey owner is our parent, not a
+// child. Same pattern as MapQuickMenu.open/close in App.vue.
+defineExpose({ zoomIn, zoomOut, nextFloor, prevFloor });
 
 // Re-emit the localized name whenever the active locale flips. `immediate`
 // covers the initial mount; the same watch also handles the async resolution

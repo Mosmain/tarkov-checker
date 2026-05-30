@@ -11,6 +11,14 @@ interface TarkovMapInfo {
   readonly transform: readonly [number, number, number, number];
   /** Degrees, counter-clockwise; applied during CRS projection. */
   readonly rotation: number;
+  /**
+   * Optional per-map offset (degrees) added to the player-yaw arrow on top of
+   * `rotation`. Use when in-game position calibration is correct but the
+   * screenshot-derived yaw is rotated relative to the rendered map (e.g. BSG
+   * re-oriented the level's world axes without changing extract coordinates,
+   * as happened for Factory in patch 1.0.5.0). Defaults to 0.
+   */
+  readonly yawOffset?: number;
   /** Top-level `<g>` group id in the SVG that acts as the base ground layer. */
   readonly svgLayer: string | null;
   /**
@@ -61,6 +69,12 @@ export const TARKOV_MAPS = {
     ],
     transform: [1.629, 119.9, 1.629, 139.3],
     rotation: 90,
+    // Patch 1.0.5.0 re-oriented the in-game world axes on Factory by 180°
+    // without changing extract coordinates: marker positions stayed correct
+    // but the screenshot quaternion's yaw started pointing in the opposite
+    // direction. Compensate per-map without touching `rotation` (which would
+    // also shift positions). Confirmed live 2026-05-30 on PvE practice.
+    yawOffset: 180,
     svgLayer: 'Ground_Floor',
     canonical: null,
     floors: [
@@ -80,6 +94,7 @@ export const TARKOV_MAPS = {
     ],
     transform: [1.629, 119.9, 1.629, 139.3],
     rotation: 90,
+    yawOffset: 180,
     svgLayer: 'Ground_Floor',
     canonical: 'factory4_day',
     floors: [
@@ -102,6 +117,7 @@ export const TARKOV_MAPS = {
     ],
     transform: [1.629, 119.9, 1.629, 139.3],
     rotation: 90,
+    yawOffset: 180,
     svgLayer: 'Ground_Floor',
     canonical: 'factory4_day',
     floors: [
@@ -124,6 +140,7 @@ export const TARKOV_MAPS = {
     ],
     transform: [1.629, 119.9, 1.629, 139.3],
     rotation: 90,
+    yawOffset: 180,
     svgLayer: 'Ground_Floor',
     canonical: 'factory4_day',
     floors: [

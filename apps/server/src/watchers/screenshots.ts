@@ -9,7 +9,7 @@ export interface ScreenshotWatcher {
 
 /**
  * Watches the Tarkov screenshots folder. Every new .png that carries a
- * parseable F12-overlay position triple is fanned out to every connected
+ * parseable PrintScreen-overlay position triple is fanned out to every connected
  * WebSocket client as a `position` message. Files that don't match the
  * pattern are silently ignored — the folder often contains hand-taken
  * screenshots too.

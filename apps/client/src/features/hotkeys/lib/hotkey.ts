@@ -105,15 +105,16 @@ export function captureHotkey(event: KeyboardEvent): CaptureResult {
     return { combo: null, cancelled: false, error: 'bad-main-key' };
   }
 
-  // F-keys (F1-F24) are allowed without modifiers — they're rarely used for
-  // typing, so binding `F12` alone doesn't conflict with normal input.
-  const isFunctionKey = /^F([1-9]|1[0-9]|2[0-4])$/.test(mainKey);
-  if (mods.length === 0 && !isFunctionKey) {
+  // Every binding requires at least one modifier. Tarkov holds bare keys
+  // (notably the whole F-row) at the DirectInput level, so Tauri's
+  // RegisterHotKey can't reliably claim them while the game is focused.
+  // Forcing a modifier sidesteps the conflict entirely.
+  if (mods.length === 0) {
     return { combo: null, cancelled: false, error: 'no-modifier' };
   }
 
   return {
-    combo: mods.length > 0 ? [...mods, mainKey].join('+') : mainKey,
+    combo: [...mods, mainKey].join('+'),
     cancelled: false,
     error: null,
   };

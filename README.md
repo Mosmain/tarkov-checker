@@ -1,84 +1,120 @@
 # tarkov-checker
 
-_English below · [Русский ниже](#tarkov-checker-русская-версия)_
+A live in-raid map companion for Escape from Tarkov. The overlay watches your Tarkov screenshots and logs in real time, tracking your position and marking extracts on an interactive Leaflet map with community SVG layers.
 
-Live in-raid map for Escape from Tarkov. Watches Tarkov's screenshot
-folder, parses your position from F12-overlay filenames, and renders
-it on a Leaflet map with the community SVG layers.
+## Features
 
-Two ways to use it:
+| Feature | Desktop Overlay | LAN / Phone |
+|---------|:---------------:|:-----------:|
+| Live player position tracking | ✓ | ✓ |
+| Auto-switch maps on raid start | ✓ | ✓ |
+| Extract locations with faction filter | ✓ | ✓ |
+| Airdrop triangulation & landing prediction | ✓ | — |
+| Multi-floor map switcher (Factory, Reserve, etc.) | ✓ | ✓ |
+| Click-through lock & global hotkeys | ✓ | — |
+| Window opacity & always-on-top control | ✓ | — |
+| Bilingual UI (English / Russian) | ✓ | ✓ |
 
-1. **Desktop overlay** (primary): a single `.exe` that opens a
-   frameless transparent always-on-top window over the game. Includes
-   click-through lock, global hotkeys, and a system-tray fallback.
-2. **LAN / phone PWA** (optional, for power users): a Node server on
-   the PC plus the same map as a PWA on your phone over Wi-Fi. See
-   [Hacking on this](#hacking-on-this) below.
+## Deployment Modes
 
-## Quick start
+**Desktop overlay** (primary): a single 6 MB portable `.exe` that opens as a frameless transparent always-on-top window over your game. No installer, no admin rights, no background service. All game monitoring happens in-process — your position is extracted from Tarkov's PrintScreen overlay screenshots, and raid transitions are detected by parsing the active session logs.
 
-1. Download `tarkov-checker-desktop.exe` from the
-   [latest Release](../../releases).
-2. Drop it anywhere on disk — Desktop, USB stick, wherever. Fully
-   portable, no installer, no admin rights, no background service.
-3. Double-click. First launch auto-detects your Tarkov install via
-   the Windows registry. If that didn't work, set the paths manually
-   in Settings → Tarkov paths.
-4. In Tarkov, hit **F12** during a raid. The screenshot drops into
-   your Tarkov screenshots folder; the overlay reads its filename
-   and moves your marker on the map.
+**LAN / phone PWA** (optional): a lightweight Node/Fastify server on your PC serves the same map interface to any browser on your local network — perfect for a second monitor or a phone on the same Wi-Fi.
 
-State (path overrides, tarkov.dev extract cache) lives in
-`%APPDATA%/tarkov-checker/`. Close the window to exit — nothing
-lingers in Task Manager.
+## Quick Start
 
-## Tarkov paths
+### End Users
 
-Two paths matter:
+1. Download `tarkov-checker-desktop.exe` from the [latest Release](../../releases/latest).
+2. Drop it anywhere — Desktop, USB stick, Downloads folder. It's completely portable.
+3. Double-click to launch. On first run, the overlay auto-detects your Tarkov installation via the Windows registry. If that fails, manually set the paths in **Settings → Tarkov paths**.
+4. In Tarkov, press **PrintScreen** during a raid. The screenshot drops into your Tarkov screenshots folder, and the overlay reads its filename to update your position on the map.
 
-- **Game folder** — where Tarkov is installed (e.g. `D:\EFT`). Logs
-  are read from `<gameFolder>\Logs`.
-- **Screenshots folder** — where F12 screenshots end up. Default is
-  `<Documents>\Escape from Tarkov\Screenshots`, but Documents may be
-  redirected to OneDrive on Windows 11.
+**Data storage**: settings and cache live in `%APPDATA%/tarkov-checker/`. Closing the window fully exits the app — nothing lingers in Task Manager.
 
-The overlay resolves them in this order (highest priority first):
+### Developers
 
-1. Environment variables: `TARKOV_GAME_DIR`, `TARKOV_SCREENSHOT_DIR`,
-   `TARKOV_LOG_DIR`. Optional; useful for non-standard installs.
-2. Manual override saved through Settings → Tarkov paths, persisted
-   to `%APPDATA%/tarkov-checker/config.json`.
-3. Auto-detect from the Windows registry — the BSG launcher writes
-   the install location there, and Windows tracks the real Documents
-   path even when redirected to OneDrive.
+Clone with submodules, install dependencies, then choose your dev mode:
 
-If auto-detect fails (you installed manually, or BSG didn't write
-the key), fill `Game folder` in Settings and click Save. Watchers
-re-apply immediately, no restart needed.
-
-## Hacking on this
-
-Engineering notes, dev workflow, build/CI procedures, and Windows
-toolchain gotchas live in [CLAUDE.md](CLAUDE.md).
-
-TL;DR for a dev clone:
-
-```pwsh
+```bash
 git clone --recurse-submodules https://github.com/Mosmain/tarkov-checker.git
 cd tarkov-checker
 pnpm install
-pnpm --filter @tarkov-checker/client dev      # in one terminal
-pnpm --filter @tarkov-checker/desktop tauri:dev   # in another
 ```
+
+**Desktop overlay dev** (most common):
+```bash
+pnpm --filter @tarkov-checker/client dev      # Terminal 1
+pnpm --filter @tarkov-checker/desktop tauri:dev   # Terminal 2
+```
+
+**LAN / phone dev** (Node server on :3000, Vite on :5173):
+```bash
+pnpm dev
+```
+
+Then point your phone browser to `http://<your-pc-ip>:5173`.
+
+## Tarkov Path Resolution
+
+The overlay needs two directories:
+
+- **Game folder** (e.g., `D:\EFT`) — logs are read from `<gameFolder>\Logs`
+- **Screenshots folder** — where PrintScreen images are saved, typically `<Documents>\Escape from Tarkov\Screenshots`
+
+Resolution priority (highest to lowest):
+
+1. **Environment variables** — `TARKOV_GAME_DIR`, `TARKOV_SCREENSHOT_DIR` (optional; useful for non-standard setups)
+2. **Manual override** — Settings → Tarkov paths, persisted to `%APPDATA%/tarkov-checker/config.json`
+3. **Windows registry auto-detect** — the BSG launcher writes the install path to the registry, and Windows tracks the real Documents location even when redirected to OneDrive
+
+If auto-detect fails, fill in **Game folder** in Settings and click **Save**. Watchers restart immediately — no app restart needed.
+
+## Feature Details
+
+**Live player position**: The overlay monitors your Tarkov screenshots folder. Each PrintScreen you take in-raid embeds your world position (x, z coordinates) and viewing direction (quaternion) in the filename. The overlay parses this, places a directional arrow on the correct map at the correct rotation, and optionally auto-recenters and zooms to follow you (configurable: Off / Small / Medium / Large).
+
+**Auto-map switching**: The overlay tails your active Tarkov session log and detects scene-preset and Transit-location lines. When you load into a raid, it automatically flips the displayed map to match. This includes aliases for maps renamed in patch 1.0.5.0 (Factory, Reserve, Interchange). Toggle in Settings; enabled by default.
+
+**Airdrop triangulation**: Press a configurable hotkey (default **Ctrl+Alt+D**) while looking at a falling airdrop to record its bearing. Sidestep ~5 meters and press the hotkey again. The overlay triangulates the intersection and marks the landing spot with a parachute icon and uncertainty circle. Same hotkey clears the marker with a 3-second countdown.
+
+**Extracts overlay**: displays every known extract on every map with faction filtering (PMC / Scav / Shared) and label customization (always visible or on hover). Uses the same faction-color scheme across all UI elements.
+
+**Multi-floor maps**: Factory, Reserve, Interchange, Streets, and The Lab have floor switchers. Navigate with UI buttons or hotkeys to toggle between levels.
+
+**Window controls** (desktop overlay only): 
+- **Drag** the transport-status pill in the top-right to move the overlay
+- **Click-through lock** (Ctrl+Alt+L) — toggle whether mouse clicks pass through to the game underneath
+- **Always-on-top** — keep the overlay above Tarkov even when the game window is focused
+- **Opacity slider** — adjust window transparency; map area stays solid, edges are see-through
+- **Zoom** — scale the entire UI
+- **Close** button with confirmation to prevent accidental exits
+
+## Supported Maps
+
+Customs, Factory (Day/Night), Woods, Shoreline, Reserve, Interchange, Lighthouse, Streets of Tarkov, The Lab, Ground Zero, and Ground Zero (High).
+
+## How It Works
+
+The project consists of:
+
+- **Tauri 2 desktop wrapper** (`apps/desktop`) — native window management, file watchers, screenshot parser, log tailer, IPC bridge to the web UI
+- **Vue 3 + Leaflet map** (`apps/client`) — interactive map rendering, extract markers, player position arrow, UI controls
+- **Node/Fastify backend** (`apps/server`) — optional LAN server for phone/second-monitor mode; mirrors the Tauri watchers
+- **Shared modules** (`packages/shared`) — map calibration data, position/event schemas, log parser, type definitions
+
+Screenshots and logs are processed locally with no external API calls during gameplay. Extracts data is bundled into the app at build time.
+
+## Architecture Details
+
+See [CLAUDE.md](CLAUDE.md) for in-depth engineering documentation: dev workflow, Tauri overlay configuration, multi-version logs parsing, Windows build quirks, CI/release procedures, and how the in-process Rust server mirrors the Node backend.
 
 ## Credits
 
-SVG maps from [the-hideout/tarkov-dev-svg-maps](https://github.com/the-hideout/tarkov-dev-svg-maps)
-(CC BY-NC-SA 4.0) — vendored as a git submodule under
-`apps/client/public/maps/`. Map calibration values (the in-game →
-SVG-pixel affine transforms) are ported from
-[the-hideout/tarkov-dev](https://github.com/the-hideout/tarkov-dev)
-(MIT). See [CREDITS.md](CREDITS.md) for full attribution.
+- **SVG maps** from [the-hideout/tarkov-dev-svg-maps](https://github.com/the-hideout/tarkov-dev-svg-maps) (CC BY-NC-SA 4.0), vendored as a git submodule under `apps/client/public/maps/`
+- **Map calibration values** (in-game coordinate → SVG-pixel transforms) ported from [the-hideout/tarkov-dev](https://github.com/the-hideout/tarkov-dev) (MIT)
+
+See [CREDITS.md](CREDITS.md) for full attribution.
 
 ## License
 
@@ -88,86 +124,121 @@ See [LICENSE](./LICENSE).
 
 # tarkov-checker (русская версия)
 
-Лайв-карта для рейдов в Escape from Tarkov. Следит за папкой
-скриншотов Tarkov, парсит твою позицию из имён F12-скриншотов и
-рисует её на Leaflet-карте с SVG-слоями от сообщества.
+Спутник-карта для рейдов в Escape from Tarkov. Оверлей следит за скриншотами и логами вашей игры, отслеживая вашу позицию в реальном времени и отмечая выходы на интерактивной Leaflet-карте с SVG-слоями от сообщества.
 
-Два способа использовать:
+## Возможности
 
-1. **Десктоп-оверлей** (основной): один `.exe`, открывает безрамочное
-   прозрачное окно поверх игры. С блокировкой click-through (когда
-   мышь проходит сквозь окно в Tarkov), глобальными хоткеями и
-   системным треем как запасной выход.
-2. **LAN / PWA на телефоне** (опционально, для энтузиастов):
-   Node-сервер на ПК плюс та же карта как PWA на телефоне по Wi-Fi.
-   Смотри секцию [Разработка](#разработка) ниже.
+| Функция | Десктоп-оверлей | LAN / Телефон |
+|---------|:---------------:|:-------------:|
+| Отслеживание позиции игрока в реальном времени | ✓ | ✓ |
+| Автосмена карты при начале рейда | ✓ | ✓ |
+| Локации выходов с фильтром по фракциям | ✓ | ✓ |
+| Триангуляция и предсказание точки приземления дропа | ✓ | — |
+| Переключатель этажей (Factory, Reserve и т.д.) | ✓ | ✓ |
+| Блокировка клика и глобальные хоткеи | ✓ | — |
+| Управление прозрачностью и режимом поверх всех окон | ✓ | — |
+| Двуязычный интерфейс (English / Русский) | ✓ | ✓ |
+
+## Режимы развертывания
+
+**Десктоп-оверлей** (основной): один портативный `.exe` размером 6 МБ, открывающийся безрамочным прозрачным окном поверх игры. Без установщика, без админских прав, без фоновых сервисов. Все отслеживание игры происходит в одном процессе — ваша позиция извлекается из PrintScreen-скриншотов с оверлеем Tarkov, а переходы между рейдами определяются парсингом логов активной сессии.
+
+**LAN / PWA на телефоне** (опционально): легкий Node/Fastify-сервер на ПК отдаёт ту же карту в браузер любого устройства в локальной сети — идеально для второго монитора или телефона в одной Wi-Fi сети.
 
 ## Быстрый старт
 
-1. Скачай `tarkov-checker-desktop.exe` из [последнего релиза](../../releases).
-2. Положи куда удобно — на Рабочий стол, флешку, в любую папку.
-   Полностью portable, без установщика, без админских прав, без
-   фоновых сервисов.
-3. Запусти двойным кликом. При первом запуске путь до Tarkov
-   ищется в реестре Windows автоматически. Если не нашёлся —
-   укажи руками в Settings → Tarkov paths.
-4. В Tarkov жми **F12** в рейде. Скриншот падает в папку
-   скриншотов Tarkov, оверлей читает имя файла и двигает маркер
-   игрока на карте.
+### Для игроков
 
-Состояние (переопределения путей, кэш экстрактов с tarkov.dev)
-живёт в `%APPDATA%/tarkov-checker/`. Закрыл окно — приложение
-полностью вышло, ничего не висит в Диспетчере задач.
+1. Скачай `tarkov-checker-desktop.exe` из [последнего релиза](../../releases/latest).
+2. Положи куда угодно — на Рабочий стол, флешку, папку Downloads. Полностью портативное приложение.
+3. Запусти двойным кликом. При первом запуске оверлей автоматически обнаружит твою установку Tarkov через реестр Windows. Если не получится, вручную укажи пути в **Settings → Tarkov paths**.
+4. В Tarkov нажми **PrintScreen** во время рейда. Скриншот упадёт в папку скриншотов Tarkov, а оверлей прочитает имя файла и обновит твою позицию на карте.
 
-## Пути Tarkov
+**Хранение данных**: настройки и кэш живут в `%APPDATA%/tarkov-checker/`. Закрытие окна полностью завершает приложение — ничего не остаётся в Диспетчере задач.
 
-Два пути имеют значение:
+### Для разработчиков
 
-- **Папка игры** — где установлен Tarkov (например, `D:\EFT`).
-  Логи читаются из `<папка игры>\Logs`.
-- **Папка скриншотов** — куда падают F12-скриншоты. По умолчанию
-  `<Документы>\Escape from Tarkov\Screenshots`, но на Windows 11
-  Документы часто перенаправлены в OneDrive.
+Клонируй с сабмодулями, установи зависимости, затем выбери режим разработки:
 
-Оверлей резолвит их по такому порядку (от высшего приоритета к
-низшему):
-
-1. Переменные окружения: `TARKOV_GAME_DIR`, `TARKOV_SCREENSHOT_DIR`,
-   `TARKOV_LOG_DIR`. Опционально; полезно для нестандартных
-   установок.
-2. Ручное переопределение через Settings → Tarkov paths,
-   сохраняется в `%APPDATA%/tarkov-checker/config.json`.
-3. Автодетект из реестра Windows — лаунчер BSG пишет путь
-   установки туда, а Windows знает реальное расположение Документов
-   даже когда они перенаправлены в OneDrive.
-
-Если автодетект не сработал (установил вручную или лаунчер не
-прописал ключ) — заполни «Game folder» в Settings и нажми Save.
-Слежение перезапустится сразу, без рестарта приложения.
-
-## Разработка
-
-Инженерные заметки, dev workflow, процедуры сборки/CI и подводные
-камни Windows-тулчейна лежат в [CLAUDE.md](CLAUDE.md).
-
-TL;DR для dev-клона:
-
-```pwsh
+```bash
 git clone --recurse-submodules https://github.com/Mosmain/tarkov-checker.git
 cd tarkov-checker
 pnpm install
-pnpm --filter @tarkov-checker/client dev          # в одном терминале
-pnpm --filter @tarkov-checker/desktop tauri:dev   # в другом
 ```
+
+**Разработка десктоп-оверлея** (наиболее частый сценарий):
+```bash
+pnpm --filter @tarkov-checker/client dev      # Терминал 1
+pnpm --filter @tarkov-checker/desktop tauri:dev   # Терминал 2
+```
+
+**Разработка LAN / телефона** (Node-сервер на :3000, Vite на :5173):
+```bash
+pnpm dev
+```
+
+Затем открой в браузере телефона `http://<ip-твоего-пк>:5173`.
+
+## Определение путей Tarkov
+
+Оверлею нужны две директории:
+
+- **Папка игры** (например, `D:\EFT`) — логи читаются из `<папка игры>\Logs`
+- **Папка скриншотов** — куда сохраняются PrintScreen-скриншоты, обычно `<Документы>\Escape from Tarkov\Screenshots`
+
+Приоритет определения (от высшего к низшему):
+
+1. **Переменные окружения** — `TARKOV_GAME_DIR`, `TARKOV_SCREENSHOT_DIR` (опционально; полезно для нестандартных установок)
+2. **Ручное переопределение** — Settings → Tarkov paths, сохраняется в `%APPDATA%/tarkov-checker/config.json`
+3. **Автодетект из реестра Windows** — лаунчер BSG пишет путь установки в реестр, и Windows отслеживает реальное расположение Документов даже когда они перенаправлены в OneDrive
+
+Если автодетект не сработал, заполни **Game folder** в Settings и нажми **Save**. Слежение перезапустится сразу — перезапуска приложения не требуется.
+
+## Подробное описание функций
+
+**Отслеживание позиции игрока**: оверлей мониторит папку скриншотов Tarkov. Каждый PrintScreen во время рейда содержит в имени файла твои мировые координаты (x, z) и направление взгляда (кватернион). Оверлей парсит это, ставит стрелку на правильную карту под правильным углом и опционально автоцентрирует и приближает вид, чтобы следить за тобой (настраивается: Выключено / Малый / Средний / Большой).
+
+**Автосмена карт**: оверлей отслеживает активный лог сессии Tarkov и ловит строки scene-preset и Transit-location. Когда ты загружаешься в рейд, отображаемая карта автоматически переключается. Это включает поддержку переименованных в патче 1.0.5.0 карт (Factory, Reserve, Interchange). Включается в Settings; по умолчанию включено.
+
+**Триангуляция дропа**: нажми настраиваемый хоткей (по умолчанию **Ctrl+Alt+D**), смотря на падающий дроп, чтобы записать его пеленг. Отойди в сторону на ~5 метров и нажми хоткей снова. Оверлей триангулирует пересечение и отметит точку приземления иконкой парашюта с кругом неопределённости. Тот же хоткей убирает отметку с обратным отсчётом в 3 секунды.
+
+**Оверлей выходов**: отображает все известные выходы на каждой карте с фильтром по фракциям (PMC / Scav / Shared) и настройкой видимости подписей (всегда или при наведении). Использует одну цветовую схему фракций по всему интерфейсу.
+
+**Многоэтажные карты**: Factory, Reserve, Interchange, Streets и The Lab имеют переключатели этажей. Навигируй кнопками UI или хоткеями между уровнями.
+
+**Управление окном** (только десктоп-оверлей):
+- **Перетаскивание**: транспортный статус в правом верхнем углу — перетащи, чтобы переместить оверлей
+- **Блокировка клика** (Ctrl+Alt+L) — переключай, проходят ли клики мышки сквозь окно в игру
+- **Поверх всех окон** — держи оверлей над Tarkov, даже когда окно игры в фокусе
+- **Ползунок прозрачности** — изменяй видимость окна; область карты остаётся непрозрачной, края полупрозрачны
+- **Масштаб** — меняй размер всего интерфейса
+- **Кнопка закрытия** с подтверждением, чтобы не закрыть случайно
+
+## Поддерживаемые карты
+
+Customs, Factory (День/Ночь), Woods, Shoreline, Reserve, Interchange, Lighthouse, Streets of Tarkov, The Lab, Ground Zero, и Ground Zero (High).
+
+## Как это работает
+
+Проект состоит из:
+
+- **Tauri 2 десктоп-обёртка** (`apps/desktop`) — управление окнами, слежение за файлами, парсинг скриншотов, отслеживание логов, IPC-мост к веб-интерфейсу
+- **Vue 3 + Leaflet карта** (`apps/client`) — интерактивный рендеринг карты, маркеры выходов, стрелка позиции игрока, управление UI
+- **Node/Fastify бэкенд** (`apps/server`) — опциональный LAN-сервер для режима телефона/второго монитора; зеркалит Tauri-слежение
+- **Общие модули** (`packages/shared`) — калибровка карт, схемы позиций/событий, парсер логов, определения типов
+
+Скриншоты и логи обрабатываются локально без внешних API-вызовов во время игры. Данные выходов встроены в приложение на этапе сборки.
+
+## Архитектурные детали
+
+Смотри [CLAUDE.md](CLAUDE.md) для подробной инженерной документации: dev workflow, конфигурация Tauri-оверлея, парсинг многоверсионных логов, подводные камни Windows-сборки, процедуры CI/релиза, и как Rust-сервер в одном процессе зеркалит Node-бэкенд.
 
 ## Благодарности
 
-SVG-карты из [the-hideout/tarkov-dev-svg-maps](https://github.com/the-hideout/tarkov-dev-svg-maps)
-(CC BY-NC-SA 4.0) — подключены как git-сабмодуль в
-`apps/client/public/maps/`. Калибровка карт (аффинные трансформации
-in-game координат в SVG-пиксели) портирована из
-[the-hideout/tarkov-dev](https://github.com/the-hideout/tarkov-dev)
-(MIT). Полная справка по атрибуции — в [CREDITS.md](CREDITS.md).
+- **SVG-карты** из [the-hideout/tarkov-dev-svg-maps](https://github.com/the-hideout/tarkov-dev-svg-maps) (CC BY-NC-SA 4.0), подключены как git-сабмодуль в `apps/client/public/maps/`
+- **Калибровка карт** (трансформации in-game координат в SVG-пиксели) портирована из [the-hideout/tarkov-dev](https://github.com/the-hideout/tarkov-dev) (MIT)
+
+Полная справка по атрибуции — в [CREDITS.md](CREDITS.md).
 
 ## Лицензия
 

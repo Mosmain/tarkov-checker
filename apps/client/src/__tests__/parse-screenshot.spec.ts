@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { parseScreenshotFilename, quaternionToYawDegrees } from '@shared/parse-screenshot';
 
 describe('parseScreenshotFilename', () => {
-  it('extracts position and orientation from a typical Tarkov F12 name', () => {
+  it('extracts position and orientation from a typical Tarkov PrintScreen name', () => {
     const result = parseScreenshotFilename(
       '2024-04-12[12-34-56]_-15.4, 1.5, -23.8_-0.1, 0.7, -0.0, 0.7_75 (0).png',
     );

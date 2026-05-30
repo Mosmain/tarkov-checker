@@ -118,8 +118,10 @@ export function useLeafletMap(
   const bounds = mapLatLngBounds(info.bounds);
 
   const extracts = useExtractMarkers(map);
-  const player = usePlayerMarker(map, info.rotation, initialZoom);
+  const player = usePlayerMarker(map, info.rotation, info.yawOffset ?? 0, initialZoom);
   const floor = useFloorSwitcher(loaded, info.floors, info.defaultFloor);
+  let resizeObserver: ResizeObserver | null = null;
+  let resizeWindowHandler: (() => void) | null = null;
 
   onMounted(async () => {
     if (!containerRef.value) return;
@@ -128,6 +130,9 @@ export function useLeafletMap(
       crs,
       attributionControl: false,
       zoomControl: false,
+      // applyFitZoom() ratchets minZoom up to the actual fit on every container
+      // resize. The static value here is just the floor used temporarily
+      // during recalculation — see MIN_ZOOM_FLOOR constant below.
       minZoom: -5,
       maxZoom: 4,
       zoomSnap: 0.25,
@@ -139,10 +144,75 @@ export function useLeafletMap(
     // switch even though the SVG is fetched asynchronously and lands later.
     const markersPane = instance.createPane('extracts');
     markersPane.style.zIndex = '500';
+    // The zoom level at which the full map bounds fit in the current
+    // container. Used as minZoom (so the user can't zoom past "whole map
+    // visible") and as the base for player-follow zoom-in deltas. Recomputed
+    // on container resize because a shrunk window needs a lower fit zoom —
+    // otherwise minZoom stays at the initial larger value and zoom-out
+    // hits an invisible floor.
+    //
+    // We also auto-refit the view when the user was AT fit zoom before the
+    // resize — when they hadn't deliberately zoomed in, they expect the map
+    // to keep tracking the container. A manually-zoomed user is left alone:
+    // a window resize shouldn't yank them out of a detail they're inspecting.
+    // Pre-fit zoom floor — matches the `minZoom` we pass to `L.map(..)` above.
+    // We temporarily relax `minZoom` to this value before calling
+    // `getBoundsZoom`, then ratchet it back up to the freshly-computed fit
+    // zoom. Why: Leaflet's `getBoundsZoom` clamps its result to the current
+    // `minZoom`, so a previous fit (e.g. 2.25 on a wide window) would
+    // permanently lock zoom-out at that level — the very bug the user hit
+    // when shrinking the window.
+    const MIN_ZOOM_FLOOR = -5;
+
+    function applyFitZoom(): void {
+      instance.setMinZoom(MIN_ZOOM_FLOOR);
+      const newFitZoom = instance.getBoundsZoom(bounds);
+      const currentZoom = instance.getZoom();
+      const wasAtFit = Math.abs(currentZoom - initialZoom.value) < 0.05;
+      initialZoom.value = newFitZoom;
+      instance.setMinZoom(newFitZoom);
+      if (wasAtFit && currentZoom !== newFitZoom) {
+        instance.setZoom(newFitZoom);
+      }
+    }
     instance.fitBounds(bounds);
-    initialZoom.value = instance.getZoom();
-    instance.setMinZoom(initialZoom.value);
+    applyFitZoom();
     instance.setMaxBounds(bounds.pad(PAN_PAD));
+
+    // Keep Leaflet's internal size cache in sync with the actual container.
+    // Triggers on overlay window resize (Tauri), browser viewport resize, the
+    // Settings drawer pushing the map sideways, and the WebView2 zoom factor
+    // change (setZoom rescales the document, which the observer catches as a
+    // content-rect change). Without this, the map renders at the initial size
+    // and tiles/markers drift out of place.
+    //
+    // Two listeners, intentionally redundant: ResizeObserver catches CSS-
+    // driven container changes (Settings drawer push, WebView zoom) but is
+    // unreliable on shrink under WebView2 inside a transparent/frameless
+    // Tauri window — it only fires when the observed element grows. The
+    // window-level `resize` event is the dependable fallback for the
+    // Tauri overlay-window case. Calls are idempotent (invalidateSize +
+    // applyFitZoom converge on the same target).
+    function syncToContainer(): void {
+      instance.invalidateSize({ animate: false, pan: false });
+      applyFitZoom();
+    }
+
+    let initialBoxObserved = false;
+    resizeObserver = new ResizeObserver(() => {
+      // Skip the synthetic event the browser fires right after observe() — it
+      // arrives with the container's current dimensions and would just call
+      // invalidateSize on a freshly-sized map.
+      if (!initialBoxObserved) {
+        initialBoxObserved = true;
+        return;
+      }
+      syncToContainer();
+    });
+    resizeObserver.observe(containerRef.value);
+
+    resizeWindowHandler = syncToContainer;
+    window.addEventListener('resize', resizeWindowHandler);
 
     try {
       const svgUrl = mapSvgPath(mapCode);
@@ -166,6 +236,12 @@ export function useLeafletMap(
   }
 
   onBeforeUnmount(() => {
+    resizeObserver?.disconnect();
+    resizeObserver = null;
+    if (resizeWindowHandler) {
+      window.removeEventListener('resize', resizeWindowHandler);
+      resizeWindowHandler = null;
+    }
     map.value?.remove();
     map.value = null;
   });

@@ -3,6 +3,7 @@ import { useTauriOverlay } from '@/features/overlay/composables/useTauriOverlay'
 import MapSection from './sections/MapSection.vue';
 import ExtractsSection from './sections/ExtractsSection.vue';
 import PlayerSection from './sections/PlayerSection.vue';
+import AirdropSection from './sections/AirdropSection.vue';
 import OverlaySection from './sections/OverlaySection.vue';
 import HotkeysSection from './sections/HotkeysSection.vue';
 import LanguageSection from './sections/LanguageSection.vue';
@@ -53,6 +54,7 @@ const open = ref(false);
       <MapSection />
       <ExtractsSection />
       <PlayerSection />
+      <AirdropSection v-if="overlay.isTauri" />
       <OverlaySection v-if="overlay.isTauri" />
       <HotkeysSection v-if="overlay.isTauri" />
 

@@ -71,7 +71,7 @@ const DISCONNECT_RE = /\bDisconnect \(address:\s*([\d.]+):(\d+)(?:,\s*reason:\s*
 const STATISTICS_RE =
   /\bStatistics \(address:\s*([\d.]+):(\d+),\s*rtt:\s*([\d.eE+-]+),\s*lose:\s*([\d.eE+-]+),\s*sent:\s*(\d+),\s*received:\s*(\d+)\)/;
 
-const logsDir = process.argv[2] ?? process.env['TARKOV_LOG_DIR'] ?? DEFAULT_LOGS_DIR;
+const logsDir = process.argv[2] ?? DEFAULT_LOGS_DIR;
 
 function ts(): string {
   return new Date().toISOString();
