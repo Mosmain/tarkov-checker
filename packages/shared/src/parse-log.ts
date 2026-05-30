@@ -31,15 +31,18 @@ export interface ParsedLogMapLine {
  * `rezerv_base` → `rezervbase`, etc.) are resolved by `canonicalMapCode()`
  * in `@shared/maps`.
  */
-const SCENE_PRESET_RE = /\brcid:([A-Za-z0-9_]+)\.scenespreset\.asset\b/;
-const TRANSIT_LOCATION_RE = /\[Transit\].*\bLocations:([A-Za-z0-9_]+)/;
-const TRACE_LOCATION_RE = /\bLocation:\s+([A-Za-z0-9_]+)\s*,\s*Sid:/;
+// Patterns are case-insensitive on the surrounding text only — the captured
+// id keeps its original case so the caller can decide how to normalise. BSG
+// is inconsistent: most maps use `<id>.scenespreset.asset` (lowercase) but
+// Interchange ships as `Shopping_Mall.ScenesPreset.asset` (PascalCase + the
+// plural "Scenes"). The /i flag absorbs both. Verified live 2026-05-30.
+const SCENE_PRESET_RE = /\brcid:([A-Za-z0-9_]+)\.scenespreset\.asset\b/i;
+const TRANSIT_LOCATION_RE = /\[Transit\].*\bLocations:([A-Za-z0-9_]+)/i;
+const TRACE_LOCATION_RE = /\bLocation:\s+([A-Za-z0-9_]+)\s*,\s*Sid:/i;
 
 export function parseLogLine(line: string): ParsedLogMapLine | null {
   const m =
-    SCENE_PRESET_RE.exec(line) ??
-    TRANSIT_LOCATION_RE.exec(line) ??
-    TRACE_LOCATION_RE.exec(line);
+    SCENE_PRESET_RE.exec(line) ?? TRANSIT_LOCATION_RE.exec(line) ?? TRACE_LOCATION_RE.exec(line);
   if (!m || !m[1]) return null;
   return { rawMapId: m[1].toLowerCase() };
 }

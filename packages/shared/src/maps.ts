@@ -206,6 +206,33 @@ export const TARKOV_MAPS = {
     ],
     defaultFloor: 'Ground_Level',
   },
+  // 1.0.5.0 rcid uses `Shopping_Mall.ScenesPreset.asset` — PascalCase plus
+  // the plural "Scenes" (one-off vs. every other map's `scenespreset`). The
+  // parser is case-insensitive so the lowercase form lands here. Bundle file
+  // is just `shopping_mall.bundle` (no `_preset` suffix either). Verified
+  // live 2026-05-30; the [Transit] line still emits the legacy `Interchange`
+  // canonical, so this alias plus the parser fix cover both ingestion paths.
+  shopping_mall: {
+    displayName: 'Interchange',
+    svgFile: 'Interchange.svg',
+    bounds: [
+      [598, -442],
+      [-433, 426],
+    ],
+    transform: [0.265, 150.6, 0.265, 134.6],
+    rotation: 180,
+    svgLayer: 'Ground_Level',
+    canonical: 'interchange',
+    floors: [
+      { id: 'Fourth_Floor', label: '4' },
+      { id: 'Third_Floor', label: '3' },
+      { id: 'Second_Floor', label: '2' },
+      { id: 'First_Floor', label: '1' },
+      { id: 'Ground_Level', label: '0' },
+      { id: 'Parking_Level', label: '-1' },
+    ],
+    defaultFloor: 'Ground_Level',
+  },
   interchange: {
     displayName: 'Interchange',
     svgFile: 'Interchange.svg',

@@ -18,12 +18,16 @@ use tauri::{AppHandle, Emitter};
 
 const SESSION_FOLDER_PREFIX: &str = "log_";
 
-static SCENE_PRESET_RE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"\brcid:([A-Za-z0-9_]+)\.scenespreset\.asset\b").expect("static regex"));
+// Case-insensitive on the surrounding text — see TS counterpart for the
+// `Shopping_Mall.ScenesPreset.asset` case study that necessitates this.
+static SCENE_PRESET_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"(?i)\brcid:([A-Za-z0-9_]+)\.scenespreset\.asset\b").expect("static regex")
+});
 static TRANSIT_LOCATION_RE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"\[Transit\].*\bLocations:([A-Za-z0-9_]+)").expect("static regex"));
-static TRACE_LOCATION_RE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"\bLocation:\s+([A-Za-z0-9_]+)\s*,\s*Sid:").expect("static regex"));
+    Lazy::new(|| Regex::new(r"(?i)\[Transit\].*\bLocations:([A-Za-z0-9_]+)").expect("static regex"));
+static TRACE_LOCATION_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"(?i)\bLocation:\s+([A-Za-z0-9_]+)\s*,\s*Sid:").expect("static regex")
+});
 static APPLICATION_LOG_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"^.+ application_(\d+)\.log$").expect("static regex"));
 

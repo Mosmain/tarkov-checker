@@ -57,9 +57,7 @@ export function useExtractMarkers(map: ShallowRef<LeafletMap | null>): UseExtrac
    * marker entirely (no active faction owns any of its names).
    */
   function effectiveEntries(entry: MarkerEntry): Array<ExtractEntry> {
-    return sortedEntries(entry.extract.entries).filter((e) =>
-      state.visibleFactions.has(e.faction),
-    );
+    return sortedEntries(entry.extract.entries).filter((e) => state.visibleFactions.has(e.faction));
   }
 
   function buildTooltipOpts(): Omit<L.TooltipOptions, 'offset' | 'className'> {

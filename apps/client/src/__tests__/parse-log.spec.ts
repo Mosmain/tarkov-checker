@@ -41,6 +41,17 @@ describe('parseLogLine', () => {
         '2026-05-30 01:11:02.660|1.0.5.0.45272|Info|application|scene preset path:maps/lighthouse_preset.bundle rcid:lighthouse.scenespreset.asset';
       expect(parseLogLine(line)).toEqual({ rawMapId: 'lighthouse' });
     });
+
+    it('captures the Interchange PascalCase variant — Shopping_Mall.ScenesPreset.asset', () => {
+      // BSG is inconsistent with this one: every other map uses
+      // `scenespreset.asset` (lowercase, one word) but Interchange ships as
+      // `ScenesPreset.asset` (PascalCase + the plural "Scenes"). The /i flag
+      // on SCENE_PRESET_RE absorbs that divergence; the lowercased capture
+      // then resolves via the `shopping_mall` → `interchange` alias.
+      const line =
+        '2026-05-30 02:57:23.234|1.0.5.0.45272|Info|application|scene preset path:maps/shopping_mall.bundle rcid:Shopping_Mall.ScenesPreset.asset';
+      expect(parseLogLine(line)).toEqual({ rawMapId: 'shopping_mall' });
+    });
   });
 
   describe('[Transit] Locations: line (1.0.5.0 fallback, canonical id)', () => {
@@ -66,6 +77,12 @@ describe('parseLogLine', () => {
       const line =
         '2026-05-25 00:00:19.100|1.0.4.9.45133|Info|application|[Transit] Flag:None, RaidId:6a1366d3875fd4b56d072ec8, Count:0, Locations:Sandbox_high -> ';
       expect(parseLogLine(line)).toEqual({ rawMapId: 'sandbox_high' });
+    });
+
+    it('captures Interchange via the Transit fallback (canonical id direct)', () => {
+      const line =
+        '2026-05-30 02:58:22.690|1.0.5.0.45272|Info|application|[Transit] Flag:None, RaidId:6a1a28064edfc272cf0d55d8, Count:0, Locations:Interchange -> ';
+      expect(parseLogLine(line)).toEqual({ rawMapId: 'interchange' });
     });
   });
 
@@ -114,9 +131,7 @@ describe('parseLogLine', () => {
 
     it('ignores BEClient exit lines (raid-end signal, no map id payload)', () => {
       expect(
-        parseLogLine(
-          '2026-05-30 00:41:25.672|1.0.5.0.45272|Info|application|BEClient exit',
-        ),
+        parseLogLine('2026-05-30 00:41:25.672|1.0.5.0.45272|Info|application|BEClient exit'),
       ).toBeNull();
       expect(
         parseLogLine(

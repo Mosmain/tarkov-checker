@@ -188,11 +188,7 @@ function findLatestMapIdInFile(filePath: string): string | null {
  * Dedupes consecutive emits of the same id so the explicit `rcid:` line and
  * the later `Location:` confirmation collapse into a single broadcast.
  */
-export function startLogsWatcher(
-  logsDir: string,
-  hub: Hub,
-  log: FastifyBaseLogger,
-): LogsWatcher {
+export function startLogsWatcher(logsDir: string, hub: Hub, log: FastifyBaseLogger): LogsWatcher {
   let lastEmittedMapId: string | null = null;
   let activeSession: { folder: string; logFile: string; tail: LogTail } | null = null;
   let sessionFolderWatcher: FSWatcher | null = null;
