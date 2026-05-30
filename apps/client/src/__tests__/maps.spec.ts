@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  canonicalMapCode,
-  isKnownMapCode,
-  mapDisplayName,
-  VISIBLE_MAP_CODES,
-} from '@shared/maps';
+import { canonicalMapCode, isKnownMapCode, mapDisplayName, VISIBLE_MAP_CODES } from '@shared/maps';
 
 describe('canonicalMapCode', () => {
   it('returns canonical codes unchanged', () => {

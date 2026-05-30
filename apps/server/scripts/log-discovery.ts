@@ -223,10 +223,7 @@ function handleNetworkConnectionLine(line: string): void {
   }
   m = STATISTICS_RE.exec(line);
   if (m) {
-    out(
-      'STATS',
-      `server=${m[1]}:${m[2]} rtt=${m[3]}ms lose=${m[4]} sent=${m[5]} received=${m[6]}`,
-    );
+    out('STATS', `server=${m[1]}:${m[2]} rtt=${m[3]}ms lose=${m[4]} sent=${m[5]} received=${m[6]}`);
     return;
   }
   m = DISCONNECT_RE.exec(line);

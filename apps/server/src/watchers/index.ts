@@ -40,9 +40,7 @@ export class WatcherManager {
     }
 
     if (paths.logsDir.exists && paths.logsDir.value) {
-      this.handles.push(
-        startLogsWatcher(paths.logsDir.value, this.hub, this.log) as LogsWatcher,
-      );
+      this.handles.push(startLogsWatcher(paths.logsDir.value, this.hub, this.log) as LogsWatcher);
     } else {
       this.log.info(
         {

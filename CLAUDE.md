@@ -377,14 +377,14 @@ the JS side has no obvious feedback unless you check the webview console.
 Lives under `apps/desktop/src-tauri/src/server/`. Mirrors the Node
 modules in `apps/server/src/` 1:1 so cross-checking stays cheap:
 
-| Node (LAN backend)                         | Rust (in-process)                                     | Purpose                                                                                  |
-| ------------------------------------------ | ----------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `watchers/screenshots.ts`                  | `server/screenshots.rs`                               | chokidar `awaitWriteFinish` → `notify-debouncer-full` 250 ms                             |
-| `watchers/logs.ts`                         | `server/logs.rs`                                      | tail `* application_NNN.log` in latest `log_*/`; emit `map-change` on `rcid:` / `Location:` hits |
-| `watchers/paths.ts` + `registry.ts`        | `server/paths.rs`                                     | `reg query` subprocess → `winreg` direct                                                 |
-| `config-store.ts`                          | `server/config.rs`                                    | JSON in `apps/server/data/` → `%APPDATA%/tarkov-checker/`                                |
-| `sse.ts` Hub broadcast                     | `app.emit("position" \| "map-change", ...)`           | SSE fan-out → Tauri event                                                                |
-| `GET/PUT /api/config`                      | `commands::{get_config, update_config}`               | HTTP routes → IPC commands                                                               |
+| Node (LAN backend)                  | Rust (in-process)                           | Purpose                                                                                          |
+| ----------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `watchers/screenshots.ts`           | `server/screenshots.rs`                     | chokidar `awaitWriteFinish` → `notify-debouncer-full` 250 ms                                     |
+| `watchers/logs.ts`                  | `server/logs.rs`                            | tail `* application_NNN.log` in latest `log_*/`; emit `map-change` on `rcid:` / `Location:` hits |
+| `watchers/paths.ts` + `registry.ts` | `server/paths.rs`                           | `reg query` subprocess → `winreg` direct                                                         |
+| `config-store.ts`                   | `server/config.rs`                          | JSON in `apps/server/data/` → `%APPDATA%/tarkov-checker/`                                        |
+| `sse.ts` Hub broadcast              | `app.emit("position" \| "map-change", ...)` | SSE fan-out → Tauri event                                                                        |
+| `GET/PUT /api/config`               | `commands::{get_config, update_config}`     | HTTP routes → IPC commands                                                                       |
 
 Frontend doesn't know which backend it talks to. Switch is in two
 places only:
@@ -427,11 +427,11 @@ have a stable key regardless of which line shape produced the hit. Same
 map, three case conventions observed live on 2026-05-30 in patch
 1.0.5.0:
 
-| Line shape | Sample id | Note |
-| --- | --- | --- |
-| `rcid:<id>.scenespreset.asset` | `factory_day` / `city` / `Rezerv_Base` | primary, fires ~30s before raid; case varies per map |
-| `[Transit] Locations:<id>` | `factory4_day` / `TarkovStreets` / `RezervBase` | canonical legacy id, fires after `LocationLoaded` |
-| `Location: <id>, Sid:` (TRACE) | `bigmap` | pre-1.0.5.0 only; line removed in 1.0.5.0 but pattern stays for historical session reads |
+| Line shape                     | Sample id                                       | Note                                                                                     |
+| ------------------------------ | ----------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `rcid:<id>.scenespreset.asset` | `factory_day` / `city` / `Rezerv_Base`          | primary, fires ~30s before raid; case varies per map                                     |
+| `[Transit] Locations:<id>`     | `factory4_day` / `TarkovStreets` / `RezervBase` | canonical legacy id, fires after `LocationLoaded`                                        |
+| `Location: <id>, Sid:` (TRACE) | `bigmap`                                        | pre-1.0.5.0 only; line removed in 1.0.5.0 but pattern stays for historical session reads |
 
 Patch 1.0.5.0 also **renamed several scene-preset bundles** (BSG dropped
 the legacy "Factory 4" numbering and the `tarkov` prefix on Streets,

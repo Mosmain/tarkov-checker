@@ -42,9 +42,7 @@ const TRACE_LOCATION_RE = /\bLocation:\s+([A-Za-z0-9_]+)\s*,\s*Sid:/i;
 
 export function parseLogLine(line: string): ParsedLogMapLine | null {
   const m =
-    SCENE_PRESET_RE.exec(line) ??
-    TRANSIT_LOCATION_RE.exec(line) ??
-    TRACE_LOCATION_RE.exec(line);
+    SCENE_PRESET_RE.exec(line) ?? TRANSIT_LOCATION_RE.exec(line) ?? TRACE_LOCATION_RE.exec(line);
   if (!m || !m[1]) return null;
   return { rawMapId: m[1].toLowerCase() };
 }

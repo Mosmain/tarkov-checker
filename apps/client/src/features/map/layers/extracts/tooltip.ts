@@ -7,9 +7,7 @@ export interface ExtractEntry {
 }
 
 /** Sort entries by canonical faction order so visuals are deterministic. */
-export function sortedEntries(
-  entries: ReadonlyArray<ExtractEntry>,
-): Array<ExtractEntry> {
+export function sortedEntries(entries: ReadonlyArray<ExtractEntry>): Array<ExtractEntry> {
   return FACTION_ORDER.flatMap((f) => entries.filter((e) => e.faction === f));
 }
 

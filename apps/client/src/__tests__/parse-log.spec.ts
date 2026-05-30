@@ -131,9 +131,7 @@ describe('parseLogLine', () => {
 
     it('ignores BEClient exit lines (raid-end signal, no map id payload)', () => {
       expect(
-        parseLogLine(
-          '2026-05-30 00:41:25.672|1.0.5.0.45272|Info|application|BEClient exit',
-        ),
+        parseLogLine('2026-05-30 00:41:25.672|1.0.5.0.45272|Info|application|BEClient exit'),
       ).toBeNull();
       expect(
         parseLogLine(
