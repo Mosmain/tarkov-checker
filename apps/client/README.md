@@ -93,9 +93,9 @@ For nested or dynamic routes (`/raids/[id]`), see [Vue Router file-based docs](h
      import { registerSettingsSection } from '@/features/settings/registry';
      registerSettingsSection({
        id: '<name>',
-       group: 'main',      // or 'system'
-       order: 30,          // multiples of 10
-       visible: 'always',  // or 'tauri', 'desktop-or-tauri'
+       group: 'main', // or 'system'
+       order: 30, // multiples of 10
+       visible: 'always', // or 'tauri', 'desktop-or-tauri'
        component: XxxSection,
      });
      ```

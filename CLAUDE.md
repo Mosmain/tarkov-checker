@@ -451,17 +451,17 @@ axum-based HTTP server alongside the Tauri IPC layer, so the same
 process backs both the webview (via IPC) and any browser tab on the
 machine (via HTTP). One source of state, two transports.
 
-| Module                          | Role                                                                                  |
-| ------------------------------- | ------------------------------------------------------------------------------------- |
-| `http_server.rs`                | axum routes, CorsLayer, SSE handler, listens on `127.0.0.1:47474`                     |
-| `server/screenshots.rs`         | `notify-debouncer-full` watcher (250 ms `awaitWriteFinish` equivalent); parses filename → position |
-| `server/logs.rs`                | poll-tails latest `log_*/application_NNN.log`; emits `map-change` on `rcid:` / `Location:` hits     |
-| `server/paths.rs`               | env → manual override → `winreg` auto-detect; returns `ResolvedPaths`                 |
-| `server/config.rs`              | reads/writes `%APPDATA%/tarkov-checker/config.json`; rejects UNC paths                |
-| `server/events.rs`              | `ServerEvent` enum + `tokio::sync::broadcast` channel for HTTP-side fan-out           |
-| `watcher.rs`                    | `WatcherSlot` state holder + `apply_resolved` that atomically swaps watcher handles   |
-| `auth.rs`                       | bearer-token storage in Windows Credential Manager (dormant; LAN-mode wiring later)   |
-| `commands.rs`                   | Tauri `#[tauri::command]` adapters mirroring the HTTP routes                          |
+| Module                  | Role                                                                                               |
+| ----------------------- | -------------------------------------------------------------------------------------------------- |
+| `http_server.rs`        | axum routes, CorsLayer, SSE handler, listens on `127.0.0.1:47474`                                  |
+| `server/screenshots.rs` | `notify-debouncer-full` watcher (250 ms `awaitWriteFinish` equivalent); parses filename → position |
+| `server/logs.rs`        | poll-tails latest `log_*/application_NNN.log`; emits `map-change` on `rcid:` / `Location:` hits    |
+| `server/paths.rs`       | env → manual override → `winreg` auto-detect; returns `ResolvedPaths`                              |
+| `server/config.rs`      | reads/writes `%APPDATA%/tarkov-checker/config.json`; rejects UNC paths                             |
+| `server/events.rs`      | `ServerEvent` enum + `tokio::sync::broadcast` channel for HTTP-side fan-out                        |
+| `watcher.rs`            | `WatcherSlot` state holder + `apply_resolved` that atomically swaps watcher handles                |
+| `auth.rs`               | bearer-token storage in Windows Credential Manager (dormant; LAN-mode wiring later)                |
+| `commands.rs`           | Tauri `#[tauri::command]` adapters mirroring the HTTP routes                                       |
 
 **HTTP routes** (all under `127.0.0.1:47474`):
 
@@ -491,11 +491,11 @@ Frontend chooses the transport in two places only:
   with auto-reconnect).
 - `apps/client/src/features/server/api/transport.ts` — single dispatch
   for HTTP/IPC calls. Tauri: dynamic import of `@tauri-apps/api/core`
-  + `invoke(...)`. Browser: same-origin `fetch('/api/*')` (Vite proxy
-  in dev; direct on `127.0.0.1:47474` in the future hosted-frontend
-  scenario where `https://<your-domain>` page hits localhost across
-  origins, allowed by the browser localhost-exception in the Secure
-  Contexts spec).
+  - `invoke(...)`. Browser: same-origin `fetch('/api/*')` (Vite proxy
+    in dev; direct on `127.0.0.1:47474` in the future hosted-frontend
+    scenario where `https://<your-domain>` page hits localhost across
+    origins, allowed by the browser localhost-exception in the Secure
+    Contexts spec).
 
 `PositionPayload` (struct in `screenshots.rs`) and `MapChangePayload`
 (struct in `logs.rs`) on the Rust side mirror `PositionMessage` and

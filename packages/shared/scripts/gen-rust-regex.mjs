@@ -104,12 +104,12 @@ function extractStringConsts(src) {
  */
 function unescapeJsString(s) {
   return s
-    .replace(/\\\\/g, '\\')   // \\ → \
-    .replace(/\\n/g, '\n')    // \n → newline
-    .replace(/\\t/g, '\t')    // \t → tab
-    .replace(/\\r/g, '\r')    // \r → CR
-    .replace(/\\'/g, "'")     // \' → '
-    .replace(/\\"/g, '"');    // \" → "
+    .replace(/\\\\/g, '\\') // \\ → \
+    .replace(/\\n/g, '\n') // \n → newline
+    .replace(/\\t/g, '\t') // \t → tab
+    .replace(/\\r/g, '\r') // \r → CR
+    .replace(/\\'/g, "'") // \' → '
+    .replace(/\\"/g, '"'); // \" → "
 }
 
 /**
@@ -162,8 +162,8 @@ const TS_FLAGS_TO_INLINE = {
   i: 'i',
   m: 'm',
   s: 's',
-  u: '',  // unicode is default in Rust regex crate
-  g: '',  // no global flag in Rust single-match API
+  u: '', // unicode is default in Rust regex crate
+  g: '', // no global flag in Rust single-match API
 };
 
 function convertFlags(tsFlags) {
@@ -206,10 +206,7 @@ function emitRustFile(destPath, sourceTsPath, constants, headerComment) {
 
 function processParseLog() {
   const srcPath = path.join(REPO_ROOT, 'packages/shared/src/parse-log.ts');
-  const destPath = path.join(
-    REPO_ROOT,
-    'apps/desktop/src-tauri/src/server/parse_log_regexes.rs',
-  );
+  const destPath = path.join(REPO_ROOT, 'apps/desktop/src-tauri/src/server/parse_log_regexes.rs');
 
   const src = fs.readFileSync(srcPath, 'utf8');
   const regexes = extractRegexLiterals(src);
@@ -231,8 +228,8 @@ function processParseLog() {
     srcPath,
     found,
     '// Regex patterns for Tarkov log line parsing.\n' +
-    '// The (?i) prefix is the inline Rust equivalent of the /i flag in the TS source.\n' +
-    '// Consumed by logs.rs via `Regex::new(parse_log_regexes::NAME)`.',
+      '// The (?i) prefix is the inline Rust equivalent of the /i flag in the TS source.\n' +
+      '// Consumed by logs.rs via `Regex::new(parse_log_regexes::NAME)`.',
   );
 }
 
@@ -276,8 +273,8 @@ function processParseScreenshot() {
     srcPath,
     found,
     '// Regex pattern strings for Tarkov screenshot filename parsing.\n' +
-    '// NUM is expanded inline — no runtime format!() call needed.\n' +
-    '// Consumed by screenshots.rs via `Regex::new(parse_screenshot_regexes::NAME_STR)`.',
+      '// NUM is expanded inline — no runtime format!() call needed.\n' +
+      '// Consumed by screenshots.rs via `Regex::new(parse_screenshot_regexes::NAME_STR)`.',
   );
 }
 

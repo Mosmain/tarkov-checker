@@ -7,5 +7,4 @@
  * the file safe to import from non-DOM contexts (Vitest in node mode,
  * future SSR experiments).
  */
-export const isTauri =
-  typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+export const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;

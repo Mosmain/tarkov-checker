@@ -35,7 +35,8 @@ interface RawExtract {
 export function useExtractsLayer(ctx: MapLayerContext): void {
   const { map, mapCode } = ctx;
   const { t, locale } = useI18n();
-  const { extractFactions, extractLabelMode, extractLabelSize } = storeToRefs(useMapSettingsStore());
+  const { extractFactions, extractLabelMode, extractLabelSize } =
+    storeToRefs(useMapSettingsStore());
 
   let extractsLayer: LayerGroup | null = null;
   const entries: MarkerEntry[] = [];

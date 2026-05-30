@@ -57,11 +57,7 @@ useGlobalShortcut(isTauri, airdropHotkey, () => airdropStore.press());
     @close="confirmClose"
   />
 
-  <OverlayErrors
-    :map-error="mapError"
-    @dismiss-map="mapError = null"
-    @retry="mapRef?.reload()"
-  />
+  <OverlayErrors :map-error="mapError" @dismiss-map="mapError = null" @retry="mapRef?.reload()" />
 
   <AirdropStatusBanner />
 
