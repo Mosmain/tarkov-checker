@@ -74,7 +74,7 @@ jobs:
 
       # Always upload as workflow artifact — lets manual/PR runs grab the
       # .exe from the run page without going through Releases.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: tarkov-checker-desktop
           path: apps/desktop/src-tauri/target/release/tarkov-checker-desktop.exe
