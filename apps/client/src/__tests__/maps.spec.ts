@@ -26,6 +26,7 @@ describe('canonicalMapCode', () => {
     expect(canonicalMapCode('factory_night')).toBe('factory4_day');
     expect(canonicalMapCode('city')).toBe('tarkovstreets');
     expect(canonicalMapCode('rezerv_base')).toBe('rezervbase');
+    expect(canonicalMapCode('shopping_mall')).toBe('interchange');
   });
 
   it('passes unknown codes through verbatim (caller filters)', () => {
@@ -63,6 +64,7 @@ describe('VISIBLE_MAP_CODES', () => {
     expect(VISIBLE_MAP_CODES).not.toContain('factory_night');
     expect(VISIBLE_MAP_CODES).not.toContain('city');
     expect(VISIBLE_MAP_CODES).not.toContain('rezerv_base');
+    expect(VISIBLE_MAP_CODES).not.toContain('shopping_mall');
   });
 });
 
@@ -73,6 +75,7 @@ describe('mapDisplayName', () => {
     expect(mapDisplayName('factory_day')).toBe('Factory');
     expect(mapDisplayName('city')).toBe('Streets of Tarkov');
     expect(mapDisplayName('rezerv_base')).toBe('Reserve');
+    expect(mapDisplayName('shopping_mall')).toBe('Interchange');
     expect(mapDisplayName('bigmap')).toBe('Customs');
   });
 });
