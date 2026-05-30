@@ -1,0 +1,23 @@
+name: Install JS deps
+description: Sets up pnpm + Node from .nvmrc and runs a frozen install.
+
+# Local composite action shared by checks.yml and build-overlay.yml.
+# Checkout deliberately lives in the caller — GH requires the repo to
+# already be on disk before a local composite can be referenced.
+#
+# `cache: pnpm` in setup-node points at the pnpm store and is keyed on
+# pnpm-lock.yaml, so install on a warm cache is just a symlink dance
+# (~5-15s). Bump pnpm or Node version here, not in every workflow.
+
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@v4
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version-file: .nvmrc
+        cache: pnpm
+
+    - run: pnpm install --frozen-lockfile
+      shell: bash

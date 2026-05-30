@@ -24,16 +24,50 @@ tauri-plugin-global-shortcut = "2"
 tauri-plugin-window-state = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-# Server runtime ported from apps/server.
+# Server runtime: filesystem watchers, config storage, registry probes.
 anyhow = "1"
 thiserror = "1"
 notify = "6"
 notify-debouncer-full = "0.3"
-reqwest = { version = "0.12", default-features = false, features = ["native-tls", "json"] }
-tokio = { version = "1", features = ["sync", "rt", "time", "fs", "macros"] }
+tokio = { version = "1", features = ["sync", "rt", "time", "fs", "macros", "net"] }
 winreg = "0.52"
 once_cell = "1"
 regex = "1"
+# HTTP server for the future browser-as-frontend mode. Listens on
+# 127.0.0.1:47474 by default; the Tauri webview keeps using IPC. See
+# CLAUDE.md "Future architecture" section for the convergence plan.
+axum = "0.7"
+# Persistent storage of the HTTP auth token via Windows Credential Manager.
+# Cross-platform on paper (Keychain on macOS, Secret Service on Linux);
+# we lean on the Windows backend since EFT is Windows-only.
+#
+# `windows-native` feature is REQUIRED — keyring 3.x ships with an empty
+# default feature set and silently uses a no-op in-memory backend when
+# none is opted into. Without this flag set_password returns Ok(()) and
+# the value never reaches Credential Manager. (Was on by default in 2.x.)
+keyring = { version = "3", features = ["windows-native"] }
+# CSRPNG source for the 32-byte auth token. Tiny crate, just a wrapper
+# around BCryptGenRandom on Windows.
+getrandom = "0.2"
+# Constant-time comparison for the bearer token check. Same memcmp,
+# proof against timing side-channels on a network-reachable secret.
+subtle = "2"
+# Standard CORS middleware. Handles OPTIONS preflight, Access-Control-Allow-*
+# headers, and the Chrome "Private Network Access" header that public-origin
+# pages need when contacting localhost.
+tower-http = { version = "0.6", features = ["cors"] }
+# Adapter that converts a tokio broadcast Receiver into a Stream — needed
+# by axum's Sse response. The `sync` feature brings BroadcastStream.
+tokio-stream = { version = "0.1", features = ["sync"] }
+# Stream/StreamExt traits for mapping the BroadcastStream into the
+# Result<Sse::Event, _> shape axum's Sse wants. Tiny crate, already
+# transitively pulled by axum/tokio-stream — exposing it directly.
+futures-util = { version = "0.3", default-features = false, features = ["std"] }
+
+[dev-dependencies]
+# `oneshot` extension on Router for unit-testing handlers in-process —
+# pulls no extra runtime cost into the release binary.
+tower = { version = "0.5", features = ["util"] }
 
 [profile.release]
 panic = "abort"

@@ -1,4 +1,8 @@
-//! Port of `apps/server/src/watchers/paths.ts` + `registry.ts`.
+//! Resolve Tarkov directory paths. Priority order: env vars
+//! (`TARKOV_GAME_DIR`, `TARKOV_SCREENSHOT_DIR`) > manual overrides from
+//! `ConfigStore` > Windows-registry auto-detect (BSG launcher writes
+//! `InstallLocation`). `logsDir` is always derived as
+//! `<gameDir>/Logs` — no separate override.
 
 use serde::Serialize;
 use std::path::{Path, PathBuf};
@@ -60,10 +64,23 @@ fn read_env(key: &str) -> Option<String> {
     })
 }
 
+/// Trim whitespace and silently discard UNC paths (`\\server\share` /
+/// `//server/share`). Returns `None` for empty strings or UNC paths.
+///
+/// UNC paths are rejected here as a defence-in-depth measure during
+/// resolution; the primary rejection happens in `config::normalize` before
+/// any value reaches persistent storage.
 fn normalize(s: Option<&str>) -> Option<String> {
     s.and_then(|v| {
         let t = v.trim();
-        if t.is_empty() { None } else { Some(t.to_string()) }
+        if t.is_empty() {
+            return None;
+        }
+        if t.starts_with("\\\\") || t.starts_with("//") {
+            eprintln!("[paths] ignoring UNC manual override: {t}");
+            return None;
+        }
+        Some(t.to_string())
     })
 }
 
@@ -77,19 +94,15 @@ pub fn resolve(manual: &ManualOverrides) -> ResolvedPaths {
         .or_else(|| normalize(manual.game_dir.as_deref()).map(|v| ResolvedPath::from(Some(v), PathSource::Manual)))
         .unwrap_or_else(|| ResolvedPath::from(detected_game.clone(), PathSource::Detected));
 
-    let logs = match read_env("TARKOV_LOG_DIR") {
-        Some(v) => ResolvedPath::from(Some(v), PathSource::Env),
-        None => {
-            // Derived from gameDir; inherits its source for the badge.
-            let derived = game
-                .value
-                .as_deref()
-                .map(|g| PathBuf::from(g).join("Logs").to_string_lossy().into_owned());
-            match derived {
-                Some(p) => ResolvedPath::from(Some(p), game.source),
-                None => ResolvedPath::from(None, PathSource::Missing),
-            }
-        }
+    // Logs always live at `<gameDir>/Logs` — no separate override path.
+    // Source badge inherits from `gameDir` so the UI shows one origin.
+    let logs = match game
+        .value
+        .as_deref()
+        .map(|g| PathBuf::from(g).join("Logs").to_string_lossy().into_owned())
+    {
+        Some(p) => ResolvedPath::from(Some(p), game.source),
+        None => ResolvedPath::from(None, PathSource::Missing),
     };
 
     let detected_screenshots = detected_documents.as_ref().map(|docs| {
@@ -162,4 +175,93 @@ fn expand_env_vars(value: &str) -> String {
         std::env::var(name).unwrap_or_else(|_| format!("%{name}%"))
     })
     .into_owned()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // --- expand_env_vars -----------------------------------------------------
+
+    #[test]
+    fn expand_env_vars_no_vars_passthrough() {
+        let input = r"D:\Foo\Bar";
+        assert_eq!(expand_env_vars(input), input);
+    }
+
+    #[test]
+    fn expand_env_vars_unknown_var_kept_literal() {
+        // An env var that certainly doesn't exist must be left as-is.
+        let input = r"%TARKOV_CHECKER_NONEXISTENT_TEST_VAR%\Foo";
+        let result = expand_env_vars(input);
+        assert_eq!(result, input, "unknown var must remain as literal %VAR%");
+    }
+
+    #[test]
+    fn expand_env_vars_known_var_expanded() {
+        // Use APPDATA which is always set on Windows CI. If for some reason
+        // it is not set (unusual CI image), we treat the var as unknown and
+        // the test documents it explicitly.
+        let expected = match std::env::var("APPDATA") {
+            Ok(val) => format!(r"{val}\tarkov-checker"),
+            Err(_) => r"%APPDATA%\tarkov-checker".to_string(),
+        };
+        let result = expand_env_vars(r"%APPDATA%\tarkov-checker");
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn expand_env_vars_multiple_vars_in_one_string() {
+        // Both vars absent → both kept as literals; no panic, no partial expand.
+        let input = "%TARKOV_CHECKER_NONEXISTENT_A%\\middle\\%TARKOV_CHECKER_NONEXISTENT_B%";
+        let result = expand_env_vars(input);
+        assert_eq!(result, input);
+    }
+
+    // --- normalize (paths module version) ------------------------------------
+    // This normalize is the defence-in-depth one used during resolution —
+    // distinct from config::normalize but same semantics.
+
+    #[test]
+    fn paths_normalize_none_returns_none() {
+        assert_eq!(normalize(None), None);
+    }
+
+    #[test]
+    fn paths_normalize_empty_returns_none() {
+        assert_eq!(normalize(Some("")), None);
+    }
+
+    #[test]
+    fn paths_normalize_whitespace_returns_none() {
+        assert_eq!(normalize(Some("   ")), None);
+    }
+
+    #[test]
+    fn paths_normalize_plain_path_preserved() {
+        assert_eq!(
+            normalize(Some(r"D:\Tarkov")),
+            Some(r"D:\Tarkov".to_string())
+        );
+    }
+
+    #[test]
+    fn paths_normalize_trims_whitespace() {
+        assert_eq!(
+            normalize(Some(r"  D:\Tarkov  ")),
+            Some(r"D:\Tarkov".to_string())
+        );
+    }
+
+    #[test]
+    fn paths_normalize_unc_backslash_returns_none() {
+        // Defence-in-depth: UNC paths silently dropped (unlike config::normalize
+        // which returns Err — here None is the contract).
+        assert_eq!(normalize(Some(r"\\server\share")), None);
+    }
+
+    #[test]
+    fn paths_normalize_unc_forward_slash_returns_none() {
+        assert_eq!(normalize(Some("//server/share")), None);
+    }
 }

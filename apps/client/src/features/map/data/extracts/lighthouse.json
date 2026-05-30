@@ -1,0 +1,110 @@
+[
+  {
+    "key": "armored_train",
+    "factions": ["shared"],
+    "position": {
+      "x": 6.27001953,
+      "y": 14.1133,
+      "z": -873.78
+    }
+  },
+  {
+    "key": "road_to_military_base_v_ex",
+    "factions": ["pmc"],
+    "position": {
+      "x": -328.951263,
+      "y": 16.73,
+      "z": -784.3581
+    }
+  },
+  {
+    "key": "side_tunnel_co_op",
+    "factions": ["shared"],
+    "position": {
+      "x": -68.3,
+      "y": 6.83,
+      "z": 318.11
+    }
+  },
+  {
+    "key": "mountain_pass",
+    "factions": ["pmc"],
+    "position": {
+      "x": -172.35,
+      "y": 41.89,
+      "z": -6.39
+    }
+  },
+  {
+    "key": "path_to_shoreline",
+    "factions": ["pmc", "scav"],
+    "position": {
+      "x": -364.4,
+      "y": 28.758,
+      "z": -121.4
+    }
+  },
+  {
+    "key": "northern_checkpoint",
+    "factions": ["pmc"],
+    "position": {
+      "x": 113.22,
+      "y": 11.86,
+      "z": -989.23
+    }
+  },
+  {
+    "key": "southern_road",
+    "factions": ["pmc"],
+    "position": {
+      "x": -295.8,
+      "y": 11.86,
+      "z": 420.6
+    }
+  },
+  {
+    "key": "southern_road_landslide",
+    "factions": ["scav"],
+    "position": {
+      "x": -281.3,
+      "y": 11.86,
+      "z": 420.8
+    }
+  },
+  {
+    "key": "hideout_under_the_landing_stage",
+    "factions": ["scav"],
+    "position": {
+      "x": 133.068,
+      "y": -0.467,
+      "z": 286.842
+    }
+  },
+  {
+    "key": "scav_hideout_at_the_grotto",
+    "factions": ["scav"],
+    "position": {
+      "x": 180.66,
+      "y": 1.18,
+      "z": -485.94
+    }
+  },
+  {
+    "key": "industrial_zone_gates",
+    "factions": ["scav"],
+    "position": {
+      "x": -152.56,
+      "y": 12.25,
+      "z": -794.1
+    }
+  },
+  {
+    "key": "passage_by_the_lake",
+    "factions": ["pmc"],
+    "position": {
+      "x": -360,
+      "y": 27.19,
+      "z": -564.87
+    }
+  }
+]

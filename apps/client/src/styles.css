@@ -1,77 +1,77 @@
 @layer theme, base, primevue, components, utilities;
 
-@import "tailwindcss";
-@import "leaflet/dist/leaflet.css";
-@import "primeicons/primeicons.css";
+@import 'tailwindcss';
+@import 'leaflet/dist/leaflet.css';
+@import 'primeicons/primeicons.css';
 @plugin "tailwindcss-primeui";
 
 @font-face {
-  font-family: "Bender";
-  src: url("/fonts/bender-light.woff2") format("woff2");
+  font-family: 'Bender';
+  src: url('/fonts/bender-light.woff2') format('woff2');
   font-weight: 300;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
-  font-family: "Bender";
-  src: url("/fonts/bender-light-italic.woff2") format("woff2");
+  font-family: 'Bender';
+  src: url('/fonts/bender-light-italic.woff2') format('woff2');
   font-weight: 300;
   font-style: italic;
   font-display: swap;
 }
 @font-face {
-  font-family: "Bender";
+  font-family: 'Bender';
   src:
-    url("/fonts/bender.woff2") format("woff2"),
-    url("/fonts/bender.woff") format("woff");
+    url('/fonts/bender.woff2') format('woff2'),
+    url('/fonts/bender.woff') format('woff');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
-  font-family: "Bender";
-  src: url("/fonts/bender-italic.woff2") format("woff2");
+  font-family: 'Bender';
+  src: url('/fonts/bender-italic.woff2') format('woff2');
   font-weight: 400;
   font-style: italic;
   font-display: swap;
 }
 @font-face {
-  font-family: "Bender";
+  font-family: 'Bender';
   src:
-    url("/fonts/bender-bold.woff2") format("woff2"),
-    url("/fonts/bender-bold.woff") format("woff");
+    url('/fonts/bender-bold.woff2') format('woff2'),
+    url('/fonts/bender-bold.woff') format('woff');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
-  font-family: "Bender";
-  src: url("/fonts/bender-bold-italic.woff2") format("woff2");
+  font-family: 'Bender';
+  src: url('/fonts/bender-bold-italic.woff2') format('woff2');
   font-weight: 700;
   font-style: italic;
   font-display: swap;
 }
 @font-face {
-  font-family: "Bender";
-  src: url("/fonts/bender-black.woff2") format("woff2");
+  font-family: 'Bender';
+  src: url('/fonts/bender-black.woff2') format('woff2');
   font-weight: 900;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
-  font-family: "Bender";
-  src: url("/fonts/bender-black-italic.woff2") format("woff2");
+  font-family: 'Bender';
+  src: url('/fonts/bender-black-italic.woff2') format('woff2');
   font-weight: 900;
   font-style: italic;
   font-display: swap;
 }
 
 @theme {
-  --font-sans: "Bender", system-ui, sans-serif;
+  --font-sans: 'Bender', system-ui, sans-serif;
 }
 
 :root {
-  --p-font-family: "Bender", system-ui, sans-serif;
+  --p-font-family: 'Bender', system-ui, sans-serif;
 }
 
 html,
@@ -92,45 +92,101 @@ html.overlay-window body {
   clip-path: inset(0 round 12px);
 }
 
+/* Overlay opacity is applied here (not at the window level) so the edge
+   border on ::after stays at 100% regardless of the slider value. The CSS
+   variable is set by useTauriOverlay.setOpacity.
+   Scoped to `#app` rather than `body > *` so anything teleported to body
+   (PrimeVue Drawer mask, MapQuickMenu, ConfirmDialog) renders fully opaque
+   — those are explicit interaction surfaces and the user needs to read
+   them regardless of how transparent they've set the overlay. */
+html.overlay-window #app {
+  opacity: var(--overlay-opacity, 1);
+}
+
+/* Unlocked overlay: trace the rounded window edge so the user can find the
+   resize/drag boundary even after they've dialled the map opacity to 0 and
+   the corners are otherwise invisible. ::after sits inside body's clip, so
+   the border lines up with the rounded-rectangle boundary itself. Locked
+   state hides it — the lock indicator already conveys "no interaction". */
+html.overlay-window.overlay-unlocked body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  border: 2px solid rgb(from var(--p-primary-400) r g b / 0.9);
+  border-radius: 12px;
+  pointer-events: none;
+  z-index: 9999;
+}
+
 .leaflet-container {
   /* Fallback for older engines that don't grok relative-color syntax. */
   background: var(--p-surface-950);
   background: rgb(from var(--p-surface-950) r g b / var(--map-bg-alpha, 1));
 }
 
-.leaflet-extracts-pane img.leaflet-marker-icon {
+/* Each extract is a divIcon — Leaflet owns the outer div (sets its own
+ * position:absolute + transform:translate3d for map-relative placement);
+ * we only style its children. Tailwind preflight gives <img> max-width:
+ * 100% which collapses the icon to 0 inside a positioned ancestor, so
+ * clear it and pin the size explicitly. */
+.leaflet-extracts-pane .extract-icon-divicon img {
+  display: block;
+  width: 26px;
+  height: 26px;
   max-width: none !important;
   max-height: none !important;
-  width: auto;
+}
+/* Multi-faction composite: clipped PNG slices stack on top of each other.
+ * `position: absolute` works because Leaflet already makes the outer div a
+ * positioned ancestor; `inset: 0` stretches each slice across the 26×26
+ * box, and the per-slice clip-path (inline, from SLICE_2/SLICE_3) carves
+ * out its triangular share. */
+.leaflet-extracts-pane .extract-icon-divicon .extract-icon-slice {
+  position: absolute;
+  inset: 0;
 }
 
+/* Tooltip container — Leaflet adds .leaflet-tooltip; we hide its built-in
+ * pseudo-element callout and let the per-row stripes carry faction colour
+ * (rows live inside, one per distinct name). Padding goes on the rows so
+ * the stripes touch the container edges. */
 .leaflet-tooltip.extract-tooltip {
   background: color-mix(in oklab, var(--p-surface-900) 78%, transparent);
   border: 1px solid var(--p-surface-700);
-  border-left-width: 3px;
   color: var(--p-surface-0);
-  font-family: "Bender", system-ui, sans-serif;
+  font-family: 'Bender', system-ui, sans-serif;
   font-size: var(--extract-label-size, 11px);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 3px 8px 3px 9px;
+  padding: 0;
   border-radius: 3px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(6px);
   white-space: nowrap;
+  overflow: hidden;
 }
 .leaflet-tooltip.extract-tooltip::before {
   display: none;
 }
-.leaflet-tooltip.extract-tooltip--pmc {
+.extract-tooltip-row {
+  padding: 3px 8px 3px 9px;
+  border-left: 3px solid var(--p-surface-500);
+}
+.extract-tooltip-row + .extract-tooltip-row {
+  border-top: 1px solid var(--p-surface-700);
+}
+.extract-tooltip-row--pmc {
   border-left-color: #22c55e;
 }
-.leaflet-tooltip.extract-tooltip--scav {
+.extract-tooltip-row--scav {
   border-left-color: #eab308;
 }
-.leaflet-tooltip.extract-tooltip--shared {
+.extract-tooltip-row--shared {
   border-left-color: #3b82f6;
+}
+.extract-tooltip-row--multi {
+  border-left-color: var(--p-surface-500);
 }
 
 .player-icon-wrapper {

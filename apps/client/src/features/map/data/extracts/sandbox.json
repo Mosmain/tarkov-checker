@@ -1,0 +1,56 @@
+[
+  {
+    "key": "police_cordon_v_ex",
+    "factions": ["pmc"],
+    "position": {
+      "x": -19.5134068,
+      "y": 23.7110023,
+      "z": 114.942139
+    }
+  },
+  {
+    "key": "emercom_checkpoint",
+    "factions": ["shared"],
+    "position": {
+      "x": 151.625,
+      "y": 24.662056,
+      "z": -97.45658
+    }
+  },
+  {
+    "key": "scav_checkpoint_co_op",
+    "factions": ["shared"],
+    "position": {
+      "x": 25.2195644,
+      "y": 24.5091858,
+      "z": -79.5413742
+    }
+  },
+  {
+    "key": "nakatani_basement_stairs",
+    "factions": ["shared"],
+    "position": {
+      "x": -16.1249924,
+      "y": 14.7620564,
+      "z": 335.063416
+    }
+  },
+  {
+    "key": "mira_ave_flare",
+    "factions": ["pmc"],
+    "position": {
+      "x": 218.225,
+      "y": 17.9920559,
+      "z": -38.5065842
+    }
+  },
+  {
+    "key": "tartowers_sales_office",
+    "factions": ["pmc"],
+    "position": {
+      "x": 190.804,
+      "y": 17.6449986,
+      "z": 133.388992
+    }
+  }
+]

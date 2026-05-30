@@ -1,0 +1,65 @@
+[
+  {
+    "key": "medical_block_elevator",
+    "factions": ["shared"],
+    "position": {
+      "x": -112.423,
+      "y": -3.10999966,
+      "z": -343.986
+    }
+  },
+  {
+    "key": "cargo_elevator",
+    "factions": ["shared"],
+    "position": {
+      "x": -112.152,
+      "y": 5.376,
+      "z": -408.64
+    }
+  },
+  {
+    "key": "main_elevator",
+    "factions": ["shared"],
+    "position": {
+      "x": -282.304016,
+      "y": -3.631999,
+      "z": -334.896
+    }
+  },
+  {
+    "key": "ventilation_shaft",
+    "factions": ["pmc"],
+    "position": {
+      "x": -144.94,
+      "y": -2.37,
+      "z": -396.826
+    }
+  },
+  {
+    "key": "sewage_conduit",
+    "factions": ["pmc"],
+    "position": {
+      "x": -122.889992,
+      "y": -3.65600014,
+      "z": -258.3245
+    }
+  },
+  {
+    "key": "parking_gate",
+    "factions": ["pmc"],
+    "position": {
+      "x": -231.73,
+      "y": 0.77356863,
+      "z": -434.816376
+    }
+  },
+  {
+    "key": "hangar_gate",
+    "factions": ["pmc"],
+    "position": {
+      "x": -170.66,
+      "y": 1.54,
+      "z": -245.94
+    }
+  }
+]

@@ -1,4 +1,8 @@
-import type { Position3D } from "./tarkov-api.js";
+export interface Position3D {
+  x: number;
+  y: number;
+  z: number;
+}
 
 export interface Quaternion {
   qx: number;
@@ -13,7 +17,8 @@ export interface ParsedScreenshot {
 }
 
 /**
- * Tarkov F12-overlay screenshots embed the player's world position and
+ * Tarkov position-overlay screenshots (PrintScreen by default) embed the
+ * player's world position and
  * orientation in their filename. Recent builds use:
  *
  *   YYYY-MM-DD[HH-MM-SS]_<x>, <y>, <z>_<qx>, <qy>, <qz>, <qw>_<fov> (<n>).png
@@ -27,21 +32,21 @@ export interface ParsedScreenshot {
  * find the quaternion just nulls the orientation field rather than
  * discarding the whole match.
  */
-const NUM = "-?\\d+(?:\\.\\d+)?";
+const NUM = '-?\\d+(?:\\.\\d+)?';
 const POSITION_RE = new RegExp(`_(${NUM}),\\s*(${NUM}),\\s*(${NUM})_`);
 const ORIENTATION_RE = new RegExp(
   `_(${NUM}),\\s*(${NUM}),\\s*(${NUM})_(${NUM}),\\s*(${NUM}),\\s*(${NUM}),\\s*(${NUM})_`,
 );
 
 function basename(filePath: string): string {
-  const cleaned = filePath.replace(/\\/g, "/");
-  const slash = cleaned.lastIndexOf("/");
+  const cleaned = filePath.replace(/\\/g, '/');
+  const slash = cleaned.lastIndexOf('/');
   return slash === -1 ? cleaned : cleaned.slice(slash + 1);
 }
 
 export function parseScreenshotFilename(filename: string): ParsedScreenshot | null {
   const base = basename(filename);
-  if (!base.toLowerCase().endsWith(".png")) return null;
+  if (!base.toLowerCase().endsWith('.png')) return null;
   const posMatch = POSITION_RE.exec(base);
   if (!posMatch) return null;
   const x = Number(posMatch[1]);

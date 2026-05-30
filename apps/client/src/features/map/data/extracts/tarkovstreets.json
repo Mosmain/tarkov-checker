@@ -1,0 +1,155 @@
+[
+  {
+    "key": "entrance_to_catacombs",
+    "factions": ["scav"],
+    "position": {
+      "x": -249.008026,
+      "y": 2.566,
+      "z": 243.797
+    }
+  },
+  {
+    "key": "ventilation_shaft",
+    "factions": ["scav"],
+    "position": {
+      "x": -124.127106,
+      "y": 3.114,
+      "z": 423.93
+    }
+  },
+  {
+    "key": "sewer_manhole",
+    "factions": ["scav"],
+    "position": {
+      "x": 276.113,
+      "y": 5.356,
+      "z": 345.389984
+    }
+  },
+  {
+    "key": "near_kamchatskaya_arch",
+    "factions": ["scav"],
+    "position": {
+      "x": 259.57,
+      "y": -3.929,
+      "z": 48.72
+    }
+  },
+  {
+    "key": "cardinal_apartment_complex_parking",
+    "factions": ["scav"],
+    "position": {
+      "x": 104.84,
+      "y": 0.130000114,
+      "z": -161.170013
+    }
+  },
+  {
+    "key": "klimov_shopping_mall_exfil",
+    "factions": ["scav"],
+    "position": {
+      "x": -163.821014,
+      "y": 1.59100008,
+      "z": -5.65802
+    }
+  },
+  {
+    "key": "courtyard",
+    "factions": ["pmc"],
+    "position": {
+      "x": -148.947,
+      "y": 1.78600025,
+      "z": 500.151978
+    }
+  },
+  {
+    "key": "primorsky_ave_taxi_v_ex",
+    "factions": ["pmc"],
+    "position": {
+      "x": -2.191315,
+      "y": 3.2,
+      "z": 461.232971
+    }
+  },
+  {
+    "key": "stylobate_building_elevator",
+    "factions": ["pmc"],
+    "position": {
+      "x": -44.7435,
+      "y": 11.04,
+      "z": -72.15
+    }
+  },
+  {
+    "key": "crash_site",
+    "factions": ["pmc"],
+    "position": {
+      "x": 312.74,
+      "y": 6.8,
+      "z": 405.96
+    }
+  },
+  {
+    "key": "sewer_river",
+    "factions": ["pmc"],
+    "position": {
+      "x": -267.04,
+      "y": -1.535,
+      "z": 219.48
+    }
+  },
+  {
+    "key": "damaged_house",
+    "factions": ["pmc"],
+    "position": {
+      "x": -248.971,
+      "y": 7.195,
+      "z": 344.275
+    }
+  },
+  {
+    "key": "collapsed_crane",
+    "factions": ["pmc"],
+    "position": {
+      "x": 216.12,
+      "y": 3.44,
+      "z": 272.7
+    }
+  },
+  {
+    "key": "klimov_street_flare",
+    "factions": ["pmc"],
+    "position": {
+      "x": -263.41,
+      "y": 2.9,
+      "z": 43.19
+    }
+  },
+  {
+    "key": "pinewood_basement_co_op",
+    "factions": ["shared"],
+    "position": {
+      "x": -114.28,
+      "y": -2.05,
+      "z": 64.88
+    }
+  },
+  {
+    "key": "expo_checkpoint",
+    "factions": ["pmc"],
+    "position": {
+      "x": 213.12,
+      "y": 0.09,
+      "z": -104.96
+    }
+  },
+  {
+    "key": "smugglers_basement",
+    "factions": ["pmc"],
+    "position": {
+      "x": 75.99,
+      "y": -0.6029999,
+      "z": 50.0100021
+    }
+  }
+]

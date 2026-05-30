@@ -1,0 +1,56 @@
+[
+  {
+    "key": "emercom_checkpoint",
+    "factions": ["shared"],
+    "position": {
+      "x": -321.56,
+      "y": 24.18,
+      "z": 266.74
+    }
+  },
+  {
+    "key": "railway_exfil",
+    "factions": ["shared"],
+    "position": {
+      "x": 472.32,
+      "y": 20.92,
+      "z": -429.74
+    }
+  },
+  {
+    "key": "power_station_v_ex",
+    "factions": ["pmc"],
+    "position": {
+      "x": -251.92,
+      "y": 21.72,
+      "z": -367.13
+    }
+  },
+  {
+    "key": "scav_camp_co_op",
+    "factions": ["shared"],
+    "position": {
+      "x": 278.69,
+      "y": 21.94955,
+      "z": -30.97
+    }
+  },
+  {
+    "key": "hole_in_the_fence",
+    "factions": ["pmc"],
+    "position": {
+      "x": -219.92,
+      "y": 22.79,
+      "z": -37.02
+    }
+  },
+  {
+    "key": "saferoom_exfil",
+    "factions": ["pmc"],
+    "position": {
+      "x": -47.73,
+      "y": 22.97,
+      "z": 44.055
+    }
+  }
+]
