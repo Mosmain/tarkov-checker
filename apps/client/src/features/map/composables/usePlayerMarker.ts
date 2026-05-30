@@ -57,9 +57,11 @@ export function usePlayerMarker(
     if (!playerLayer) {
       playerLayer = L.layerGroup().addTo(map.value);
     }
-    // The in-game yaw must be rotated by the map's own coordinateRotation
-    // so the arrow points where the player is looking in the rendered view.
-    const displayYaw = yaw === null ? null : yaw + mapRotation;
+    // CRS rotates the world CCW by mapRotation, so a world-frame heading at
+    // yaw ψ lands at screen angle ψ − mapRotation (CW from screen-up, which
+    // is what SVG rotate() expects). For the rotation=180 maps the sign is
+    // invisible (±180 ≡ 180); for Factory (90) and Labs (270) it isn't.
+    const displayYaw = yaw === null ? null : yaw - mapRotation;
     const icon = L.divIcon({
       html: buildPlayerIconHtml(displayYaw),
       className: 'player-icon-wrapper',
