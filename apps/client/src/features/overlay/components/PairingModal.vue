@@ -4,17 +4,15 @@ import { storeToRefs } from 'pinia';
 import { useOverlayStore } from '@/features/overlay/store';
 
 /**
- * Phone-pairing dialog (D4). Renders the QR + the literal URL behind
- * it; the user scans on a phone in the same Wi-Fi, the phone lands on
- * the helper-served SPA with `#token=…` in the fragment, main.ts's
- * bootstrap stashes the token into localStorage, and the rest of the
- * SPA picks it up via transport.ts / useServerStream.
+ * Phone-pairing dialog. Renders the QR + the literal LAN URL behind
+ * it; the user scans on a phone in the same Wi-Fi, the phone lands
+ * on the helper-served SPA (`http://<lan-ip>:47474/`), and the SPA
+ * loads same-origin with no token / no bootstrap step — trust model
+ * is same-Wi-Fi.
  *
- * Lifecycle: mounted-on-open, unmounted-on-close (via `v-if`). Every
- * open regenerates the QR — the token can change via E6 "Reset
- * pairing" (which restarts the app, so opening again is post-restart)
- * and the LAN IP can change if the user switches Wi-Fi. Per-open
- * regeneration covers both with one `invoke` call and zero listeners.
+ * Regenerated on every open via `watch(visible)` — the LAN IP can
+ * change if the user switches Wi-Fi during the session. One `invoke`
+ * per open, no listeners.
  */
 
 interface PairingQr {
@@ -102,10 +100,12 @@ async function copyUrl(): Promise<void> {
           {{ t('pairing.url') }}
         </label>
         <div class="flex items-center gap-2">
-          <input
-            :value="data.url"
+          <InputText
+            :model-value="data.url"
             readonly
-            class="flex-1 px-2 py-1 text-xs bg-surface-800 rounded border border-surface-700 select-all font-mono"
+            size="small"
+            fluid
+            class="font-mono !text-xs"
           />
           <Button
             size="small"

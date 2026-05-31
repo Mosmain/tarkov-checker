@@ -42,20 +42,16 @@ cd tarkov-checker
 pnpm install
 ```
 
-**Desktop overlay dev** (most common):
+**Dev** (one command — Tauri spawns Vite on :5173 and the helper on :47474):
 
 ```bash
-pnpm --filter @tarkov-checker/client dev      # Terminal 1
-pnpm --filter @tarkov-checker/desktop tauri:dev   # Terminal 2
+pnpm --filter @tarkov-checker/desktop tauri:dev
 ```
 
-**LAN / phone dev** (Node server on :3000, Vite on :5173):
-
-```bash
-pnpm dev
-```
-
-Then point your phone browser to `http://<your-pc-ip>:5173`.
+A browser on the same PC or a phone on the same Wi-Fi can hit
+`http://<your-pc-ip>:5173/` — Vite proxies `/api/*` and `/events` to
+the helper. The release build serves the SPA from the .exe at
+`http://<your-pc-ip>:47474/` instead (no Vite there).
 
 ## Tarkov Path Resolution
 
@@ -169,20 +165,16 @@ cd tarkov-checker
 pnpm install
 ```
 
-**Разработка десктоп-оверлея** (наиболее частый сценарий):
+**Разработка десктоп-оверлея** (одна команда — Tauri поднимает Vite на :5173):
 
 ```bash
-pnpm --filter @tarkov-checker/client dev      # Терминал 1
-pnpm --filter @tarkov-checker/desktop tauri:dev   # Терминал 2
+pnpm --filter @tarkov-checker/desktop tauri:dev
 ```
 
-**Разработка LAN / телефона** (Node-сервер на :3000, Vite на :5173):
-
-```bash
-pnpm dev
-```
-
-Затем открой в браузере телефона `http://<ip-твоего-пк>:5173`.
+Браузер на том же ПК или телефон в той же Wi-Fi могут открывать
+`http://<ip-твоего-пк>:5173/` — Vite проксирует `/api/*` и `/events`
+в helper. В release-сборке SPA отдаёт сам .exe на
+`http://<ip-твоего-пк>:47474/` (Vite там нет).
 
 ## Определение путей Tarkov
 

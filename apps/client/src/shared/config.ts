@@ -7,10 +7,10 @@
  *
  * Three contexts to handle:
  *
- * 1. **Dev mode** (`pnpm dev` → `http://localhost:5173`): the SPA's
- *    fetches use relative paths, Vite's `server.proxy` forwards them
- *    to `http://localhost:47474`. Single-origin → no CORS, no
- *    preflight noise.
+ * 1. **Dev mode** (`pnpm dev` / `tauri:dev` → Vite on :5173): the
+ *    SPA uses relative paths, Vite's `server.proxy` forwards `/api/*`
+ *    and `/events` to `http://127.0.0.1:47474`. Single-origin → no
+ *    CORS, no preflight.
  * 2. **Helper-served SPA** (LAN-phone scenario, or a browser opening
  *    `http://localhost:47474/` directly): the helper served the page
  *    AND hosts the API at the same origin. Relative paths work.

@@ -130,25 +130,17 @@ export default defineConfig(({ mode, command }) => ({
   server: {
     host: true,
     port: 5173,
-    // Surface port conflicts instead of silently picking 5174 — Tauri's devUrl is pinned.
     strictPort: true,
     // Rust rebuilds touch src-tauri/target on every save; without this Vite
     // re-bundles on each cargo write and HMR thrashes.
     watch: {
       ignored: ['**/src-tauri/**'],
     },
-    // One-origin dev: page is served by Vite (:5173), backend by the Rust
-    // helper inside Tauri (`apps/desktop/src-tauri`, listening on
-    // `127.0.0.1:47474`). The browser only ever talks to :5173.
-    // http-proxy passes through chunked transfer-encoding, so the SSE
-    // stream survives the hop without buffering.
-    //
-    // The production hosted-frontend scenario will hit :47474 directly
-    // and rely on the helper's `CorsLayer` for CORS; the proxy here is
-    // purely a dev-mode convenience that keeps origin parity with prod.
+    // 127.0.0.1 (not localhost) — Node resolves localhost to ::1 first
+    // and the helper binds IPv4-only, so the v6 attempt hangs ~25s.
     proxy: {
-      '/api': { target: 'http://localhost:47474', changeOrigin: false },
-      '/events': { target: 'http://localhost:47474', changeOrigin: false },
+      '/api': { target: 'http://127.0.0.1:47474', changeOrigin: false },
+      '/events': { target: 'http://127.0.0.1:47474', changeOrigin: false },
     },
   },
   build: {

@@ -1,5 +1,4 @@
 import { serverMessage } from '@shared/ws-messages';
-import { getAuthToken } from '@/shared/auth';
 import { dispatchServerEvent } from './useServerEvents';
 
 export type StreamStatus = 'connecting' | 'open' | 'closed';
@@ -20,16 +19,7 @@ export function useServerStream(url: string): UseServerStreamResult {
   let source: EventSource | null = null;
 
   function connect(): void {
-    // EventSource cannot set custom headers, so the bearer token rides
-    // in the query string instead. The helper accepts both
-    // `?token=…` and `Authorization: Bearer …`. Read at connect-time
-    // (not module-load) so the D4 hash-bootstrap can populate
-    // localStorage on first hit before this composable mounts.
-    const token = getAuthToken();
-    const streamUrl = token
-      ? `${url}${url.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`
-      : url;
-    source = new EventSource(streamUrl);
+    source = new EventSource(url);
     status.value = 'connecting';
 
     source.addEventListener('open', () => {

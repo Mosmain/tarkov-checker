@@ -177,7 +177,7 @@ pnpm typecheck  # vue-tsc -b --noEmit
 pnpm lint       # eslint --max-warnings=0
 ```
 
-Tauri overlay dev needs both this Vite server (port 5173) and `pnpm --filter @tarkov-checker/desktop tauri:dev` from a second terminal. See [CLAUDE.md → Dev workflow](../../CLAUDE.md#dev-workflow).
+`tauri:dev` spawns this same Vite via its `beforeDevCommand` — you don't need to start it manually. See [CLAUDE.md → Dev workflow](../../CLAUDE.md#dev-workflow).
 
 ## Where things connect
 

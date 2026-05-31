@@ -1,8 +1,9 @@
 # @tarkov-checker/desktop
 
-Tauri 2 wrapper around `@tarkov-checker/client`. The window embeds the built
-Vue bundle from `apps/client/dist`; in dev it points at the running Vite
-server (`http://localhost:5173`).
+Tauri 2 wrapper around `@tarkov-checker/client`. In dev the window points
+at the Vite server `beforeDevCommand` spawns on `http://localhost:5173`.
+Release build bundles `apps/client/dist` into the .exe (and the helper
+serves the same files for phone access on `:47474`).
 
 ## Requirements
 

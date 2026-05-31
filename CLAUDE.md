@@ -38,28 +38,17 @@ One command:
 pnpm --filter @tarkov-checker/desktop tauri:dev
 ```
 
-Tauri's `beforeDevCommand` is wired to `pnpm --filter
-@tarkov-checker/client dev`, so the Vite dev server starts as a child
-of `tauri dev`. When Tauri exits, Vite gets a clean shutdown too.
+`beforeDevCommand` spawns `pnpm --filter @tarkov-checker/client dev`
+(Vite on **:5173**). Tauri waits for it, opens the webview at the same
+URL, and shuts Vite down when it exits. The Rust helper (in-process
+HTTP server) binds `0.0.0.0:47474` for `/api/*` and `/events`; Vite's
+`server.proxy` forwards same-origin requests to it.
 
-Flow:
-
-- **Vite** serves the SPA at `http://localhost:5173`. Its `server.proxy`
-  config forwards same-origin `/api/*` and `/events` to the Rust helper
-  at `127.0.0.1:47474`, so the browser only ever sees one origin and
-  CORS stays simple in development.
-- **Tauri overlay** loads `http://localhost:5173` into a WebView2
-  window. The Rust process is also the HTTP server backing the Vite
-  proxy — both transports talk to the same in-process state.
-
-The Rust HTTP server binds on `127.0.0.1` only by default; LAN
-exposure for the phone-as-second-screen scenario is a future opt-in
-toggle (see "Future architecture").
-
-For pure browser-mode work (just the SPA, no Tauri shell) run
-`pnpm --filter @tarkov-checker/client dev` directly — but `/api/*` and
-`/events` then need the helper to be running separately (e.g. via
-`tauri:dev` in another terminal).
+In **dev** the helper does NOT serve the SPA (no embedded `dist/`) —
+hitting `http://localhost:47474/` returns a stub message pointing at
+Vite. Phones in the same Wi-Fi use `http://<lan-ip>:5173/`. The
+embedded-SPA path lights up only in **release** builds, where there
+is no Vite.
 
 The repo must live on an **ASCII path** (currently `C:\git-repos\tarkov-checker`)
 — `cargo metadata` segfaults on a Cyrillic CWD, which is what made the
@@ -462,22 +451,28 @@ machine (via HTTP). One source of state, two transports.
 
 | Module                  | Role                                                                                               |
 | ----------------------- | -------------------------------------------------------------------------------------------------- |
-| `http_server.rs`        | axum routes, CorsLayer, SSE handler, listens on `127.0.0.1:47474`                                  |
+| `http_server.rs`        | axum routes, CorsLayer, SSE handler, listens on `0.0.0.0:47474`                                    |
 | `server/screenshots.rs` | `notify-debouncer-full` watcher (250 ms `awaitWriteFinish` equivalent); parses filename → position |
 | `server/logs.rs`        | poll-tails latest `log_*/application_NNN.log`; emits `map-change` on `rcid:` / `Location:` hits    |
 | `server/paths.rs`       | env → manual override → `winreg` auto-detect; returns `ResolvedPaths`                              |
 | `server/config.rs`      | reads/writes `%APPDATA%/tarkov-checker/config.json`; rejects UNC paths                             |
 | `server/events.rs`      | `ServerEvent` enum + `tokio::sync::broadcast` channel for HTTP-side fan-out                        |
 | `watcher.rs`            | `WatcherSlot` state holder + `apply_resolved` that atomically swaps watcher handles                |
-| `auth.rs`               | bearer-token storage in Windows Credential Manager (dormant; LAN-mode wiring later)                |
-| `commands.rs`           | Tauri `#[tauri::command]` adapters mirroring the HTTP routes                                       |
+| `lan.rs`                | LAN IP detection for the QR pairing flow (multi-NIC heuristic — see `detect_lan_ip`)               |
+| `commands.rs`           | Tauri `#[tauri::command]` adapters mirroring the HTTP routes + `pairing_qr`                        |
 
-**HTTP routes** (all under `127.0.0.1:47474`):
+**Trust model: same Wi-Fi = trusted.** The helper always binds
+`0.0.0.0:47474`. No bearer-token auth — browser drive-by callers are
+gated by the `CorsLayer` Origin allowlist, and LAN-side
+curl-equivalents are unfiltered by design. See PLAN-LAN-AND-TRAY.md
+for the architectural reasoning.
+
+**HTTP routes** (all under `0.0.0.0:47474`):
 
 - `GET /api/ping` — public health probe (`{name, version, status}`).
 - `GET /api/config` — current `ResolvedPaths`. Origin-allowlisted via
-  `CorsLayer` (`http://localhost:5173` + future hosted-frontend
-  origin); same JSON shape as the Tauri `get_config` IPC command.
+  `CorsLayer` (Vite dev `:5173`, hosted GitHub Pages); same
+  JSON shape as the Tauri `get_config` IPC command.
 - `PUT /api/config` — apply `ConfigPatch`, re-run `apply_resolved`,
   return the new `ResolvedPaths`. UNC → 400 with `{error: "..."}`.
 - `GET /events` — Server-Sent Events stream. `ServerEvent` (tagged

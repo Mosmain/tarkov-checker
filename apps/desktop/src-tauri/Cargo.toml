@@ -33,25 +33,11 @@ tokio = { version = "1", features = ["sync", "rt", "time", "fs", "macros", "net"
 winreg = "0.52"
 once_cell = "1"
 regex = "1"
-# HTTP server for the future browser-as-frontend mode. Listens on
-# 127.0.0.1:47474 by default; the Tauri webview keeps using IPC. See
-# CLAUDE.md "Future architecture" section for the convergence plan.
+# HTTP server. Listens on 0.0.0.0:47474 — same-Wi-Fi trust model, no
+# bearer-token auth (browser-context callers are gated by the
+# CorsLayer Origin allowlist; native curl-equivalents on the LAN are
+# unfiltered by design).
 axum = "0.7"
-# Persistent storage of the HTTP auth token via Windows Credential Manager.
-# Cross-platform on paper (Keychain on macOS, Secret Service on Linux);
-# we lean on the Windows backend since EFT is Windows-only.
-#
-# `windows-native` feature is REQUIRED — keyring 3.x ships with an empty
-# default feature set and silently uses a no-op in-memory backend when
-# none is opted into. Without this flag set_password returns Ok(()) and
-# the value never reaches Credential Manager. (Was on by default in 2.x.)
-keyring = { version = "3", features = ["windows-native"] }
-# CSRPNG source for the 32-byte auth token. Tiny crate, just a wrapper
-# around BCryptGenRandom on Windows.
-getrandom = "0.2"
-# Constant-time comparison for the bearer token check. Same memcmp,
-# proof against timing side-channels on a network-reachable secret.
-subtle = "2"
 # Standard CORS middleware. Handles OPTIONS preflight, Access-Control-Allow-*
 # headers, and the Chrome "Private Network Access" header that public-origin
 # pages need when contacting localhost.
@@ -79,9 +65,9 @@ rust-embed = "8"
 # the browser parses index.html as HTML and .svg as image/svg+xml.
 mime_guess = "2"
 # QR-code generation for the phone pairing flow. The pairing_qr command
-# renders an SVG QR encoding the LAN URL + token; the webview displays
-# it inline. SVG scales without rasterisation and the encoded payload
-# is small (~256 bytes).
+# renders an SVG QR encoding the LAN URL; the webview displays it
+# inline. SVG scales without rasterisation and the encoded payload is
+# small (~256 bytes).
 qrcode = { version = "0.14", default-features = false, features = ["svg"] }
 # Detects the host's primary LAN IP (first non-loopback IPv4). Used by
 # pairing_qr to build the URL the QR encodes. Multi-NIC hosts can pick

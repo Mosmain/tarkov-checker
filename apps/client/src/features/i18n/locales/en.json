@@ -68,16 +68,16 @@
     "quickMenuTitle": "Transparency"
   },
   "pairing": {
-    "heading": "Phone pairing",
+    "heading": "Phone access",
     "sectionHint": "Show a QR for a phone in the same Wi-Fi to open the same map UI.",
     "open": "Show QR",
-    "title": "Pair phone",
-    "url": "Pairing URL",
+    "title": "Open on phone",
+    "url": "LAN URL",
     "copy": "Copy",
     "copied": "Copied",
-    "hint": "Scan with a phone in the same Wi-Fi. The phone opens the same map UI, paired automatically.",
+    "hint": "Scan with a phone in the same Wi-Fi. The map will open in the phone's browser.",
     "loading": "Generating QR code…",
-    "error": "Couldn't generate pairing QR"
+    "error": "Couldn't generate QR"
   },
   "hotkeys": {
     "heading": "Hotkeys",

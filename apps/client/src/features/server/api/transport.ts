@@ -10,7 +10,6 @@
  * so callers get a validated, typed result either way.
  */
 
-import { getAuthToken } from '@/shared/auth';
 import { apiBase } from '@/shared/config';
 import { isTauri } from '@/shared/tauri';
 import type { IpcContract } from './ipc-contract';
@@ -54,20 +53,9 @@ export async function callBackend<K extends keyof IpcContract>(
 async function httpRequest<T>(http: HttpCall, parse: (data: unknown) => T): Promise<T> {
   const method = http.method ?? 'GET';
   const qs = http.query ? '?' + new URLSearchParams(http.query).toString() : '';
-  const headers: Record<string, string> = {};
+  const init: RequestInit = { method };
   if (http.body !== undefined) {
-    headers['Content-Type'] = 'application/json';
-  }
-  // Attach the bearer token when we have one. The helper accepts the
-  // header on every route; it's only ENFORCED when LAN mode is on, so
-  // sending it in LAN-off mode is harmless. /api/ping uses the same
-  // header to compute its `paired` flag — see http_server.rs ping.
-  const token = getAuthToken();
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  const init: RequestInit = { method, headers };
-  if (http.body !== undefined) {
+    init.headers = { 'Content-Type': 'application/json' };
     init.body = JSON.stringify(http.body);
   }
   const r = await fetch(`${apiBase()}${http.path}${qs}`, init);

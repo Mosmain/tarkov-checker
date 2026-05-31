@@ -1,24 +1,11 @@
 name: Build overlay
 
-# Triggers:
-# - Manual (`workflow_dispatch`): PR-stage testing. Pick the branch in
-#   the GitHub UI; .exe ends up as an Actions artifact on the run page.
-# - Push to master: CI sanity check — builds + uploads artifact, but
-#   does NOT publish a GitHub Release. Master gets touched often, every
-#   merge isn't a release.
-# - Push of a v* tag: stable release, marked as Latest. This is the
-#   only path that creates entries in the Releases tab.
 on:
   workflow_dispatch:
   push:
     branches: [master]
     tags: ['v*']
 
-# Default-deny at workflow level. The build job overrides to write
-# because softprops/action-gh-release creates Releases on tag pushes.
-# Step-level permissions don't exist in GH Actions — job-level write
-# is the tightest scope available without splitting into build +
-# release jobs.
 permissions:
   contents: read
 
@@ -27,53 +14,35 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 30
     permissions:
-      contents: write # softprops/action-gh-release needs this to create Releases
+      contents: write
 
     steps:
       - uses: actions/checkout@v6
         with:
-          # apps/client/public/maps is a git submodule (the SVG maps).
-          # Vite bundles them as static assets — without the submodule
-          # the build "succeeds" but the overlay ships a broken map.
           submodules: recursive
 
       - uses: ./.github/actions/install-js
 
-      # MSVC + Rust stable are preinstalled on windows-latest; this just
-      # nails the channel and exposes `rustup` to subsequent steps.
       - uses: dtolnay/rust-toolchain@stable
 
-      # Caches ~/.cargo/registry + the project's target/ keyed on Cargo.lock.
-      # First run is slow (full compile, ~8-12 min); subsequent runs reuse
-      # everything not touched by the lockfile change (~3-5 min).
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: apps/desktop/src-tauri -> target
 
-      # Check that the Rust code is formatted according to rustfmt's rules.
-      # Run before the full build so format errors surface quickly without
-      # waiting 8-12 minutes for a complete compile.
       - name: Rust fmt check
         working-directory: apps/desktop/src-tauri
         run: cargo fmt --all -- --check
 
       - run: pnpm overlay:build
 
-      # Lint all targets (lib + bin + tests) in release mode.  The
-      # --release flag reuses the already-compiled artifacts from
-      # pnpm overlay:build, so this step is nearly instant on cache hits.
       - name: Rust clippy
         working-directory: apps/desktop/src-tauri
         run: cargo clippy --all-targets --release -- -D warnings
 
-      # Run unit tests compiled in release mode.  --no-fail-fast keeps
-      # going after the first failure so all broken tests show up at once.
       - name: Rust tests
         working-directory: apps/desktop/src-tauri
         run: cargo test --release --no-fail-fast
 
-      # Always upload as workflow artifact — lets manual/PR runs grab the
-      # .exe from the run page without going through Releases.
       - uses: actions/upload-artifact@v7
         with:
           name: tarkov-checker-desktop
@@ -81,8 +50,6 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
-      # Only v* tag pushes publish to the Releases tab. Master pushes
-      # and manual runs stop at the artifact-upload step above.
       - name: Publish release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v3
