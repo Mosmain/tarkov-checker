@@ -14,5 +14,10 @@ export const useOverlayStore = defineStore('overlay', () => {
   // unrecoverable, so the locked state is intentionally NOT persisted.
   const clickThrough = ref(false);
 
-  return { alwaysOnTop, opacity, mapOpacity, zoom, clickThrough };
+  // Pairing modal open/closed. Flipped by the tray's "Pair phone" item
+  // (E4) and read by PairingModal.vue mounted at App.vue. Not
+  // persisted — pairing is per-action, never "remembered open".
+  const pairingModalOpen = ref(false);
+
+  return { alwaysOnTop, opacity, mapOpacity, zoom, clickThrough, pairingModalOpen };
 });

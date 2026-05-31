@@ -5,28 +5,52 @@
  * helpers are only consulted when the page runs in a normal browser
  * tab.
  *
- * Dev mode (`pnpm dev` → `http://localhost:5173`): relative paths are
- * proxied to `http://localhost:47474` by `vite.config.ts`. Keeping the
- * URL same-origin avoids any preflight noise during local development.
+ * Three contexts to handle:
  *
- * Production (built SPA hosted on GitHub Pages, custom domain, anywhere
- * served as static): the page is cross-origin to the helper. We must
- * point straight at `http://localhost:47474` — the page's relative URL
- * would otherwise hit the hosting domain (which has no API). Browsers
- * allow the cross-origin call because `localhost` is a "potentially
- * trustworthy origin" per the Secure Contexts spec; CORS is handled by
- * the helper's `CorsLayer` (Origin allowlist + Private Network Access).
+ * 1. **Dev mode** (`pnpm dev` → `http://localhost:5173`): the SPA's
+ *    fetches use relative paths, Vite's `server.proxy` forwards them
+ *    to `http://localhost:47474`. Single-origin → no CORS, no
+ *    preflight noise.
+ * 2. **Helper-served SPA** (LAN-phone scenario, or a browser opening
+ *    `http://localhost:47474/` directly): the helper served the page
+ *    AND hosts the API at the same origin. Relative paths work.
+ *    Detected by checking `window.location.port === '47474'`.
+ * 3. **Externally hosted SPA** (GitHub Pages, custom domain): the
+ *    page is cross-origin to the helper. We point straight at
+ *    `http://localhost:47474` — browsers allow this because
+ *    `localhost` is a "potentially trustworthy origin" per the Secure
+ *    Contexts spec; CORS is handled by the helper's `CorsLayer`
+ *    (Origin allowlist + Private Network Access opt-in).
  *
- * The constant is fixed because the helper's listen address is fixed
- * (`127.0.0.1:47474`, see `apps/desktop/src-tauri/src/http_server.rs`).
+ * The helper's listen port is fixed (`47474`, see
+ * `apps/desktop/src-tauri/src/http_server.rs::LISTEN_PORT`).
  */
 
-const HELPER_BASE_URL = 'http://localhost:47474';
+const HELPER_PORT = '47474';
+const HELPER_BASE_URL = `http://localhost:${HELPER_PORT}`;
+
+/**
+ * True when the current page was served by the helper itself, so the
+ * API is reachable at relative paths. Holds for the LAN-phone case
+ * (`http://<lan-ip>:47474/`) AND the same-machine local-browser case
+ * (`http://localhost:47474/`).
+ *
+ * Crucial on phones: a phone at `http://192.168.0.199:47474/` cannot
+ * reach `http://localhost:47474/api/...` (its `localhost` is the
+ * phone itself). Relative paths route back to the helper that served
+ * the SPA in the first place — works regardless of which IP the
+ * phone actually used.
+ */
+function isHelperServed(): boolean {
+  return typeof window !== 'undefined' && window.location.port === HELPER_PORT;
+}
 
 export function apiBase(): string {
-  return import.meta.env.PROD ? HELPER_BASE_URL : '';
+  if (!import.meta.env.PROD) return ''; // dev: Vite proxy
+  if (isHelperServed()) return ''; // same-origin to the helper
+  return HELPER_BASE_URL; // hosted page → cross-origin to localhost helper
 }
 
 export function eventsUrl(): string {
-  return import.meta.env.PROD ? `${HELPER_BASE_URL}/events` : '/events';
+  return `${apiBase()}/events`;
 }

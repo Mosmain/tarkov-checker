@@ -10,7 +10,7 @@ export interface SettingsSection {
   group: SectionGroup;
   /** Ascending; use multiples of 10 so future insertions fit between existing entries.
    * main: 10 map, 20 extracts, 30 player, 40 airdrop, 50 overlay, 60 hotkeys
-   * system: 10 language, 20 paths */
+   * system: 10 language, 20 paths, 30 pairing */
   order: number;
   visible?: SectionVisibility;
   /** Sync `Component` or `defineAsyncComponent(() => import('...'))` —

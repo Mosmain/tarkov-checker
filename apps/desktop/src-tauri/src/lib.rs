@@ -1,6 +1,7 @@
 mod auth;
 mod commands;
 mod http_server;
+mod lan;
 mod server;
 mod watcher;
 
@@ -21,6 +22,7 @@ pub fn run() {
             commands::get_auth_token,
             commands::get_config,
             commands::update_config,
+            commands::pairing_qr,
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();

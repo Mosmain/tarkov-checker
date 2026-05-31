@@ -19,6 +19,14 @@ pub struct StoredConfig {
     pub game_dir: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub screenshots_dir: Option<String>,
+    /// LAN-phone unlock. When `true`, the HTTP server binds `0.0.0.0`
+    /// instead of `127.0.0.1` AND applies bearer-token auth to the
+    /// state-changing routes. Default `false` — loopback-only, no auth.
+    ///
+    /// Toggled via the tray menu, applied on restart (not live-rebind).
+    /// See PLAN-LAN-AND-TRAY.md "Restart-on-config-change".
+    #[serde(default)]
+    pub lan_mode: bool,
 }
 
 /// PUT body. Each field is optional; only the keys present are updated.
@@ -58,6 +66,24 @@ impl ConfigStore {
             game_dir: s.game_dir.clone(),
             screenshots_dir: s.screenshots_dir.clone(),
         }
+    }
+
+    /// Snapshot of the current LAN-mode flag. Cheap (one Mutex lock,
+    /// one bool read) — caller can poll it freely.
+    pub async fn is_lan_mode(&self) -> bool {
+        self.state.lock().await.lan_mode
+    }
+
+    /// Persist a new LAN-mode value. The HTTP server does NOT pick this
+    /// up until the next process start — see PLAN-LAN-AND-TRAY.md
+    /// "Restart-on-config-change" for the reasoning.
+    #[allow(dead_code)] // wired in when the tray "Enable LAN mode" lands (E5)
+    pub async fn set_lan_mode(&self, value: bool) -> Result<()> {
+        {
+            let mut s = self.state.lock().await;
+            s.lan_mode = value;
+        }
+        self.persist().await
     }
 
     pub async fn apply(&self, patch: ConfigPatch) -> Result<()> {

@@ -63,6 +63,31 @@ tokio-stream = { version = "0.1", features = ["sync"] }
 # Result<Sse::Event, _> shape axum's Sse wants. Tiny crate, already
 # transitively pulled by axum/tokio-stream — exposing it directly.
 futures-util = { version = "0.3", default-features = false, features = ["std"] }
+# Embed apps/client/dist/ into the .exe so the helper can serve the SPA
+# same-origin to any browser that hits it (LAN-phone scenario, hosted-
+# page-served-from-helper). Debug builds read from disk at request time
+# (HMR-like); release builds bake the bytes in.
+#
+# `compression` feature is NOT enabled — it pulls in zstd-sys which
+# crashes rustc with STATUS_ACCESS_VIOLATION on this Windows host
+# (see CLAUDE.md "Windows build quirks"). Raw embed adds ~3 MB to the
+# .exe (uncompressed dist size). Re-evaluate once D2-E lands and the
+# binary is back in CI — CI is reliable enough to take the hit.
+rust-embed = "8"
+# Maps file extensions to MIME types for the SPA fallback handler. The
+# embed crate gives us bytes; this gives us the right Content-Type so
+# the browser parses index.html as HTML and .svg as image/svg+xml.
+mime_guess = "2"
+# QR-code generation for the phone pairing flow. The pairing_qr command
+# renders an SVG QR encoding the LAN URL + token; the webview displays
+# it inline. SVG scales without rasterisation and the encoded payload
+# is small (~256 bytes).
+qrcode = { version = "0.14", default-features = false, features = ["svg"] }
+# Detects the host's primary LAN IP (first non-loopback IPv4). Used by
+# pairing_qr to build the URL the QR encodes. Multi-NIC hosts can pick
+# the wrong interface (Hyper-V switch, WSL2 vNIC) — the pairing modal
+# surfaces the picked value so the user notices.
+local-ip-address = "0.6"
 
 [dev-dependencies]
 # `oneshot` extension on Router for unit-testing handlers in-process —

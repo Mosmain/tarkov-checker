@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import MapQuickMenu from '@/features/overlay/components/MapQuickMenu.vue';
+import PairingModal from '@/features/overlay/components/PairingModal.vue';
 import { useServerTransport } from '@/features/server/composables/useServerTransport';
 import { provideTransportStatus } from '@/features/server/composables/useTransportStatus';
 import { useOverlayStore } from '@/features/overlay/store';
@@ -51,6 +52,13 @@ function onMapContextMenu(event: MouseEvent): void {
 <template>
   <ConfirmDialog />
   <MapQuickMenu ref="quickMenu" />
+  <!--
+    PairingModal only makes sense inside the Tauri webview — its
+    `invoke('pairing_qr')` call needs the IPC bridge. In a plain
+    browser context the modal would just error on open, so we don't
+    mount it at all there.
+  -->
+  <PairingModal v-if="isTauri" />
   <div
     class="relative h-screen w-screen text-surface-0"
     :class="isTauri ? '' : 'bg-surface-950'"
