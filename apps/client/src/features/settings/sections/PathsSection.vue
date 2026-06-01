@@ -64,6 +64,7 @@ const {
             :readonly="!canEditPaths"
             size="small"
             fluid
+            @keyup.enter="canSavePaths && savePaths()"
           />
         </IconField>
       </div>
@@ -82,6 +83,7 @@ const {
             :readonly="!canEditPaths"
             size="small"
             fluid
+            @keyup.enter="canSavePaths && savePaths()"
           />
         </IconField>
       </div>

@@ -11,6 +11,7 @@ import { useTrayIcon } from '@/features/overlay/composables/useTrayIcon';
 import { useOverlayBootstrap } from '@/features/overlay/composables/useOverlayBootstrap';
 import { useAutoMapSwitch } from '@/features/map/composables/useAutoMapSwitch';
 import { eventsUrl } from '@/shared/config';
+import { useConfirm } from 'primevue/useconfirm';
 
 const { clickThrough: overlayClickThrough } = storeToRefs(useOverlayStore());
 const { lockHotkey } = storeToRefs(useHotkeysStore());
@@ -35,7 +36,16 @@ useGlobalShortcut(isTauri, lockHotkey, () => {
 useOverlayBootstrap(overlayClickThrough);
 useTrayIcon(isTauri, overlayClickThrough);
 
+const confirm = useConfirm();
 const quickMenu = ref<InstanceType<typeof MapQuickMenu> | null>(null);
+
+// Close transient UI when the overlay locks so click-through can't strand them.
+watch(overlayClickThrough, (locked) => {
+  if (locked) {
+    confirm.close();
+    quickMenu.value?.close();
+  }
+});
 
 // Right-click anywhere over the Leaflet canvas opens the transparency panel.
 // Lives at the app root so the same gesture works regardless of which route

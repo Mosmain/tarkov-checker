@@ -25,6 +25,26 @@ const MODIFIER_DISPLAY: Readonly<Record<string, string>> = {
 /** Display labels for non-modifier main keys. Anything not listed falls back
  *  to an uppercased version of the token. */
 const KEY_DISPLAY: Readonly<Record<string, string>> = {
+  // Canonical numpad tokens — equal to KeyboardEvent.code, accepted verbatim
+  // by the global-hotkey crate (it uppercases before matching).
+  Numpad0: 'Num 0',
+  Numpad1: 'Num 1',
+  Numpad2: 'Num 2',
+  Numpad3: 'Num 3',
+  Numpad4: 'Num 4',
+  Numpad5: 'Num 5',
+  Numpad6: 'Num 6',
+  Numpad7: 'Num 7',
+  Numpad8: 'Num 8',
+  Numpad9: 'Num 9',
+  NumpadAdd: 'Num +',
+  NumpadSubtract: 'Num -',
+  NumpadMultiply: 'Num *',
+  NumpadDivide: 'Num /',
+  NumpadDecimal: 'Num .',
+  NumpadEnter: 'Num ↵',
+  // Legacy short tokens — only num0-9/numadd ever persisted (the others
+  // reverted on a failed register), kept so old binds still render right.
   num0: 'Num 0',
   num1: 'Num 1',
   num2: 'Num 2',
@@ -36,10 +56,6 @@ const KEY_DISPLAY: Readonly<Record<string, string>> = {
   num8: 'Num 8',
   num9: 'Num 9',
   numadd: 'Num +',
-  numsub: 'Num -',
-  nummult: 'Num *',
-  numdiv: 'Num /',
-  numdec: 'Num .',
   Up: '↑',
   Down: '↓',
   Left: '←',
@@ -56,7 +72,28 @@ const KEY_DISPLAY: Readonly<Record<string, string>> = {
   PageDown: 'PgDn',
 };
 
-const MODIFIER_KEYS = new Set(['Control', 'Alt', 'Shift', 'Meta', 'OS']);
+// `AltGraph` is what right-Alt reports on AltGr layouts.
+const MODIFIER_KEYS = new Set(['Control', 'Alt', 'AltGraph', 'Shift', 'Meta', 'OS']);
+
+// Physical modifier codes — matching on `event.code` is layout-independent, so
+// right-Alt (code "AltRight", key "AltGraph") is treated as a held modifier
+// rather than misread as a bad main key.
+const MODIFIER_CODES = new Set([
+  'ControlLeft',
+  'ControlRight',
+  'AltLeft',
+  'AltRight',
+  'ShiftLeft',
+  'ShiftRight',
+  'MetaLeft',
+  'MetaRight',
+  'OSLeft',
+  'OSRight',
+]);
+
+/** Window event the recorder fires so live registrations re-claim their combo
+ *  even when the value is unchanged (a same-value write doesn't trip a watch). */
+export const HOTKEY_REAPPLY_EVENT = 'tc:hotkey-reapply';
 
 /**
  * Split an accelerator string into display-friendly parts (e.g. for rendering
@@ -91,7 +128,7 @@ export function captureHotkey(event: KeyboardEvent): CaptureResult {
     return { combo: null, cancelled: true, error: null };
   }
   // Holding only modifiers — wait for the main key.
-  if (MODIFIER_KEYS.has(event.key)) {
+  if (MODIFIER_KEYS.has(event.key) || MODIFIER_CODES.has(event.code)) {
     return { combo: null, cancelled: false, error: null };
   }
 
@@ -122,24 +159,29 @@ export function captureHotkey(event: KeyboardEvent): CaptureResult {
 
 // `KeyboardEvent.code` → Tauri accelerator token for non-letter/digit/F keys.
 const CODE_TO_ACCEL: Readonly<Record<string, string>> = {
-  // Numpad digits
-  Numpad0: 'num0',
-  Numpad1: 'num1',
-  Numpad2: 'num2',
-  Numpad3: 'num3',
-  Numpad4: 'num4',
-  Numpad5: 'num5',
-  Numpad6: 'num6',
-  Numpad7: 'num7',
-  Numpad8: 'num8',
-  Numpad9: 'num9',
-  // Numpad operators
-  NumpadAdd: 'numadd',
-  NumpadSubtract: 'numsub',
-  NumpadMultiply: 'nummult',
-  NumpadDivide: 'numdiv',
-  NumpadDecimal: 'numdec',
-  NumpadEnter: 'Enter',
+  // Numpad keys: emit the canonical W3C code (== KeyboardEvent.code). The
+  // global-hotkey crate uppercases and matches these verbatim; the old short
+  // tokens (numsub/nummult/numdiv/numdec) were NOT in its alias table, so they
+  // failed to register and silently reverted — only numadd/num0-9 happened to
+  // have aliases. Passing the canonical code makes every numpad key work.
+  Numpad0: 'Numpad0',
+  Numpad1: 'Numpad1',
+  Numpad2: 'Numpad2',
+  Numpad3: 'Numpad3',
+  Numpad4: 'Numpad4',
+  Numpad5: 'Numpad5',
+  Numpad6: 'Numpad6',
+  Numpad7: 'Numpad7',
+  Numpad8: 'Numpad8',
+  Numpad9: 'Numpad9',
+  NumpadAdd: 'NumpadAdd',
+  NumpadSubtract: 'NumpadSubtract',
+  NumpadMultiply: 'NumpadMultiply',
+  NumpadDivide: 'NumpadDivide',
+  NumpadDecimal: 'NumpadDecimal',
+  // Distinct from main Enter — registering 'Enter' here would never fire on the
+  // numpad key the user actually pressed.
+  NumpadEnter: 'NumpadEnter',
   // Punctuation (literal character tokens accepted by Tauri/Electron accel)
   Slash: '/',
   Backslash: '\\',

@@ -54,8 +54,62 @@ pub fn run() {
                 app_handle: app_handle.clone(),
             });
 
+            // Clamp restored window onto a visible monitor (handles 2K→FHD moves).
+            if let Some(win) = app.get_webview_window("main") {
+                clamp_window_to_monitor(&win);
+            }
+
             Ok(())
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+/// Reposition the window if the window-state plugin restored coordinates that
+/// land off every current monitor (monitor layout changed between sessions).
+fn clamp_window_to_monitor(window: &tauri::WebviewWindow) {
+    const MIN_OVERLAP: i32 = 48;
+
+    let Ok(pos) = window.outer_position() else { return };
+    let Ok(size) = window.outer_size() else { return };
+    let Ok(monitors) = window.available_monitors() else { return };
+
+    if monitors.is_empty() {
+        return;
+    }
+
+    let wx1 = pos.x;
+    let wy1 = pos.y;
+    let wx2 = wx1 + size.width as i32;
+    let wy2 = wy1 + size.height as i32;
+
+    let on_screen = monitors.iter().any(|m| {
+        let mx1 = m.position().x;
+        let my1 = m.position().y;
+        let mx2 = mx1 + m.size().width as i32;
+        let my2 = my1 + m.size().height as i32;
+
+        let ix = (wx2.min(mx2) - wx1.max(mx1)).max(0);
+        let iy = (wy2.min(my2) - wy1.max(my1)).max(0);
+        ix >= MIN_OVERLAP && iy >= MIN_OVERLAP
+    });
+
+    if on_screen {
+        return;
+    }
+
+    // Pick primary → first available → current.
+    let target = window
+        .primary_monitor()
+        .ok()
+        .flatten()
+        .or_else(|| monitors.into_iter().next())
+        .or_else(|| window.current_monitor().ok().flatten());
+
+    if let Some(m) = target {
+        const MARGIN: i32 = 40;
+        let nx = m.position().x + MARGIN;
+        let ny = m.position().y + MARGIN;
+        let _ = window.set_position(tauri::PhysicalPosition::new(nx, ny));
+    }
 }

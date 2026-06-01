@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { captureHotkey, formatHotkeyParts } from '../lib/hotkey';
+import { captureHotkey, formatHotkeyParts, HOTKEY_REAPPLY_EVENT } from '../lib/hotkey';
 
 const props = defineProps<{
   /** Current accelerator string (e.g. "CommandOrControl+Alt+L"). */
@@ -16,8 +16,16 @@ const { t } = useI18n();
 
 const recording = ref(false);
 const error = ref<'invalid' | null>(null);
+const applied = ref(false);
+let appliedTimer: ReturnType<typeof setTimeout> | undefined;
 
 const displayParts = computed(() => formatHotkeyParts(props.modelValue));
+
+function flashApplied(): void {
+  applied.value = true;
+  clearTimeout(appliedTimer);
+  appliedTimer = setTimeout(() => (applied.value = false), 1200);
+}
 
 // Module-level guard so only one recorder is active across all instances —
 // if a recorder is already listening, starting another one stops the first.
@@ -52,13 +60,21 @@ function onKey(event: KeyboardEvent): void {
     return;
   }
   if (result.combo) {
+    const unchanged = result.combo === props.modelValue;
     emit('update:modelValue', result.combo);
     error.value = null;
+    flashApplied();
+    // Same value won't trip the registration watch — broadcast a re-apply so
+    // the binding is re-claimed and the user sees it took.
+    if (unchanged) window.dispatchEvent(new Event(HOTKEY_REAPPLY_EVENT));
     stopRecording();
   }
 }
 
-onBeforeUnmount(() => stopRecording());
+onBeforeUnmount(() => {
+  stopRecording();
+  clearTimeout(appliedTimer);
+});
 </script>
 
 <script lang="ts">
@@ -80,8 +96,8 @@ let currentRecorder: { cancel: () => void } | null = null;
       />
     </div>
     <div
-      class="inline-flex items-center gap-1 rounded-md bg-surface-900/60 px-2 py-1.5 text-[11px] font-semibold tracking-wider"
-      :class="recording ? 'ring-2 ring-primary' : ''"
+      class="inline-flex items-center gap-1 rounded-md bg-surface-900/60 px-2 py-1.5 text-[11px] font-semibold tracking-wider transition-shadow"
+      :class="recording ? 'ring-2 ring-primary' : applied ? 'ring-2 ring-green-500' : ''"
     >
       <template v-if="recording">
         <span class="opacity-70">{{ t('hotkeys.recordingPrompt') }}</span>
@@ -93,6 +109,7 @@ let currentRecorder: { cancel: () => void } | null = null;
           </span>
           <span v-if="idx < displayParts.length - 1" class="px-1 opacity-60">+</span>
         </span>
+        <i v-if="applied" class="pi pi-check ml-1 text-green-500" />
       </template>
     </div>
     <p v-if="error === 'invalid'" class="mt-1.5 text-[10px] leading-relaxed text-amber-400">

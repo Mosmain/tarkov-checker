@@ -34,6 +34,12 @@ useEventListener(window, 'keydown', (e) => {
   if (e.key === 'Escape' && position.value) close();
 });
 
+// Close when the overlay loses focus or is hidden (e.g. Alt+Tab, lock).
+useEventListener(window, 'blur', () => close());
+useEventListener(document, 'visibilitychange', () => {
+  if (document.visibilityState === 'hidden') close();
+});
+
 defineExpose({ open, close });
 </script>
 

@@ -1,3 +1,5 @@
+import { HOTKEY_REAPPLY_EVENT } from '../lib/hotkey';
+
 /**
  * Register a Tauri global shortcut that mirrors a reactive combo string. On
  * mount we register the current combo; on every change the old combo is
@@ -15,6 +17,10 @@ export function useGlobalShortcut(isTauri: boolean, combo: Ref<string>, action: 
 
   async function tryRegister(next: string): Promise<boolean> {
     if (!isTauri) return false;
+    // Re-applying the already-active combo is a success, not a churn: skip the
+    // unregister→register dance so it can't transiently fail and trigger a
+    // misleading revert.
+    if (next === registered) return true;
     const { register, unregister } = await import('@tauri-apps/plugin-global-shortcut');
     if (registered) {
       try {
@@ -47,6 +53,13 @@ export function useGlobalShortcut(isTauri: boolean, combo: Ref<string>, action: 
   }
 
   onMounted(() => {
+    void tryRegister(combo.value);
+  });
+
+  // Re-recording an identical combo doesn't change the ref, so the watch below
+  // never fires. The recorder broadcasts this event to force a re-claim — a
+  // no-op if already active, a recovery if a prior register failed.
+  useEventListener(window, HOTKEY_REAPPLY_EVENT, () => {
     void tryRegister(combo.value);
   });
 
