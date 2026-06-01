@@ -135,12 +135,14 @@ export function captureHotkey(event: KeyboardEvent): CaptureResult {
     return { combo: null, cancelled: false, error: null };
   }
 
-  // AltGr (right Alt on many layouts, e.g. Russian) is delivered to Windows
-  // global shortcuts as Ctrl+Alt — there is no distinct "right Alt" modifier —
-  // and its altKey/ctrlKey flags are unreliable, so key off AltGraph directly.
+  // Right Alt on layouts like Russian is AltGr, which injects a synthetic Ctrl.
+  // Record it as plain Alt (drop that Ctrl) so the bind stays layout-stable: on
+  // an English layout the same physical key is a plain Alt, and a Ctrl+Alt bind
+  // would silently stop firing there. Global hotkeys can't tell left/right Alt
+  // apart anyway, so "Alt" is the honest, portable representation.
   const altGraph = event.getModifierState('AltGraph');
   const mods: string[] = [];
-  if (event.ctrlKey || event.metaKey || altGraph) mods.push('CommandOrControl');
+  if (!altGraph && (event.ctrlKey || event.metaKey)) mods.push('CommandOrControl');
   if (event.altKey || altGraph) mods.push('Alt');
   if (event.shiftKey) mods.push('Shift');
 

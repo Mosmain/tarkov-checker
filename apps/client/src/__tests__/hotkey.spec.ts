@@ -140,9 +140,10 @@ describe('captureHotkey — validation', () => {
     }
   });
 
-  it('AltGr + key maps to Ctrl+Alt (how Windows delivers it)', () => {
-    // RU layout: AltGr reports key="AltGraph", altKey/ctrlKey flags unreliable.
-    expect(captureHotkey(ev('KeyZ', { altGraph: true })).combo).toBe('CommandOrControl+Alt+Z');
+  it('AltGr (right Alt) records as plain Alt, dropping the synthetic Ctrl', () => {
+    // RU layout: AltGr reports key="AltGraph" and injects a synthetic Ctrl. We
+    // strip it so the bind stays layout-stable (right Alt is plain Alt on EN).
+    expect(captureHotkey(ev('KeyZ', { altGraph: true, ctrl: true })).combo).toBe('Alt+Z');
   });
 
   it('unmapped keys are rejected', () => {
