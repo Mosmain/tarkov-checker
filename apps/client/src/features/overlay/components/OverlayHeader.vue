@@ -38,38 +38,42 @@ async function startDrag(event: MouseEvent): Promise<void> {
 </script>
 
 <template>
-  <!-- Dedicated drag handle, top-left: an obvious grab target so dragging
-       isn't a hidden affordance on the status pill. Tauri + unlocked only. -->
+  <!-- Drag bar, top-center: a subtle grabber that expands on hover into a bar
+       with the map name. The whole strip is the drag region — `group` drives
+       the reveal so the idle hint stays tiny and the map stays unobstructed.
+       Tauri + unlocked only. -->
   <div
     v-if="isTauri && !overlayClickThrough"
-    class="absolute top-3 left-3 z-[1000] flex h-7 w-7 cursor-grab items-center justify-center rounded-md bg-surface-800/70 text-surface-0 backdrop-blur select-none active:cursor-grabbing"
-    :title="t('overlay.move')"
-    :aria-label="t('overlay.move')"
+    class="group absolute top-0 left-1/2 z-[1000] flex -translate-x-1/2 justify-center px-6 pt-1.5 pb-2.5"
     @mousedown="startDrag"
   >
-    <i class="pi pi-bars text-sm pointer-events-none" />
+    <div
+      :title="t('overlay.move')"
+      :aria-label="t('overlay.move')"
+      class="flex h-1.5 max-w-[2.5rem] cursor-grab items-center gap-1.5 overflow-hidden whitespace-nowrap rounded-full bg-surface-700/75 px-2 text-surface-0 backdrop-blur transition-all duration-200 ease-out select-none active:cursor-grabbing group-hover:h-7 group-hover:max-w-[16rem] group-hover:bg-surface-800/85 group-hover:px-3"
+    >
+      <i
+        class="pi pi-bars shrink-0 text-xs opacity-0 transition-opacity duration-150 group-hover:opacity-100 pointer-events-none"
+      />
+      <span
+        class="text-xs font-medium opacity-0 transition-opacity duration-150 group-hover:opacity-100 pointer-events-none"
+        >{{ mapDisplayName }}</span
+      >
+    </div>
   </div>
 
   <div class="absolute top-3 right-3 z-[1000] flex items-center gap-2">
-    <!-- Unlocked: full pill with status dot + map name, also the drag handle. -->
+    <!-- Browser: status dot + map name (no window drag there). Tauri: compact
+         status dot only — the map name lives in the drag bar, and the locked
+         state needs nothing but the connection state. -->
     <span
-      v-if="!overlayClickThrough"
-      class="inline-flex items-center gap-2 rounded-md bg-surface-800/70 px-3 py-1 text-sm font-medium text-surface-0 backdrop-blur select-none"
-      :class="isTauri ? 'cursor-grab active:cursor-grabbing' : 'pointer-events-none'"
-      @mousedown="startDrag"
+      v-if="!isTauri"
+      class="inline-flex items-center gap-2 rounded-md bg-surface-800/70 px-3 py-1 text-sm font-medium text-surface-0 backdrop-blur pointer-events-none select-none"
     >
-      <i
-        :class="['text-[10px] pointer-events-none', statusIconClass]"
-        :title="'ws: ' + status"
-        aria-hidden="true"
-      />
-      <span class="pointer-events-none">{{ mapDisplayName }}</span>
+      <i :class="['text-[10px]', statusIconClass]" :title="'ws: ' + status" aria-hidden="true" />
+      <span>{{ mapDisplayName }}</span>
       <span class="sr-only" aria-live="polite">Connection: {{ status }}</span>
     </span>
-    <!-- Locked overlay: collapse the pill to a single status dot. Map name
-         is redundant once the player has set up the overlay; only the
-         connection state is worth pixel-budget when the window is otherwise
-         frozen. -->
     <span
       v-else
       class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-surface-800/70 backdrop-blur pointer-events-none"
