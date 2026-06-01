@@ -27,36 +27,64 @@ const statusIconClass = computed(() => {
   }
 });
 
-// Drag region — explicit @mousedown rather than data-tauri-drag-region,
-// which is flaky on decorations:false + transparent:true windows.
+// The bar expands on hover and must STAY expanded while dragging — the OS move
+// loop steals pointer events, so `:hover` drops the instant the drag starts.
+// Track dragging explicitly; clear it on release (mouseup, or the first
+// button-less mousemove as a fallback if the OS swallowed the mouseup).
+const hovered = ref(false);
+const dragging = ref(false);
+const dragBarActive = computed(() => hovered.value || dragging.value);
+
+function endDrag(): void {
+  dragging.value = false;
+  window.removeEventListener('mouseup', endDrag);
+  window.removeEventListener('mousemove', onDragMove);
+}
+
+function onDragMove(event: MouseEvent): void {
+  if (event.buttons === 0) endDrag();
+}
+
+// Explicit @mousedown rather than data-tauri-drag-region, which is flaky on
+// decorations:false + transparent:true windows.
 async function startDrag(event: MouseEvent): Promise<void> {
   if (!props.isTauri) return;
   if (event.button !== 0) return;
+  dragging.value = true;
+  window.addEventListener('mouseup', endDrag);
+  window.addEventListener('mousemove', onDragMove);
   const { getCurrentWindow } = await import('@tauri-apps/api/window');
   await getCurrentWindow().startDragging();
 }
+
+onBeforeUnmount(endDrag);
 </script>
 
 <template>
-  <!-- Drag bar, top-center: a subtle grabber that expands on hover into a bar
-       with the map name. The whole strip is the drag region — `group` drives
-       the reveal so the idle hint stays tiny and the map stays unobstructed.
-       Tauri + unlocked only. -->
+  <!-- Full-width drag bar at the top. The whole strip is the drag region, so
+       the window can still be grabbed back when it's been dragged mostly past a
+       screen edge. A faint idle line expands into a labelled bar on hover and
+       STAYS expanded while dragging. Tauri + unlocked only. -->
   <div
     v-if="isTauri && !overlayClickThrough"
-    class="group absolute top-0 left-1/2 z-[1000] flex -translate-x-1/2 justify-center px-6 pt-1.5 pb-2.5"
+    class="absolute top-0 right-0 left-0 z-[1000] flex h-6 items-start"
     @mousedown="startDrag"
+    @mouseenter="hovered = true"
+    @mouseleave="hovered = false"
   >
     <div
       :title="t('overlay.move')"
       :aria-label="t('overlay.move')"
-      class="flex h-1.5 max-w-[2.5rem] cursor-grab items-center gap-1.5 overflow-hidden whitespace-nowrap rounded-full bg-surface-700/75 px-2 text-surface-0 backdrop-blur transition-all duration-200 ease-out select-none active:cursor-grabbing group-hover:h-7 group-hover:max-w-[16rem] group-hover:bg-surface-800/85 group-hover:px-3"
+      class="flex w-full cursor-grab items-center justify-center gap-1.5 overflow-hidden rounded-t-xl text-surface-0 backdrop-blur transition-all duration-200 ease-out select-none active:cursor-grabbing"
+      :class="dragBarActive ? 'h-6 bg-surface-800/85' : 'h-1.5 bg-surface-700/55'"
     >
       <i
-        class="pi pi-bars shrink-0 text-xs opacity-0 transition-opacity duration-150 group-hover:opacity-100 pointer-events-none"
+        class="pi pi-bars shrink-0 text-xs transition-opacity duration-150 pointer-events-none"
+        :class="dragBarActive ? 'opacity-100' : 'opacity-0'"
       />
       <span
-        class="text-xs font-medium opacity-0 transition-opacity duration-150 group-hover:opacity-100 pointer-events-none"
+        class="text-xs font-medium whitespace-nowrap transition-opacity duration-150 pointer-events-none"
+        :class="dragBarActive ? 'opacity-100' : 'opacity-0'"
         >{{ mapDisplayName }}</span
       >
     </div>
