@@ -135,9 +135,13 @@ export function captureHotkey(event: KeyboardEvent): CaptureResult {
     return { combo: null, cancelled: false, error: null };
   }
 
+  // AltGr (right Alt on many layouts, e.g. Russian) is delivered to Windows
+  // global shortcuts as Ctrl+Alt — there is no distinct "right Alt" modifier —
+  // and its altKey/ctrlKey flags are unreliable, so key off AltGraph directly.
+  const altGraph = event.getModifierState('AltGraph');
   const mods: string[] = [];
-  if (event.ctrlKey || event.metaKey) mods.push('CommandOrControl');
-  if (event.altKey) mods.push('Alt');
+  if (event.ctrlKey || event.metaKey || altGraph) mods.push('CommandOrControl');
+  if (event.altKey || altGraph) mods.push('Alt');
   if (event.shiftKey) mods.push('Shift');
 
   const mainKey = normalizeMainKey(event);

@@ -21,16 +21,8 @@ const { t } = useI18n();
 
 const recording = ref(false);
 const error = ref<'invalid' | null>(null);
-const applied = ref(false);
-let appliedTimer: ReturnType<typeof setTimeout> | undefined;
 
 const displayParts = computed(() => formatHotkeyParts(props.modelValue));
-
-function flashApplied(): void {
-  applied.value = true;
-  clearTimeout(appliedTimer);
-  appliedTimer = setTimeout(() => (applied.value = false), 1200);
-}
 
 // Module-level guard so only one recorder is active across all instances —
 // if a recorder is already listening, starting another one stops the first.
@@ -72,17 +64,13 @@ function onKey(event: KeyboardEvent): void {
   if (result.combo) {
     emit('update:modelValue', result.combo);
     error.value = null;
-    flashApplied();
     // stopRecording() resumes registration, re-claiming the combo even when the
     // value is unchanged (a same-value write never trips the registration watch).
     stopRecording();
   }
 }
 
-onBeforeUnmount(() => {
-  stopRecording();
-  clearTimeout(appliedTimer);
-});
+onBeforeUnmount(() => stopRecording());
 </script>
 
 <script lang="ts">
@@ -104,8 +92,8 @@ let currentRecorder: { cancel: () => void } | null = null;
       />
     </div>
     <div
-      class="inline-flex items-center gap-1 rounded-md bg-surface-900/60 px-2 py-1.5 text-[11px] font-semibold tracking-wider transition-shadow"
-      :class="recording ? 'ring-2 ring-primary' : applied ? 'ring-2 ring-green-500' : ''"
+      class="inline-flex items-center gap-1 rounded-md bg-surface-900/60 px-2 py-1.5 text-[11px] font-semibold tracking-wider"
+      :class="recording ? 'ring-2 ring-primary' : ''"
     >
       <template v-if="recording">
         <span class="opacity-70">{{ t('hotkeys.recordingPrompt') }}</span>
@@ -117,7 +105,6 @@ let currentRecorder: { cancel: () => void } | null = null;
           </span>
           <span v-if="idx < displayParts.length - 1" class="px-1 opacity-60">+</span>
         </span>
-        <i v-if="applied" class="pi pi-check ml-1 text-green-500" />
       </template>
     </div>
     <p v-if="error === 'invalid'" class="mt-1.5 text-[10px] leading-relaxed text-amber-400">

@@ -32,6 +32,7 @@ interface Mods {
   alt?: boolean;
   shift?: boolean;
   meta?: boolean;
+  altGraph?: boolean;
 }
 
 function ev(code: string, mods: Mods = {}, key = ''): KeyboardEvent {
@@ -42,6 +43,7 @@ function ev(code: string, mods: Mods = {}, key = ''): KeyboardEvent {
     altKey: !!mods.alt,
     shiftKey: !!mods.shift,
     metaKey: !!mods.meta,
+    modifierAltGraph: !!mods.altGraph,
   });
 }
 
@@ -136,6 +138,11 @@ describe('captureHotkey — validation', () => {
     for (const code of ['ShiftRight', 'ControlRight', 'MetaRight']) {
       expect(captureHotkey(ev(code, { shift: true })).error).toBeNull();
     }
+  });
+
+  it('AltGr + key maps to Ctrl+Alt (how Windows delivers it)', () => {
+    // RU layout: AltGr reports key="AltGraph", altKey/ctrlKey flags unreliable.
+    expect(captureHotkey(ev('KeyZ', { altGraph: true })).combo).toBe('CommandOrControl+Alt+Z');
   });
 
   it('unmapped keys are rejected', () => {
