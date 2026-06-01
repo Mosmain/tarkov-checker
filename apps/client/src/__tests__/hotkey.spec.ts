@@ -121,14 +121,13 @@ describe('captureHotkey — validation', () => {
     expect(r.error).toBeNull();
   });
 
-  it('right Alt as AltGraph waits, not "invalid"', () => {
-    // AltGr layouts report key="AltGraph" (not in MODIFIER_KEYS) — the code match saves it.
-    const r = captureHotkey(ev('AltRight', { ctrl: true, alt: true }, 'AltGraph'));
+  it('right Alt as AltGr is rejected (too layout-unstable to bind)', () => {
+    const r = captureHotkey(ev('AltRight', { altGraph: true }, 'AltGraph'));
     expect(r.combo).toBeNull();
-    expect(r.error).toBeNull();
+    expect(r.error).toBe('altgr');
   });
 
-  it('right Alt as plain Alt waits', () => {
+  it('right Alt as plain Alt (e.g. EN layout) waits', () => {
     const r = captureHotkey(ev('AltRight', { alt: true }, 'Alt'));
     expect(r.combo).toBeNull();
     expect(r.error).toBeNull();
@@ -140,10 +139,15 @@ describe('captureHotkey — validation', () => {
     }
   });
 
-  it('AltGr (right Alt) records as plain Alt, dropping the synthetic Ctrl', () => {
-    // RU layout: AltGr reports key="AltGraph" and injects a synthetic Ctrl. We
-    // strip it so the bind stays layout-stable (right Alt is plain Alt on EN).
-    expect(captureHotkey(ev('KeyZ', { altGraph: true, ctrl: true })).combo).toBe('Alt+Z');
+  it('AltGr + key is rejected, but a genuine Ctrl+Alt is not', () => {
+    // AltGr (right Alt on RU) sets the AltGraph modifier → rejected.
+    const altgr = captureHotkey(ev('KeyZ', { altGraph: true, ctrl: true }));
+    expect(altgr.combo).toBeNull();
+    expect(altgr.error).toBe('altgr');
+    // Manual Ctrl+Alt does NOT set AltGraph → still bindable.
+    expect(captureHotkey(ev('KeyZ', { ctrl: true, alt: true })).combo).toBe(
+      'CommandOrControl+Alt+Z',
+    );
   });
 
   it('unmapped keys are rejected', () => {

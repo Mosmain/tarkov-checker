@@ -20,7 +20,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 
 const recording = ref(false);
-const error = ref<'invalid' | null>(null);
+const error = ref<'invalid' | 'altgr' | null>(null);
 
 const displayParts = computed(() => formatHotkeyParts(props.modelValue));
 
@@ -55,6 +55,10 @@ function onKey(event: KeyboardEvent): void {
   if (result.cancelled) {
     error.value = null;
     stopRecording();
+    return;
+  }
+  if (result.error === 'altgr') {
+    error.value = 'altgr';
     return;
   }
   if (result.error === 'no-modifier' || result.error === 'bad-main-key') {
@@ -107,8 +111,8 @@ let currentRecorder: { cancel: () => void } | null = null;
         </span>
       </template>
     </div>
-    <p v-if="error === 'invalid'" class="mt-1.5 text-[10px] leading-relaxed text-amber-400">
-      {{ t('hotkeys.invalid') }}
+    <p v-if="error" class="mt-1.5 text-[10px] leading-relaxed text-amber-400">
+      {{ t(error === 'altgr' ? 'hotkeys.altgr' : 'hotkeys.invalid') }}
     </p>
   </div>
 </template>

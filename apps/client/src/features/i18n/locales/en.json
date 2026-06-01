@@ -92,6 +92,7 @@
     "recording": "Recording…",
     "recordingPrompt": "Press the new combination (Esc to cancel)",
     "invalid": "Need at least one modifier (Ctrl/Alt/Shift).",
+    "altgr": "Right Alt (AltGr) can't be used — it's unreliable across layouts. Use Ctrl, Alt or Shift.",
     "conflict": "This combination is taken by another app. Try another."
   },
   "closeConfirm": {

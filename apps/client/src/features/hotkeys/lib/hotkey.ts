@@ -72,8 +72,7 @@ const KEY_DISPLAY: Readonly<Record<string, string>> = {
   PageDown: 'PgDn',
 };
 
-// `AltGraph` is what right-Alt reports on AltGr layouts.
-const MODIFIER_KEYS = new Set(['Control', 'Alt', 'AltGraph', 'Shift', 'Meta', 'OS']);
+const MODIFIER_KEYS = new Set(['Control', 'Alt', 'Shift', 'Meta', 'OS']);
 
 // Physical modifier codes — matching on `event.code` is layout-independent, so
 // right-Alt (code "AltRight", key "AltGraph") is treated as a held modifier
@@ -119,7 +118,7 @@ interface CaptureResult {
   /** True when the user pressed Escape — caller should cancel recording. */
   cancelled: boolean;
   /** Reason the combo is invalid, or null if it's good. */
-  error: 'no-modifier' | 'bad-main-key' | null;
+  error: 'no-modifier' | 'bad-main-key' | 'altgr' | null;
 }
 
 /**
@@ -130,20 +129,21 @@ export function captureHotkey(event: KeyboardEvent): CaptureResult {
   if (event.key === 'Escape') {
     return { combo: null, cancelled: true, error: null };
   }
+  // Right Alt is AltGr on many layouts (Russian etc.): the OS delivers it as
+  // Ctrl+Alt, so a bind made with it fires inconsistently across layouts.
+  // Refuse it. AltGraph is set only by a real AltGr, not by a manual Ctrl+Alt,
+  // so legitimate Ctrl+Alt combos are unaffected.
+  if (event.getModifierState('AltGraph')) {
+    return { combo: null, cancelled: false, error: 'altgr' };
+  }
   // Holding only modifiers — wait for the main key.
   if (MODIFIER_KEYS.has(event.key) || MODIFIER_CODES.has(event.code)) {
     return { combo: null, cancelled: false, error: null };
   }
 
-  // Right Alt on layouts like Russian is AltGr, which injects a synthetic Ctrl.
-  // Record it as plain Alt (drop that Ctrl) so the bind stays layout-stable: on
-  // an English layout the same physical key is a plain Alt, and a Ctrl+Alt bind
-  // would silently stop firing there. Global hotkeys can't tell left/right Alt
-  // apart anyway, so "Alt" is the honest, portable representation.
-  const altGraph = event.getModifierState('AltGraph');
   const mods: string[] = [];
-  if (!altGraph && (event.ctrlKey || event.metaKey)) mods.push('CommandOrControl');
-  if (event.altKey || altGraph) mods.push('Alt');
+  if (event.ctrlKey || event.metaKey) mods.push('CommandOrControl');
+  if (event.altKey) mods.push('Alt');
   if (event.shiftKey) mods.push('Shift');
 
   const mainKey = normalizeMainKey(event);
