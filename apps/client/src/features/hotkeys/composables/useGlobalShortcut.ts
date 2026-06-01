@@ -22,44 +22,67 @@ export function useGlobalShortcut(isTauri: boolean, combo: Ref<string>, action: 
   // True while a recorder is capturing — hold no OS binding.
   let suspended = false;
 
-  async function unregisterCurrent(): Promise<void> {
-    if (!isTauri || !registered) return;
-    const { unregister } = await import('@tauri-apps/plugin-global-shortcut');
-    try {
-      await unregister(registered);
-    } catch {
-      // Best-effort — the binding may already be gone.
-    }
-    registered = null;
+  // Serialize register/unregister ops. The change-watch and the recorder's
+  // resume can both fire a register for the same combo; without this they race,
+  // double-register, one throws "already registered", and the watch's failure
+  // path reverts the value the user just set.
+  let opChain: Promise<unknown> = Promise.resolve();
+  function enqueue<T>(task: () => Promise<T>): Promise<T> {
+    const run = opChain.then(task);
+    opChain = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    return run;
   }
 
-  async function tryRegister(next: string): Promise<boolean> {
-    if (!isTauri || suspended) return false;
-    // Re-applying the already-active combo is a success, not a churn.
-    if (next === registered) return true;
-    const { register, unregister } = await import('@tauri-apps/plugin-global-shortcut');
-    // A suspend may have landed while the import was in flight.
-    if (suspended) return false;
-    await unregisterCurrent();
-    // Defensive: an HMR reload may have left an orphan registration on the Rust
-    // side; clear it before our register call so the attempt sticks.
-    try {
-      await unregister(next);
-    } catch {
-      // Expected when the combo isn't registered.
-    }
-    try {
-      await register(next, (e) => {
-        // Plugin fires both "Pressed" and "Released" — trigger on Pressed only.
-        if (e.state === 'Pressed') action();
-      });
-      registered = next;
-      return true;
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error('[hotkey] failed to register', next, err);
-      return false;
-    }
+  function unregisterCurrent(): Promise<void> {
+    return enqueue(async () => {
+      if (!isTauri || !registered) return;
+      const { unregister } = await import('@tauri-apps/plugin-global-shortcut');
+      try {
+        await unregister(registered);
+      } catch {
+        // Best-effort — the binding may already be gone.
+      }
+      registered = null;
+    });
+  }
+
+  function tryRegister(next: string): Promise<boolean> {
+    return enqueue(async () => {
+      if (!isTauri || suspended) return false;
+      // Already active (e.g. resume registered it just before this queued run).
+      if (next === registered) return true;
+      const { register, unregister } = await import('@tauri-apps/plugin-global-shortcut');
+      if (registered) {
+        try {
+          await unregister(registered);
+        } catch {
+          // Ignore — old binding may already be gone.
+        }
+        registered = null;
+      }
+      // Defensive: an HMR reload may have left an orphan registration on the
+      // Rust side; clear it before our register call so the attempt sticks.
+      try {
+        await unregister(next);
+      } catch {
+        // Expected when the combo isn't registered.
+      }
+      try {
+        await register(next, (e) => {
+          // Plugin fires both "Pressed" and "Released" — trigger on Pressed only.
+          if (e.state === 'Pressed') action();
+        });
+        registered = next;
+        return true;
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('[hotkey] failed to register', next, err);
+        return false;
+      }
+    });
   }
 
   onMounted(() => {
@@ -85,8 +108,9 @@ export function useGlobalShortcut(isTauri: boolean, combo: Ref<string>, action: 
     // Recording in progress — resume will re-register the final value.
     if (suspended) return;
     const ok = await tryRegister(next);
-    if (!ok && prev) {
-      // Revert store value to the working combo so the UI doesn't lie.
+    // Don't revert if the combo did end up registered (a concurrent resume won
+    // the race) — only when it genuinely couldn't be claimed.
+    if (!ok && prev && registered !== next) {
       suppressNext = true;
       combo.value = prev;
       await tryRegister(prev);
