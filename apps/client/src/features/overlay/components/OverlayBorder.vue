@@ -7,7 +7,9 @@
 <template>
   <Teleport to="body">
     <svg class="overlay-border" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-      <rect />
+      <!-- pathLength normalizes the perimeter to 100 units so the dash pattern
+           divides evenly and closes without a seam at any window size. -->
+      <rect pathLength="100" />
     </svg>
   </Teleport>
 </template>

@@ -128,12 +128,16 @@ html.overlay-window #app {
   stroke: var(--p-primary-400);
   stroke: rgb(from var(--p-primary-400) r g b / 0.9);
   stroke-width: 2px;
-  stroke-dasharray: 7 7;
+  /* The rect carries pathLength="100", so dash + offset are in normalized units
+     where the whole perimeter = 100. A 0.5+0.5 period divides 100 exactly (100
+     dashes) → the loop closes seamlessly at the start corner regardless of the
+     (resizable) window size, and one period of offset animates seamlessly. */
+  stroke-dasharray: 0.5 0.5;
   animation: overlay-ants 0.8s linear infinite;
 }
 @keyframes overlay-ants {
   to {
-    stroke-dashoffset: -14;
+    stroke-dashoffset: -1;
   }
 }
 @media (prefers-reduced-motion: reduce) {
