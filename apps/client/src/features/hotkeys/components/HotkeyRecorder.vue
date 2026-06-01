@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { captureHotkey, formatHotkeyParts, HOTKEY_REAPPLY_EVENT } from '../lib/hotkey';
+import {
+  captureHotkey,
+  formatHotkeyParts,
+  HOTKEY_SUSPEND_EVENT,
+  HOTKEY_RESUME_EVENT,
+} from '../lib/hotkey';
 
 const props = defineProps<{
   /** Current accelerator string (e.g. "CommandOrControl+Alt+L"). */
@@ -37,12 +42,17 @@ function startRecording(): void {
   currentRecorder = { cancel: stopRecording };
   recording.value = true;
   error.value = null;
+  // Drop all OS bindings so the captured combo reaches us instead of firing.
+  window.dispatchEvent(new Event(HOTKEY_SUSPEND_EVENT));
   window.addEventListener('keydown', onKey, { capture: true });
 }
 
 function stopRecording(): void {
+  if (!recording.value) return;
   recording.value = false;
   window.removeEventListener('keydown', onKey, { capture: true });
+  // Re-claim every binding (also re-applies an unchanged re-record).
+  window.dispatchEvent(new Event(HOTKEY_RESUME_EVENT));
   if (currentRecorder?.cancel === stopRecording) currentRecorder = null;
 }
 
@@ -60,13 +70,11 @@ function onKey(event: KeyboardEvent): void {
     return;
   }
   if (result.combo) {
-    const unchanged = result.combo === props.modelValue;
     emit('update:modelValue', result.combo);
     error.value = null;
     flashApplied();
-    // Same value won't trip the registration watch — broadcast a re-apply so
-    // the binding is re-claimed and the user sees it took.
-    if (unchanged) window.dispatchEvent(new Event(HOTKEY_REAPPLY_EVENT));
+    // stopRecording() resumes registration, re-claiming the combo even when the
+    // value is unchanged (a same-value write never trips the registration watch).
     stopRecording();
   }
 }

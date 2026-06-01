@@ -91,9 +91,12 @@ const MODIFIER_CODES = new Set([
   'OSRight',
 ]);
 
-/** Window event the recorder fires so live registrations re-claim their combo
- *  even when the value is unchanged (a same-value write doesn't trip a watch). */
-export const HOTKEY_REAPPLY_EVENT = 'tc:hotkey-reapply';
+/** Window events the recorder fires to pause/resume all live global shortcuts
+ *  during capture. Without this the OS-registered combo fires its action and
+ *  swallows the keystroke, so an already-bound combo (incl. itself) can never
+ *  be re-captured. Resume re-claims every combo, re-applying unchanged ones. */
+export const HOTKEY_SUSPEND_EVENT = 'tc:hotkey-suspend';
+export const HOTKEY_RESUME_EVENT = 'tc:hotkey-resume';
 
 /**
  * Split an accelerator string into display-friendly parts (e.g. for rendering
