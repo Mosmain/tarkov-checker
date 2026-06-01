@@ -19,7 +19,7 @@ const langOptions = computed(() => [
       option-value="value"
       :allow-empty="false"
       :aria-label="t('language')"
-      class="w-full"
+      fluid
     />
   </Fieldset>
 </template>

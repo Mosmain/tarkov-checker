@@ -22,7 +22,7 @@ const playerFollowOptions = computed(() => [
       option-value="value"
       :allow-empty="false"
       size="small"
-      class="w-full"
+      fluid
     />
     <p class="mt-1.5 text-[10px] leading-relaxed opacity-70">{{ t('playerFollowHint') }}</p>
   </Fieldset>

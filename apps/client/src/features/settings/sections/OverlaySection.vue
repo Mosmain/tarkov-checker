@@ -67,7 +67,7 @@ const overlayZoomOptions = computed(() => [
           option-value="value"
           :allow-empty="false"
           size="small"
-          class="w-full"
+          fluid
         />
       </div>
     </div>

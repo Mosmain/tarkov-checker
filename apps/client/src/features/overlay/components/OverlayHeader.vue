@@ -12,6 +12,8 @@ interface Props {
 const props = defineProps<Props>();
 defineEmits<{ close: [] }>();
 
+const { t } = useI18n();
+
 const statusIconClass = computed(() => {
   switch (props.status) {
     case 'open':
@@ -36,6 +38,18 @@ async function startDrag(event: MouseEvent): Promise<void> {
 </script>
 
 <template>
+  <!-- Dedicated drag handle, top-left: an obvious grab target so dragging
+       isn't a hidden affordance on the status pill. Tauri + unlocked only. -->
+  <div
+    v-if="isTauri && !overlayClickThrough"
+    class="absolute top-3 left-3 z-[1000] flex h-7 w-7 cursor-grab items-center justify-center rounded-md bg-surface-800/70 text-surface-0 backdrop-blur select-none active:cursor-grabbing"
+    :title="t('overlay.move')"
+    :aria-label="t('overlay.move')"
+    @mousedown="startDrag"
+  >
+    <i class="pi pi-bars text-sm pointer-events-none" />
+  </div>
+
   <div class="absolute top-3 right-3 z-[1000] flex items-center gap-2">
     <!-- Unlocked: full pill with status dot + map name, also the drag handle. -->
     <span

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import MapView from '@/features/map/components/MapView.vue';
 import OverlayHeader from '@/features/overlay/components/OverlayHeader.vue';
+import OverlayBorder from '@/features/overlay/components/OverlayBorder.vue';
 import OverlayLockIndicator from '@/features/overlay/components/OverlayLockIndicator.vue';
 import OverlayErrors from '@/features/overlay/components/OverlayErrors.vue';
 import AirdropStatusBanner from '@/features/airdrop/components/AirdropStatusBanner.vue';
@@ -60,6 +61,8 @@ useGlobalShortcut(isTauri, airdropHotkey, () => airdropStore.press());
   <OverlayErrors :map-error="mapError" @dismiss-map="mapError = null" @retry="mapRef?.reload()" />
 
   <AirdropStatusBanner />
+
+  <OverlayBorder v-if="isTauri && !overlayClickThrough" />
 
   <OverlayLockIndicator
     v-if="isTauri"

@@ -46,16 +46,6 @@ export function useOverlayBootstrap(overlayClickThrough: Ref<boolean>): void {
   watch(overlayClickThrough, (locked) => void overlay.setClickThrough(locked));
   document.documentElement.classList.add('overlay-window');
 
-  // `overlay-unlocked` class drives the visible window border (see styles.css).
-  // The locked state never shows the border — the lock indicator alone says
-  // "can't interact", and the border would be wasted ink. Sync initially +
-  // on every flip so the visual matches the actual interaction mode.
-  function syncUnlockedClass(locked: boolean): void {
-    document.documentElement.classList.toggle('overlay-unlocked', !locked);
-  }
-  syncUnlockedClass(overlayClickThrough.value);
-  watch(overlayClickThrough, syncUnlockedClass);
-
   // Replay persisted values to the native window before the user interacts
   // with anything. Same calls fire on each subsequent store change.
   void overlay.setAlwaysOnTop(alwaysOnTop.value);

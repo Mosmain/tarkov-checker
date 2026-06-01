@@ -65,7 +65,8 @@
     "mapOpacity": "Map opacity",
     "mapOpacityHint": "Available when overall opacity is below 100%.",
     "zoom": "Zoom",
-    "quickMenuTitle": "Transparency"
+    "quickMenuTitle": "Transparency",
+    "move": "Drag to move"
   },
   "pairing": {
     "heading": "Phone access",
