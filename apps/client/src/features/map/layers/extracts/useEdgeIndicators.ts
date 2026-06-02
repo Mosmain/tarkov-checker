@@ -7,8 +7,8 @@ export interface EdgeArrow {
   color: string;
 }
 
-const MARGIN = 16; // px inset from the container edge
-const ARROW_PX = 18;
+const MARGIN = 18; // px inset from the container edge
+const ARROW_PX = 22;
 
 /**
  * Renders small arrows on the viewport edge pointing at off-screen extracts.
@@ -31,7 +31,9 @@ export function createEdgeIndicators(map: LeafletMap, getArrows: () => EdgeArrow
     if (!el) {
       el = document.createElement('div');
       el.className = 'edge-indicator';
-      el.innerHTML = `<svg viewBox="0 0 24 24" width="${ARROW_PX}" height="${ARROW_PX}" aria-hidden="true"><path d="M12 3 L20 19 L12 15 L4 19 Z" fill="currentColor"/></svg>`;
+      // Thick dark outline (drawn behind the fill via paint-order) so the
+      // small coloured arrow reads on any part of the busy map.
+      el.innerHTML = `<svg viewBox="0 0 24 24" width="${ARROW_PX}" height="${ARROW_PX}" aria-hidden="true"><path d="M12 3 L20 19 L12 15 L4 19 Z" fill="currentColor" stroke="#0a0b0d" stroke-width="3" stroke-linejoin="round" paint-order="stroke"/></svg>`;
       overlay.appendChild(el);
       pool[i] = el;
     }
