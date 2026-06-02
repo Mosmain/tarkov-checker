@@ -82,7 +82,9 @@ async function startDrag(event: MouseEvent): Promise<void> {
     <!-- Revealed chrome: drag pill + controls, flex siblings (no overlap). -->
     <div
       class="flex h-10 w-full items-center gap-2 transition-all duration-200 ease-out"
-      :class="dragBarActive ? 'translate-y-0 opacity-100' : 'pointer-events-none -translate-y-1 opacity-0'"
+      :class="
+        dragBarActive ? 'translate-y-0 opacity-100' : 'pointer-events-none -translate-y-1 opacity-0'
+      "
     >
       <!-- Drag pill: visual only; mousedown falls through to the band. -->
       <div
@@ -90,7 +92,7 @@ async function startDrag(event: MouseEvent): Promise<void> {
         :aria-label="t('overlay.move')"
         class="pointer-events-none flex h-10 min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-2xl bg-surface-800/85 px-4 text-surface-0 ring-1 ring-white/10 backdrop-blur select-none"
       >
-        <i class="pi pi-bars shrink-0 text-xs opacity-90" aria-hidden="true" />
+        <i class="pi pi-arrows-alt shrink-0 text-xs opacity-90" aria-hidden="true" />
         <span class="truncate text-sm font-medium">{{ mapDisplayName }}</span>
       </div>
 
