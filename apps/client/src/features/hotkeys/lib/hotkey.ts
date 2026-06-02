@@ -232,3 +232,35 @@ function normalizeMainKey(event: KeyboardEvent): string | null {
   // Numpad / punctuation / navigation
   return CODE_TO_ACCEL[code] ?? null;
 }
+
+const CMD_CTRL_TOKENS = new Set([
+  'CommandOrControl',
+  'CmdOrCtrl',
+  'Command',
+  'Cmd',
+  'Control',
+  'Ctrl',
+  'Meta',
+  'Super',
+]);
+
+/**
+ * Does a `keydown` event exactly match an accelerator string? The browser
+ * counterpart of `captureHotkey` — used to fire the same bindings on the page
+ * (LAN / browser) where Tauri's global-shortcut plugin isn't available.
+ * CommandOrControl matches Ctrl OR Meta; all other modifiers must match
+ * exactly (no extras), so Ctrl+= doesn't also trigger on Ctrl+Shift+=.
+ */
+export function matchesAccelerator(event: KeyboardEvent, combo: string): boolean {
+  const parts = combo.split('+');
+  if (parts.length < 2) return false;
+  const mainToken = parts[parts.length - 1];
+  const mods = parts.slice(0, -1);
+  const wantCmdCtrl = mods.some((m) => CMD_CTRL_TOKENS.has(m));
+  const wantAlt = mods.some((m) => m === 'Alt' || m === 'Option');
+  const wantShift = mods.includes('Shift');
+  if ((event.ctrlKey || event.metaKey) !== wantCmdCtrl) return false;
+  if (event.altKey !== wantAlt) return false;
+  if (event.shiftKey !== wantShift) return false;
+  return normalizeMainKey(event) === mainToken;
+}

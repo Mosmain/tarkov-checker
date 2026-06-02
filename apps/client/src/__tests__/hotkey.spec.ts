@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { captureHotkey, formatHotkeyParts } from '@/features/hotkeys/lib/hotkey';
+import { captureHotkey, formatHotkeyParts, matchesAccelerator } from '@/features/hotkeys/lib/hotkey';
 
 // Mirror of the keys accepted by global-hotkey 0.7.0's `parse_key` (uppercased
 // before matching). Our captured main-key tokens MUST land in this set or
@@ -153,6 +153,33 @@ describe('captureHotkey — validation', () => {
   it('unmapped keys are rejected', () => {
     const r = captureHotkey(ev('MediaSelect', { ctrl: true }));
     expect(r.error).toBe('bad-main-key');
+  });
+});
+
+describe('matchesAccelerator (browser-side matching)', () => {
+  it('matches the exact combo', () => {
+    expect(matchesAccelerator(ev('Equal', { ctrl: true }), 'CommandOrControl+=')).toBe(true);
+    expect(matchesAccelerator(ev('KeyD', { ctrl: true, alt: true }), 'CommandOrControl+Alt+D')).toBe(
+      true,
+    );
+    expect(
+      matchesAccelerator(ev('Equal', { ctrl: true, shift: true }), 'CommandOrControl+Shift+='),
+    ).toBe(true);
+  });
+
+  it('rejects extra or missing modifiers', () => {
+    // extra shift
+    expect(matchesAccelerator(ev('Equal', { ctrl: true, shift: true }), 'CommandOrControl+=')).toBe(
+      false,
+    );
+    // missing alt
+    expect(matchesAccelerator(ev('KeyL', { ctrl: true }), 'CommandOrControl+Alt+L')).toBe(false);
+    // wrong main key
+    expect(matchesAccelerator(ev('Minus', { ctrl: true }), 'CommandOrControl+=')).toBe(false);
+  });
+
+  it('CommandOrControl matches Meta too (Mac)', () => {
+    expect(matchesAccelerator(ev('KeyK', { meta: true }), 'CommandOrControl+K')).toBe(true);
   });
 });
 

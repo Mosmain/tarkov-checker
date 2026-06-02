@@ -13,6 +13,7 @@ import { useTauriOverlay } from '@/features/overlay/composables/useTauriOverlay'
 import { showOverlayChrome } from '@/shared/tauri';
 import { useTransportStatus } from '@/features/server/composables/useTransportStatus';
 import { useGlobalShortcut } from '@/features/hotkeys/composables/useGlobalShortcut';
+import { useBrowserShortcut } from '@/features/hotkeys/composables/useBrowserShortcut';
 import { useCloseConfirm } from '@/features/overlay/composables/useCloseConfirm';
 import { useAirdropStore } from '@/features/airdrop/store';
 import { useAirdropTracker } from '@/features/airdrop/composables/useAirdropTracker';
@@ -36,11 +37,20 @@ const mapError = ref<string | null>(null);
 // defineExpose. `?.` keeps every shortcut handler safe to call before the
 // component mounts (e.g. immediately after a `:key` swap on map change).
 const mapRef = ref<InstanceType<typeof MapView> | null>(null);
-useGlobalShortcut(isTauri, zoomInHotkey, () => mapRef.value?.zoomIn());
-useGlobalShortcut(isTauri, zoomOutHotkey, () => mapRef.value?.zoomOut());
-useGlobalShortcut(isTauri, floorUpHotkey, () => mapRef.value?.nextFloor());
-useGlobalShortcut(isTauri, floorDownHotkey, () => mapRef.value?.prevFloor());
-useGlobalShortcut(isTauri, airdropHotkey, () => airdropStore.press());
+
+// Bind each map action to BOTH transports: the Tauri global shortcut (overlay)
+// and the page-level listener (browser / LAN phone). Each no-ops in the other's
+// context, so exactly one fires. Lock stays overlay-only (no window to lock in
+// a browser), wired separately in App.vue.
+function bindShortcut(combo: Ref<string>, action: () => void): void {
+  useGlobalShortcut(isTauri, combo, action);
+  useBrowserShortcut(isTauri, combo, action);
+}
+bindShortcut(zoomInHotkey, () => mapRef.value?.zoomIn());
+bindShortcut(zoomOutHotkey, () => mapRef.value?.zoomOut());
+bindShortcut(floorUpHotkey, () => mapRef.value?.nextFloor());
+bindShortcut(floorDownHotkey, () => mapRef.value?.prevFloor());
+bindShortcut(airdropHotkey, () => airdropStore.press());
 </script>
 
 <template>
