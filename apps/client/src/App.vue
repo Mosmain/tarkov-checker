@@ -77,7 +77,7 @@ function onMapContextMenu(event: MouseEvent): void {
   -->
   <PairingModal v-if="isTauri" />
   <div
-    class="relative h-screen w-screen text-surface-0"
+    class="relative h-dvh w-screen text-surface-0"
     :class="isTauri ? '' : 'bg-surface-950'"
     @contextmenu="onMapContextMenu"
   >

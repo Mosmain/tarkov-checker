@@ -21,14 +21,21 @@ const { active: headerActive } = useOverlayHeaderActive();
   <!-- Slide via transform (composited), not `top` (layout) — matches the
        header's transform/opacity reveal so the two move in lockstep.
        translate-y-11 (44px) lands it at top-14 from the top-3 base. -->
+  <!-- Outer wrapper is a 40px-tall flex row (= the settings button height) so
+       the pill's vertical centre lines up with the status/settings cluster on
+       the opposite corner; both anchor at the same safe-area top. -->
   <div
-    class="sa-top sa-left pointer-events-none absolute z-[1000] inline-flex items-center gap-1.5 rounded-md bg-surface-800/70 px-2 py-1 font-mono text-xs tabular-nums text-surface-0 backdrop-blur transition-transform duration-200 ease-out select-none"
+    class="sa-top sa-left pointer-events-none absolute z-[1000] flex h-10 items-center transition-transform duration-200 ease-out"
     :class="headerActive ? 'translate-y-11' : 'translate-y-0'"
     aria-hidden="true"
   >
-    <i class="pi pi-clock text-[10px] opacity-70" />
-    <span>{{ clock.left }}</span>
-    <span class="opacity-40">/</span>
-    <span>{{ clock.right }}</span>
+    <span
+      class="inline-flex items-center gap-1.5 rounded-md bg-surface-800/70 px-2 py-1 font-mono text-xs tabular-nums text-surface-0 backdrop-blur select-none"
+    >
+      <i class="pi pi-clock text-[10px] opacity-70" />
+      <span>{{ clock.left }}</span>
+      <span class="opacity-40">/</span>
+      <span>{{ clock.right }}</span>
+    </span>
   </div>
 </template>
