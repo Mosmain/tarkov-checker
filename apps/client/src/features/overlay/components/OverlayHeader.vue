@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import SettingsPanel from '@/features/settings/SettingsPanel.vue';
+import MapSwitchMenu from './MapSwitchMenu.vue';
 import { isTauri } from '@/shared/tauri';
 import { useOverlayHeaderActive } from '../composables/useOverlayHeaderActive';
 import type { TransportStatus } from '@/features/server/composables/useServerTransport';
@@ -70,6 +71,15 @@ async function startDrag(event: MouseEvent): Promise<void> {
   const { getCurrentWindow } = await import('@tauri-apps/api/window');
   await getCurrentWindow().startDragging();
 }
+
+// Right-click the map name → quick map switcher. Overlay always; browser only
+// on a wide enough viewport (phones have no right-click, skip them).
+const mapMenu = ref<InstanceType<typeof MapSwitchMenu> | null>(null);
+const wideEnough = useMediaQuery('(min-width: 640px)');
+function openMapMenu(event: MouseEvent): void {
+  if (!isTauri && !wideEnough.value) return;
+  mapMenu.value?.open(event.clientX, event.clientY);
+}
 </script>
 
 <template>
@@ -86,6 +96,7 @@ async function startDrag(event: MouseEvent): Promise<void> {
     @mousedown="startDrag"
     @mouseenter="hovered = true"
     @mouseleave="hovered = false"
+    @contextmenu.prevent="openMapMenu"
   >
     <!-- Idle grabber nub (centred), cross-fades out when the bar is active. -->
     <div
@@ -147,10 +158,12 @@ async function startDrag(event: MouseEvent): Promise<void> {
     </span>
   </div>
 
-  <!-- BROWSER: no window drag — keep a static status + map name pill + settings. -->
+  <!-- BROWSER: no window drag — keep a static status + map name pill + settings.
+       Right-click the pill to switch maps (wide viewports only). -->
   <div v-else class="sa-top sa-right absolute z-[1000] flex items-center gap-2">
     <span
-      class="inline-flex items-center gap-2 rounded-md bg-surface-800/70 px-3 py-1 text-sm font-medium text-surface-0 backdrop-blur pointer-events-none select-none"
+      class="inline-flex items-center gap-2 rounded-md bg-surface-800/70 px-3 py-1 text-sm font-medium text-surface-0 backdrop-blur select-none"
+      @contextmenu.prevent="openMapMenu"
     >
       <i :class="['text-[10px]', statusIconClass]" :title="'ws: ' + status" aria-hidden="true" />
       <span>{{ mapDisplayName }}</span>
@@ -158,4 +171,6 @@ async function startDrag(event: MouseEvent): Promise<void> {
     </span>
     <SettingsPanel />
   </div>
+
+  <MapSwitchMenu ref="mapMenu" />
 </template>
