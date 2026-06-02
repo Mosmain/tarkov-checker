@@ -5,6 +5,8 @@ registerSettingsSection({
   id: 'hotkeys',
   group: 'main',
   order: 60,
-  visible: 'tauri',
+  // Shown on the desktop browser + overlay (both have a keyboard), hidden on
+  // phones. The browser uses the same combos via useBrowserShortcut.
+  visible: 'desktop-or-tauri',
   component: HotkeysSection,
 });
