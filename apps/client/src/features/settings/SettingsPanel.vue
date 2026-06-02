@@ -40,7 +40,7 @@ const isDesktop = useMediaQuery('(min-width: 640px)');
   <Drawer
     v-model:visible="open"
     :position="isDesktop ? 'right' : 'full'"
-    :closable="false"
+    :show-close-icon="false"
     :class="isDesktop ? '!w-[26rem]' : ''"
   >
     <!-- Explicit, prominent close button: when the overlay is small the drawer

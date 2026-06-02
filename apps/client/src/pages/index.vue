@@ -9,6 +9,7 @@ import { useMapSettingsStore } from '@/features/map/store';
 import { useOverlayStore } from '@/features/overlay/store';
 import { useHotkeysStore } from '@/features/hotkeys/store';
 import { useTauriOverlay } from '@/features/overlay/composables/useTauriOverlay';
+import { showOverlayChrome } from '@/shared/tauri';
 import { useTransportStatus } from '@/features/server/composables/useTransportStatus';
 import { useGlobalShortcut } from '@/features/hotkeys/composables/useGlobalShortcut';
 import { useCloseConfirm } from '@/features/overlay/composables/useCloseConfirm';
@@ -53,7 +54,7 @@ useGlobalShortcut(isTauri, airdropHotkey, () => airdropStore.press());
   <OverlayHeader
     :map-display-name="mapDisplayName"
     :status="status"
-    :is-tauri="isTauri"
+    :tauri-chrome="showOverlayChrome"
     :overlay-click-through="overlayClickThrough"
     @close="confirmClose"
   />
@@ -62,10 +63,10 @@ useGlobalShortcut(isTauri, airdropHotkey, () => airdropStore.press());
 
   <AirdropStatusBanner />
 
-  <OverlayBorder v-if="isTauri && !overlayClickThrough" />
+  <OverlayBorder v-if="showOverlayChrome && !overlayClickThrough" />
 
   <OverlayLockIndicator
-    v-if="isTauri"
+    v-if="showOverlayChrome"
     :lock-hotkey="lockHotkey"
     :overlay-click-through="overlayClickThrough"
     @lock="overlayClickThrough = true"

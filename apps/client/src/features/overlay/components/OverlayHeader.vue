@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import SettingsPanel from '@/features/settings/SettingsPanel.vue';
+import { isTauri } from '@/shared/tauri';
 import type { TransportStatus } from '@/features/server/composables/useServerTransport';
 
 interface Props {
   mapDisplayName: string;
   status: TransportStatus;
-  isTauri: boolean;
+  /** Render the Tauri overlay chrome (true under real Tauri, or the dev
+   *  preview flag). Native window calls still guard on the real `isTauri`. */
+  tauriChrome: boolean;
   overlayClickThrough: boolean;
 }
 
@@ -46,7 +49,7 @@ useEventListener(window, 'mousemove', (e: MouseEvent) => {
 // Explicit @mousedown rather than data-tauri-drag-region, which is flaky on
 // decorations:false + transparent:true windows.
 async function startDrag(event: MouseEvent): Promise<void> {
-  if (!props.isTauri) return;
+  if (!isTauri) return;
   if (event.button !== 0) return;
   dragging.value = true;
   const { getCurrentWindow } = await import('@tauri-apps/api/window');
@@ -64,7 +67,7 @@ async function startDrag(event: MouseEvent): Promise<void> {
        trigger it, and `dragging` keeps it open once the OS takes over the move.
        Tauri + unlocked only. -->
   <div
-    v-if="isTauri && !overlayClickThrough"
+    v-if="tauriChrome && !overlayClickThrough"
     class="absolute top-0 right-0 left-0 z-[1000] flex justify-center"
     @mousedown="startDrag"
   >
@@ -101,7 +104,7 @@ async function startDrag(event: MouseEvent): Promise<void> {
          status dot only — the map name lives in the drag bar, and the locked
          state needs nothing but the connection state. -->
     <span
-      v-if="!isTauri"
+      v-if="!tauriChrome"
       class="inline-flex items-center gap-2 rounded-md bg-surface-800/70 px-3 py-1 text-sm font-medium text-surface-0 backdrop-blur pointer-events-none select-none"
     >
       <i :class="['text-[10px]', statusIconClass]" :title="'ws: ' + status" aria-hidden="true" />
@@ -118,7 +121,7 @@ async function startDrag(event: MouseEvent): Promise<void> {
     </span>
     <SettingsPanel v-if="!overlayClickThrough" />
     <Button
-      v-if="isTauri && !overlayClickThrough"
+      v-if="tauriChrome && !overlayClickThrough"
       rounded
       severity="secondary"
       class="!bg-surface-800/80 hover:!bg-red-900 !border-surface-700 backdrop-blur"
