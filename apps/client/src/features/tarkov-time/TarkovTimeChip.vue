@@ -22,7 +22,7 @@ const { active: headerActive } = useOverlayHeaderActive();
        header's transform/opacity reveal so the two move in lockstep.
        translate-y-11 (44px) lands it at top-14 from the top-3 base. -->
   <div
-    class="pointer-events-none absolute top-3 left-3 z-[1000] inline-flex items-center gap-1.5 rounded-md bg-surface-800/70 px-2 py-1 font-mono text-xs tabular-nums text-surface-0 backdrop-blur transition-transform duration-200 ease-out select-none"
+    class="sa-top sa-left pointer-events-none absolute z-[1000] inline-flex items-center gap-1.5 rounded-md bg-surface-800/70 px-2 py-1 font-mono text-xs tabular-nums text-surface-0 backdrop-blur transition-transform duration-200 ease-out select-none"
     :class="headerActive ? 'translate-y-11' : 'translate-y-0'"
     aria-hidden="true"
   >

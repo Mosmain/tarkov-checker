@@ -53,7 +53,7 @@ watch(mapError, (err) => emit('mapError', err));
 
 <template>
   <div ref="mapContainer" class="absolute inset-0 z-0" />
-  <div v-if="hasFloors" class="absolute bottom-3 left-3 z-[1000]">
+  <div v-if="hasFloors" class="sa-bottom sa-left absolute z-[1000]">
     <FloorSwitcher :floors="info.floors" :current="currentFloor" @select="setActiveFloor" />
   </div>
 </template>

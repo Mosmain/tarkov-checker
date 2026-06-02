@@ -21,7 +21,7 @@ const lockAriaLabel = computed(() =>
 </script>
 
 <template>
-  <div class="absolute bottom-3 right-3 z-[1000] flex items-center gap-2">
+  <div class="sa-bottom sa-right absolute z-[1000] flex items-center gap-2">
     <span
       class="pointer-events-none inline-flex items-center gap-1 rounded-md bg-surface-800/70 px-2 py-1 text-[10px] font-semibold tracking-wider backdrop-blur"
     >

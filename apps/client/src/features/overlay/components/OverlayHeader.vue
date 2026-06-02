@@ -82,7 +82,7 @@ async function startDrag(event: MouseEvent): Promise<void> {
        is visual only; the band owns the drag. -->
   <div
     v-if="tauriChrome && !overlayClickThrough"
-    class="absolute top-0 right-0 left-0 z-[1000] flex h-12 cursor-grab items-start px-2 pt-2 active:cursor-grabbing"
+    class="sa-pt absolute top-0 right-0 left-0 z-[1000] flex h-12 cursor-grab items-start px-2 active:cursor-grabbing"
     @mousedown="startDrag"
     @mouseenter="hovered = true"
     @mouseleave="hovered = false"
@@ -137,7 +137,7 @@ async function startDrag(event: MouseEvent): Promise<void> {
   </div>
 
   <!-- OVERLAY locked: just the connection dot — no interactive chrome. -->
-  <div v-else-if="tauriChrome" class="absolute top-3 right-3 z-[1000]">
+  <div v-else-if="tauriChrome" class="sa-top sa-right absolute z-[1000]">
     <span
       class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-surface-800/70 backdrop-blur pointer-events-none"
       :title="'ws: ' + status"
@@ -148,7 +148,7 @@ async function startDrag(event: MouseEvent): Promise<void> {
   </div>
 
   <!-- BROWSER: no window drag — keep a static status + map name pill + settings. -->
-  <div v-else class="absolute top-3 right-3 z-[1000] flex items-center gap-2">
+  <div v-else class="sa-top sa-right absolute z-[1000] flex items-center gap-2">
     <span
       class="inline-flex items-center gap-2 rounded-md bg-surface-800/70 px-3 py-1 text-sm font-medium text-surface-0 backdrop-blur pointer-events-none select-none"
     >

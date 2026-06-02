@@ -195,6 +195,26 @@ html.overlay-window #app {
   filter: drop-shadow(0 0 2px rgb(0 0 0 / 0.6));
 }
 
+/* Safe-area offsets for floating controls (#24) — clear the notch / Dynamic
+ * Island / home indicator / rounded corners on phones (index.html sets
+ * viewport-fit=cover so the page draws under them). The insets are 0 on
+ * desktop, so these collapse to the base 0.75rem / 0.5rem there. */
+.sa-top {
+  top: calc(0.75rem + env(safe-area-inset-top));
+}
+.sa-bottom {
+  bottom: calc(0.75rem + env(safe-area-inset-bottom));
+}
+.sa-left {
+  left: calc(0.75rem + env(safe-area-inset-left));
+}
+.sa-right {
+  right: calc(0.75rem + env(safe-area-inset-right));
+}
+.sa-pt {
+  padding-top: calc(0.5rem + env(safe-area-inset-top));
+}
+
 /* Tooltip container — Leaflet adds .leaflet-tooltip; we hide its built-in
  * pseudo-element callout and let the per-row stripes carry faction colour
  * (rows live inside, one per distinct name). Padding goes on the rows so
