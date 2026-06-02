@@ -5,8 +5,9 @@
 - `apps/desktop` — Tauri 2 wrapper. The production artifact: Rust
   watcher/config pipeline (`src-tauri/src/server/`), the Tauri IPC
   commands the webview calls, AND an in-process HTTP server (axum) on
-  `127.0.0.1:47474` exposing `/api/ping`, `/api/config` (GET+PUT) and
-  `/events` (SSE). Single 6 MB `.exe` that ships as both the overlay
+  `127.0.0.1:47474` exposing `/api/ping`, `/api/config` (GET+PUT),
+  `/api/hotkeys` (GET+PUT, +suspend/resume) and `/events` (SSE). Single
+  6 MB `.exe` that ships as both the overlay
   and the local HTTP backend for any browser pointed at the same
   origin. See "In-process HTTP server" below.
 - `apps/client` — Vue + Leaflet map. Two transports, one codebase.
@@ -318,7 +319,11 @@ Persisted state lives in **per-feature** Pinia stores, not one big store:
   into vue-i18n's `locale`; `main.ts` calls `useI18nStore()` eagerly after
   `app.use(createPinia())` so the persisted language is applied before any
   component reads `t()`.
-- `apps/client/src/features/hotkeys/store.ts` — per-action hotkey combos.
+- `apps/client/src/features/hotkeys/store.ts` — thin sync layer over the
+  **backend-owned** combos: `lockHotkey` stays a client `persistedRef`
+  (overlay-only), the five forwarded actions load from the backend
+  (`fetchHotkeys`) and `setAction` PUTs on change. See "Backend-owned
+  hotkeys" below.
 - `apps/client/src/features/overlay/store.ts` — Tauri-only:
   `alwaysOnTop`, `opacity` (0.3–1), `mapOpacity` (0–1), `zoom`
   (`"75" | "100" | "125" | "150"`), plus a deliberately session-only
@@ -347,7 +352,7 @@ that owns settings registers its UI section via `registerSettingsSection()`.
   `useSettingsSections(group)`. Visibility logic: `'always'` (desktop +
   phone, default), `'tauri'` (overlay only), `'desktop-or-tauri'` (phone at
   ≥640px or overlay). Order uses multiples of 10. Currently:
-  - main: 10 map, 20 extracts, 30 player, 40 airdrop (tauri-only), 50 overlay (tauri-only), 60 hotkeys (tauri-only)
+  - main: 10 map, 20 extracts, 30 player, 40 airdrop (tauri-only), 50 overlay (tauri-only), 60 hotkeys (desktop-or-tauri)
   - system: 10 language, 20 paths (desktop-or-tauri)
 - `features/<name>/settings.ts` — each feature with settings calls
   `registerSettingsSection({ id, group, order, visible, component })` at
@@ -408,10 +413,14 @@ allow-set-opacity` doesn't exist in Tauri 2.11.x), the composable
   slider remains visually responsive.
 - **Zoom** — `WebviewWindow.setZoom(factor)`.
 
-**Global shortcut** is `tauri-plugin-global-shortcut` (Rust crate +
-`@tauri-apps/plugin-global-shortcut` npm). Registered in `App.vue`'s
-`onMounted` with combo `"CommandOrControl+Alt+L"`. Handler fires on
-both `Pressed` and `Released` — toggle only on `Pressed`.
+**Lock global shortcut** is the ONLY client-registered hotkey:
+`useGlobalShortcut` (via `@tauri-apps/plugin-global-shortcut`) binds
+`"CommandOrControl+Alt+L"` in `App.vue` to toggle click-through. Kept
+client-side on purpose — it's an overlay window op with no browser
+meaning, and the proven plugin path preserves the recovery route out of
+a click-through lockout. Handler fires on both `Pressed` and `Released`
+— toggle only on `Pressed`. **Every other hotkey is backend-owned** —
+see "Backend-owned hotkeys" below.
 
 **Capabilities** (`apps/desktop/src-tauri/capabilities/default.json`)
 must include the privileged window ops explicitly — `core:default`
@@ -475,9 +484,15 @@ for the architectural reasoning.
   JSON shape as the Tauri `get_config` IPC command.
 - `PUT /api/config` — apply `ConfigPatch`, re-run `apply_resolved`,
   return the new `ResolvedPaths`. UNC → 400 with `{error: "..."}`.
+- `GET /api/hotkeys` — backend-owned combos (`HotkeyConfig`).
+- `PUT /api/hotkeys` — apply `HotkeyPatch`, (re)register OS hotkeys,
+  return the EFFECTIVE config (a combo that can't be claimed reverts).
+  Unparseable combo → 400. See "Backend-owned hotkeys".
+- `POST /api/hotkeys/{suspend,resume}` — drop / re-claim the OS binds
+  while the settings recorder captures a combo (204).
 - `GET /events` — Server-Sent Events stream. `ServerEvent` (tagged
-  enum) frames; one `data: { type: "position"|"map-change", ... }`
-  per watcher emission. Keep-alive `: ping` every 25 s.
+  enum) frames; one `data: { type: "position"|"map-change"|"command", ... }`
+  per watcher / hotkey emission. Keep-alive `: ping` every 25 s.
 
 Events are fan-out twice in parallel by each watcher emit-site:
 
@@ -509,6 +524,54 @@ union wire format for SSE. Adding a new event type touches four
 declarations (TS schema, TS discriminated union, Rust payload struct,
 new `ServerEvent` variant); the file is still called `ws-messages.ts`
 for historical reasons (was the WS schema before the SSE migration).
+
+## Backend-owned hotkeys
+
+The backend is the single owner of the five forwarded hotkeys (`zoom-in`,
+`zoom-out`, `floor-up`, `floor-down`, `airdrop`). It registers them as
+**OS-global** shortcuts (fire even while the game is focused) and on a
+press broadcasts `ServerEvent::Command { action }` so EVERY client —
+overlay webview, browser, LAN phone — performs the action. The old
+focus-required `useBrowserShortcut` and per-client `useGlobalShortcut`
+wiring for these is gone; only the overlay **lock** combo stays
+client-registered (see "Desktop overlay").
+
+- Combos persist in `%APPDATA%/tarkov-checker/hotkeys.json` via
+  `server/hotkeys.rs` (`HotkeyStore`, sibling to `config.json`). Defaults
+  match the client's historical `tc.hotkeys.*` so an un-customised install
+  is unchanged; the client migrates customised localStorage values up once
+  (`tc.hotkeys.migrated`).
+- Registration lives in `src/hotkeys.rs` behind one `HotkeyController`
+  trait, with two impls that are **never** used together (the windowed app
+  and headless backend are mutually exclusive — both bind :47474):
+  - `TauriHotkeys` (`run()`): delegates to `tauri-plugin-global-shortcut`.
+    The five combos are registered via the **plugin Builder**
+    (`.with_shortcuts(...).with_handler(...)`) so registration happens on
+    Tauri's main thread without the `run_on_main_thread` deadlock that
+    registering inside our own `setup` hook would hit; a press-handler
+    reads an `Arc<Mutex<id→action>>` map and emits `command`.
+  - `StandaloneHotkeys` (`run_headless()`): there is no Tauri event loop,
+    so it owns a dedicated OS thread that creates a
+    `global_hotkey::GlobalHotKeyManager` and runs its **own Win32
+    `PeekMessage` pump**, reading `WM_HOTKEY` directly. Required because
+    `global-hotkey` needs a message pump on the manager's thread; the doc
+    even says so. It does NOT use `GlobalHotKeyEvent::set_event_handler`.
+- **Do not** run a standalone `global-hotkey` manager and the Tauri plugin
+  in the SAME process: the plugin installs a process-global
+  `GlobalHotKeyEvent::set_event_handler` (`OnceCell`), so a second
+  manager's events would route to the plugin's handler (which doesn't know
+  the ids) and the `receiver()` channel would get nothing. The two impls
+  above sidestep this by never coexisting.
+- The settings recorder brackets capture with the `HOTKEY_SUSPEND/RESUME`
+  window events; `useHotkeysSync` (App.vue) bridges them to
+  `POST /api/hotkeys/{suspend,resume}` so the backend drops its OS binds
+  and the pressed combo reaches the page/webview to be re-recorded (the
+  same events still drive the client-side lock shortcut).
+- Wire parity follows the same 4-declaration rule as other events:
+  `commandMessage` (zod) + union in `ws-messages.ts`, `ServerEvent::Command`
+  + `HotkeyAction` (kebab-case) in `server/events.rs`. The client dispatches
+  `command` in `pages/index.vue` (`useServerEvent('command', …)`) to
+  `mapRef`/`airdropStore`.
 
 The logs watcher (`server/logs.rs`) tails the **latest** `log_*/`
 session folder under `logsDir` — picked by sort order (timestamps in

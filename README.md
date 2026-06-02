@@ -19,7 +19,7 @@ A live in-raid map companion for Escape from Tarkov. The overlay watches your Ta
 
 **Desktop overlay** (primary): a single 6 MB portable `.exe` that opens as a frameless transparent always-on-top window over your game. No installer, no admin rights, no background service. All game monitoring happens in-process — your position is extracted from Tarkov's PrintScreen overlay screenshots, and raid transitions are detected by parsing the active session logs.
 
-**LAN / phone PWA** (optional): a lightweight Node/Fastify server on your PC serves the same map interface to any browser on your local network — perfect for a second monitor or a phone on the same Wi-Fi.
+**LAN / phone PWA** (optional): the overlay's in-process Rust helper (axum, on `0.0.0.0:47474`) serves the same map interface to any browser on your local network — perfect for a second monitor or a phone on the same Wi-Fi. The release build serves the embedded SPA directly; in dev, Vite on :5173 proxies to it.
 
 ## Quick Start
 
@@ -106,7 +106,7 @@ Screenshots and logs are processed locally with no external API calls during gam
 
 ## Architecture Details
 
-See [CLAUDE.md](CLAUDE.md) for in-depth engineering documentation: dev workflow, Tauri overlay configuration, multi-version logs parsing, Windows build quirks, CI/release procedures, and the in-process Rust HTTP server (`/api/config`, `/events`).
+See [CLAUDE.md](CLAUDE.md) for in-depth engineering documentation: dev workflow, Tauri overlay configuration, multi-version logs parsing, Windows build quirks, CI/release procedures, and the in-process Rust HTTP server (`/api/config`, `/api/hotkeys`, `/events`).
 
 ## Credits
 
@@ -142,7 +142,7 @@ See [LICENSE](./LICENSE).
 
 **Десктоп-оверлей** (основной): один портативный `.exe` размером 6 МБ, открывающийся безрамочным прозрачным окном поверх игры. Без установщика, без админских прав, без фоновых сервисов. Все отслеживание игры происходит в одном процессе — ваша позиция извлекается из PrintScreen-скриншотов с оверлеем Tarkov, а переходы между рейдами определяются парсингом логов активной сессии.
 
-**LAN / PWA на телефоне** (опционально): легкий Node/Fastify-сервер на ПК отдаёт ту же карту в браузер любого устройства в локальной сети — идеально для второго монитора или телефона в одной Wi-Fi сети.
+**LAN / PWA на телефоне** (опционально): встроенный в оверлей Rust-хелпер (axum, на `0.0.0.0:47474`) отдаёт ту же карту в браузер любого устройства в локальной сети — идеально для второго монитора или телефона в одной Wi-Fi сети. Release-сборка отдаёт встроенный SPA напрямую; в режиме разработки Vite на :5173 проксирует к нему.
 
 ## Быстрый старт
 
@@ -229,7 +229,7 @@ Customs, Factory (День/Ночь), Woods, Shoreline, Reserve, Interchange, Li
 
 ## Архитектурные детали
 
-Смотри [CLAUDE.md](CLAUDE.md) для подробной инженерной документации: dev workflow, конфигурация Tauri-оверлея, парсинг многоверсионных логов, подводные камни Windows-сборки, процедуры CI/релиза, и in-process Rust HTTP-сервер (`/api/config`, `/events`).
+Смотри [CLAUDE.md](CLAUDE.md) для подробной инженерной документации: dev workflow, конфигурация Tauri-оверлея, парсинг многоверсионных логов, подводные камни Windows-сборки, процедуры CI/релиза, и in-process Rust HTTP-сервер (`/api/config`, `/api/hotkeys`, `/events`).
 
 ## Благодарности
 

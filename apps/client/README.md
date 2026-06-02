@@ -1,6 +1,6 @@
 # @tarkov-checker/client
 
-Vue + Leaflet map. Runs both inside the Tauri overlay (`apps/desktop`) and as a plain browser page on phones over LAN (the same prod build Fastify serves at `:3000/`). Same code path, different transport (Tauri events vs SSE / `EventSource`).
+Vue + Leaflet map. Runs both inside the Tauri overlay (`apps/desktop`) and as a plain browser page on phones over LAN (the same prod build the in-process Rust helper in `apps/desktop` serves at `:47474/`; dev uses Vite on `:5173`, which proxies `/api` + `/events` to the helper). Same code path, different transport (Tauri events vs SSE / `EventSource`).
 
 Specifics about Tauri internals, Windows build quirks, and dev workflow live in [the repo CLAUDE.md](../../CLAUDE.md). This README is for contributors working **inside the client**.
 
@@ -24,12 +24,12 @@ features/   One folder per business feature, each fully owns its slice:
   map/         Leaflet map framework (useLeafletMap, useFloorSwitcher), layers registry + built-in layers (extracts/player/airdrop), MapView component, static extracts dataset (data/extracts/<code>.json — one file per canonical map)
   airdrop/     Airdrop triangulation state machine, screenshot tracker, settings section
   overlay/     Tauri overlay window controls, opacity/zoom/mapOpacity sync, tray icon, overlay-specific components
-  hotkeys/     Global shortcuts, HotkeyRecorder, accelerator parser
-  server/      SSE/HTTP transport, typed IPC contract, server event bus, /api/config client
+  hotkeys/     Backend-owned combos synced via thin store (fetch/PUT), HotkeyRecorder, accelerator parser; only the overlay lock stays client-registered
+  server/      SSE/HTTP transport, typed IPC contract, server event bus, /api/config + /api/hotkeys clients
   i18n/        createI18n instance, store (apiLang persisted), locales/<code>.json files
   settings/    Settings registry, SettingsPanel.vue, section sub-components
 shared/     Cross-feature utilities (persisted-store, config) — no business logic
-App.vue     Tiny: <RouterView/> + ConfirmDialog + MapQuickMenu + side effects (transport, tray, lock hotkey)
+App.vue     Tiny: <RouterView/> + ConfirmDialog + MapQuickMenu + side effects (transport, tray, lock hotkey, hotkeys sync — backend load + recorder suspend/resume bridge)
 main.ts     createApp → pinia + router + i18n + PrimeVue
 theme.ts    PrimeVue Aura preset override (primary = purple)
 styles.css  Tailwind imports, font-faces, dark mode token tweaks
@@ -182,7 +182,7 @@ pnpm lint       # eslint --max-warnings=0
 ## Where things connect
 
 - **Tauri detection** — centralized in [`shared/tauri.ts`](./src/shared/tauri.ts) as `isTauri` const. Checked at module load time, safe for non-DOM contexts. Used by transport layer, router, overlay composables, and settings visibility logic.
-- **Server-pushed messages** — schema in [`@shared/ws-messages`](../../packages/shared/src/ws-messages.ts). Position + map-change events; Node server pushes over SSE, Rust port emits as Tauri events. Client uses the same Zod schema either way.
+- **Server-pushed messages** — schema in [`@shared/ws-messages`](../../packages/shared/src/ws-messages.ts). Position, map-change, and command (backend-owned hotkey) events; the in-process Rust helper pushes over SSE to browsers, and emits as Tauri events to the overlay webview. Client uses the same Zod schema either way.
 - **Tarkov map calibration** (CRS, bounds, rotation) — [`@shared/maps`](../../packages/shared/src/maps.ts). Modifying calibration affects both desktop and browser.
 - **Map localization** — `useMapI18n()` composable in [`features/map/composables/useMapI18n.ts`](./src/features/map/composables/useMapI18n.ts) provides `localizedMapName(code)` with `te → t → displayName` fallback chain. Used in MapView + MapSection to stay in sync.
 - **HTTP / IPC** — single dispatch in [`features/server/api/transport.ts`](./src/features/server/api/transport.ts).
@@ -191,6 +191,6 @@ pnpm lint       # eslint --max-warnings=0
 
 ## See also
 
-- [`CLAUDE.md`](../../CLAUDE.md) — repo-wide context: Tauri internals, Windows build quirks (HVCI/Defender), path resolution dual implementation (Node + Rust), why ASCII-only repo path matters.
+- [`CLAUDE.md`](../../CLAUDE.md) — repo-wide context: Tauri internals, Windows build quirks (HVCI/Defender), Rust path resolution, why ASCII-only repo path matters.
 - [`apps/desktop/README.md`](../desktop/README.md) — Tauri overlay specifics.
-- [`packages/shared/`](../../packages/shared/) — Zod schemas + map calibration tables shared between client, Node server, and Rust port.
+- [`packages/shared/`](../../packages/shared/) — Zod schemas + map calibration tables shared between the client and the Rust helper.
