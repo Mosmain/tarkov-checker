@@ -7,8 +7,10 @@ use tauri::{AppHandle, State};
 
 #[cfg(not(debug_assertions))]
 use crate::http_server::LISTEN_PORT;
+use crate::hotkeys::HotkeyController;
 use crate::lan::detect_lan_ip;
 use crate::server::config::{ConfigPatch, ConfigStore};
+use crate::server::hotkeys::{HotkeyConfig, HotkeyPatch, HotkeyStore};
 use crate::server::paths::{self, ResolvedPaths};
 use crate::watcher::WatcherSlot;
 
@@ -32,6 +34,50 @@ pub async fn update_config(
     let resolved = paths::resolve(&store.overrides().await);
     crate::watcher::apply_resolved(Some(&app), slot.inner(), &resolved).await;
     Ok(resolved)
+}
+
+/// `GET /api/hotkeys` analogue — the backend-owned combos.
+#[tauri::command]
+pub async fn get_hotkeys(store: State<'_, Arc<HotkeyStore>>) -> Result<HotkeyConfig, String> {
+    Ok(store.get().await)
+}
+
+/// `PUT /api/hotkeys` analogue. Persists the patch then (re)registers the
+/// OS-global hotkeys, reverting any field whose combo can't be claimed.
+/// Returns the effective config.
+#[tauri::command]
+pub async fn update_hotkeys(
+    patch: HotkeyPatch,
+    store: State<'_, Arc<HotkeyStore>>,
+    hotkeys: State<'_, Arc<dyn HotkeyController>>,
+) -> Result<HotkeyConfig, String> {
+    let merged = store.apply(patch).await?;
+    let controller = hotkeys.inner().clone();
+    let to_apply = merged.clone();
+    let effective = tokio::task::spawn_blocking(move || controller.apply(&to_apply))
+        .await
+        .unwrap_or_else(|_| merged.clone());
+    if effective != merged {
+        store.set(effective.clone()).await.map_err(|e| e.to_string())?;
+    }
+    Ok(effective)
+}
+
+/// Drop all OS hotkey binds while the settings recorder captures a combo, so
+/// the keystroke reaches the webview instead of firing its action.
+#[tauri::command]
+pub async fn suspend_hotkeys(hotkeys: State<'_, Arc<dyn HotkeyController>>) -> Result<(), String> {
+    let controller = hotkeys.inner().clone();
+    let _ = tokio::task::spawn_blocking(move || controller.suspend()).await;
+    Ok(())
+}
+
+/// Re-claim the OS hotkey binds after the recorder finishes.
+#[tauri::command]
+pub async fn resume_hotkeys(hotkeys: State<'_, Arc<dyn HotkeyController>>) -> Result<(), String> {
+    let controller = hotkeys.inner().clone();
+    let _ = tokio::task::spawn_blocking(move || controller.resume()).await;
+    Ok(())
 }
 
 /// Wire shape for [`pairing_qr`]. Both fields are intended for direct

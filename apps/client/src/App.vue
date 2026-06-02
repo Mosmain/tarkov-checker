@@ -7,6 +7,7 @@ import { useOverlayStore } from '@/features/overlay/store';
 import { useHotkeysStore } from '@/features/hotkeys/store';
 import { useTauriOverlay } from '@/features/overlay/composables/useTauriOverlay';
 import { useGlobalShortcut } from '@/features/hotkeys/composables/useGlobalShortcut';
+import { useHotkeysSync } from '@/features/hotkeys/composables/useHotkeysSync';
 import { useTrayIcon } from '@/features/overlay/composables/useTrayIcon';
 import { useOverlayBootstrap } from '@/features/overlay/composables/useOverlayBootstrap';
 import { useAutoMapSwitch } from '@/features/map/composables/useAutoMapSwitch';
@@ -27,11 +28,17 @@ provideTransportStatus(status);
 // regardless of which route is currently mounted.
 useAutoMapSwitch();
 
-// Lock toggle is the only truly global hotkey — every other map-specific
-// shortcut lives inside OverlayView, scoped to that route.
+// Lock toggle stays a client-side global shortcut: it's an overlay window op
+// (click-through) with no browser meaning, and keeping it on the proven plugin
+// path preserves the recovery route out of a click-through lockout. Every other
+// hotkey is backend-owned and arrives as a `command` event (see index.vue).
 useGlobalShortcut(isTauri, lockHotkey, () => {
   overlayClickThrough.value = !overlayClickThrough.value;
 });
+
+// Load backend-owned combos into the store + bridge the recorder's
+// suspend/resume to the backend (so a combo can be re-recorded).
+useHotkeysSync();
 
 useOverlayBootstrap(overlayClickThrough);
 useTrayIcon(isTauri, overlayClickThrough);

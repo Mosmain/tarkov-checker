@@ -6,7 +6,8 @@ registerSettingsSection({
   group: 'main',
   order: 60,
   // Shown on the desktop browser + overlay (both have a keyboard), hidden on
-  // phones. The browser uses the same combos via useBrowserShortcut.
+  // phones. The combos are backend-owned now — configurable from any desktop
+  // browser, fired globally for every client via the `command` event.
   visible: 'desktop-or-tauri',
   component: HotkeysSection,
 });

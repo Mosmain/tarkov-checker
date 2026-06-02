@@ -12,7 +12,7 @@ use axum::{
         sse::{Event, KeepAlive, Sse},
         IntoResponse, Json, Response,
     },
-    routing::get,
+    routing::{get, post},
     Extension, Router,
 };
 #[cfg(not(debug_assertions))]
@@ -24,8 +24,10 @@ use tokio::sync::broadcast;
 use tokio_stream::wrappers::{errors::BroadcastStreamRecvError, BroadcastStream};
 use tower_http::cors::{AllowOrigin, CorsLayer};
 
+use crate::hotkeys::HotkeyController;
 use crate::server::config::{ConfigPatch, ConfigStore};
 use crate::server::events::ServerEvent;
+use crate::server::hotkeys::{HotkeyConfig, HotkeyPatch, HotkeyStore};
 use crate::server::paths::{self, ResolvedPaths};
 use crate::watcher::{self, WatcherSlot};
 
@@ -42,6 +44,8 @@ pub struct Deps {
     pub config_store: Arc<ConfigStore>,
     pub watcher_slot: Arc<WatcherSlot>,
     pub app_handle: Option<AppHandle>,
+    pub hotkey_store: Arc<HotkeyStore>,
+    pub hotkeys: Arc<dyn HotkeyController>,
 }
 
 /// Per-server shared state. Cheap to clone (Arc all the way down).
@@ -60,6 +64,10 @@ struct AppState {
     /// Held here (not inside WatcherSlot directly) so the HTTP handler
     /// can grab a clone without indirecting through the slot.
     event_tx: broadcast::Sender<ServerEvent>,
+    /// Backend-owned global hotkey combos (persisted in hotkeys.json).
+    hotkey_store: Arc<HotkeyStore>,
+    /// Registers/reconciles the OS-global hotkeys from `hotkey_store`.
+    hotkeys: Arc<dyn HotkeyController>,
 }
 
 #[derive(Serialize)]
@@ -154,6 +162,55 @@ async fn put_config_http(
     Ok(Json(resolved))
 }
 
+/// `GET /api/hotkeys` — the backend-owned combos. Same JSON the Tauri
+/// `get_hotkeys` IPC command returns.
+async fn get_hotkeys_http(State(state): State<AppState>) -> Json<HotkeyConfig> {
+    Json(state.hotkey_store.get().await)
+}
+
+/// `PUT /api/hotkeys` — validate + persist the patch, then (re)register the
+/// OS-global hotkeys. If a combo can't be claimed the manager reverts that
+/// field; the *effective* config is persisted and returned so the client
+/// snaps the recorder back. Unparseable combo → 400.
+async fn put_hotkeys_http(
+    State(state): State<AppState>,
+    Json(patch): Json<HotkeyPatch>,
+) -> Result<Json<HotkeyConfig>, (StatusCode, Json<ConfigError>)> {
+    let merged = state.hotkey_store.apply(patch).await.map_err(|error| {
+        (StatusCode::BAD_REQUEST, Json(ConfigError { error }))
+    })?;
+
+    // Registration blocks (round-trips to the main / pump thread); keep it off
+    // the async worker.
+    let hotkeys = state.hotkeys.clone();
+    let to_apply = merged.clone();
+    let effective = tokio::task::spawn_blocking(move || hotkeys.apply(&to_apply))
+        .await
+        .unwrap_or(merged.clone());
+
+    // Persist the revert if a field couldn't be registered.
+    if effective != merged {
+        if let Err(err) = state.hotkey_store.set(effective.clone()).await {
+            eprintln!("[hotkeys] persist effective config failed: {err:#}");
+        }
+    }
+    Ok(Json(effective))
+}
+
+/// `POST /api/hotkeys/suspend` — drop all OS binds while a recorder captures.
+async fn suspend_hotkeys_http(State(state): State<AppState>) -> StatusCode {
+    let hotkeys = state.hotkeys.clone();
+    let _ = tokio::task::spawn_blocking(move || hotkeys.suspend()).await;
+    StatusCode::NO_CONTENT
+}
+
+/// `POST /api/hotkeys/resume` — re-claim the combos after capture finishes.
+async fn resume_hotkeys_http(State(state): State<AppState>) -> StatusCode {
+    let hotkeys = state.hotkeys.clone();
+    let _ = tokio::task::spawn_blocking(move || hotkeys.resume()).await;
+    StatusCode::NO_CONTENT
+}
+
 // Release-only: bake apps/client/dist/ into the .exe. In dev the SPA is
 // served by Vite, so the helper just 404s on non-API paths.
 #[cfg(not(debug_assertions))]
@@ -196,7 +253,7 @@ fn cors_layer() -> CorsLayer {
 
     CorsLayer::new()
         .allow_origin(AllowOrigin::list(origins))
-        .allow_methods([Method::GET, Method::PUT, Method::OPTIONS])
+        .allow_methods([Method::GET, Method::PUT, Method::POST, Method::OPTIONS])
         .allow_headers([header::CONTENT_TYPE])
         // Chrome's Private Network Access policy: a public-origin page
         // (HTTPS on internet) hitting a private IP (127.0.0.1) needs an
@@ -213,6 +270,9 @@ fn router(state: AppState) -> Router {
     Router::new()
         .route("/api/ping", get(ping))
         .route("/api/config", get(get_config_http).put(put_config_http))
+        .route("/api/hotkeys", get(get_hotkeys_http).put(put_hotkeys_http))
+        .route("/api/hotkeys/suspend", post(suspend_hotkeys_http))
+        .route("/api/hotkeys/resume", post(resume_hotkeys_http))
         .route("/events", get(events_sse))
         .with_state(state)
         // SPA fallback MUST come after the API/SSE routes and BEFORE
@@ -233,6 +293,8 @@ pub fn spawn(deps: Deps) {
         config_store: deps.config_store,
         watcher_slot: deps.watcher_slot,
         event_tx,
+        hotkey_store: deps.hotkey_store,
+        hotkeys: deps.hotkeys,
     };
     let app_handle = deps.app_handle;
     tauri::async_runtime::spawn(async move {
@@ -261,27 +323,46 @@ mod tests {
     use axum::http::Request as HttpRequest;
     use tower::ServiceExt;
 
-    async fn test_state() -> AppState {
-        // ConfigStore wants a file path it can write to. Tests use a
-        // per-process tmp file; the file may not exist yet (load returns
-        // empty state in that case).
-        let tmp = std::env::temp_dir().join(format!(
-            "tarkov-checker-test-{}-{}.json",
+    /// No-op hotkey controller — the route tests never register real OS
+    /// hotkeys, they only exercise the HTTP wiring + store.
+    struct NoopHotkeys;
+    impl HotkeyController for NoopHotkeys {
+        fn apply(&self, desired: &HotkeyConfig) -> HotkeyConfig {
+            desired.clone()
+        }
+        fn suspend(&self) {}
+        fn resume(&self) {}
+    }
+
+    fn tmp_json(tag: &str) -> std::path::PathBuf {
+        std::env::temp_dir().join(format!(
+            "tarkov-checker-test-{tag}-{}-{}.json",
             std::process::id(),
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap_or_default()
                 .as_nanos(),
-        ));
-        let store = ConfigStore::load(tmp)
+        ))
+    }
+
+    async fn test_state() -> AppState {
+        // ConfigStore wants a file path it can write to. Tests use a
+        // per-process tmp file; the file may not exist yet (load returns
+        // empty state in that case).
+        let store = ConfigStore::load(tmp_json("config"))
             .await
             .expect("test config store should load");
+        let hotkey_store = HotkeyStore::load(tmp_json("hotkeys"))
+            .await
+            .expect("test hotkey store should load");
         let watcher_slot = Arc::new(WatcherSlot::default());
         let event_tx = watcher_slot.event_sender();
         AppState {
             config_store: Arc::new(store),
             watcher_slot,
             event_tx,
+            hotkey_store: Arc::new(hotkey_store),
+            hotkeys: Arc::new(NoopHotkeys),
         }
     }
 
@@ -341,6 +422,83 @@ mod tests {
         // Shape of ResolvedPaths: three slots, each with value/source/exists.
         assert!(body.contains("gameDir"), "body: {body}");
         assert!(body.contains("screenshotsDir"), "body: {body}");
+    }
+
+    // -----------------------------------------------------------------
+    // /api/hotkeys — backend-owned combos
+    // -----------------------------------------------------------------
+
+    #[tokio::test]
+    async fn get_hotkeys_returns_defaults() {
+        let response = test_router(test_state().await)
+            .oneshot(
+                HttpRequest::builder()
+                    .uri("/api/hotkeys")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = body_text(response).await;
+        assert!(body.contains("\"zoomIn\""), "body: {body}");
+        assert!(body.contains("\"airdrop\""), "body: {body}");
+    }
+
+    #[tokio::test]
+    async fn put_hotkeys_applies_valid_patch() {
+        // Unlike PUT /api/config, the hotkeys PUT needs no Extension<AppHandle>
+        // (NoopHotkeys in test state), so it runs to completion here.
+        let response = test_router(test_state().await)
+            .oneshot(
+                HttpRequest::builder()
+                    .method(Method::PUT)
+                    .uri("/api/hotkeys")
+                    .header(header::CONTENT_TYPE, "application/json")
+                    .body(Body::from(r#"{"zoomIn":"CommandOrControl+Alt+Z"}"#))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = body_text(response).await;
+        assert!(
+            body.contains("CommandOrControl+Alt+Z"),
+            "effective config should echo the new combo: {body}"
+        );
+    }
+
+    #[tokio::test]
+    async fn put_hotkeys_rejects_unparseable_combo() {
+        let response = test_router(test_state().await)
+            .oneshot(
+                HttpRequest::builder()
+                    .method(Method::PUT)
+                    .uri("/api/hotkeys")
+                    .header(header::CONTENT_TYPE, "application/json")
+                    .body(Body::from(r#"{"airdrop":"not+a+real+key"}"#))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    }
+
+    #[tokio::test]
+    async fn suspend_resume_hotkeys_return_no_content() {
+        for path in ["/api/hotkeys/suspend", "/api/hotkeys/resume"] {
+            let response = test_router(test_state().await)
+                .oneshot(
+                    HttpRequest::builder()
+                        .method(Method::POST)
+                        .uri(path)
+                        .body(Body::empty())
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+            assert_eq!(response.status(), StatusCode::NO_CONTENT, "path: {path}");
+        }
     }
 
     // -----------------------------------------------------------------

@@ -1,6 +1,8 @@
 import {
+  commandMessage,
   mapChangeMessage,
   positionMessage,
+  type CommandMessage,
   type MapChangeMessage,
   type PositionMessage,
 } from '@shared/ws-messages';
@@ -19,6 +21,7 @@ export interface UseServerTransport {
 // message minus its literal `type` field.
 type PositionPayload = Omit<PositionMessage, 'type'>;
 type MapChangePayload = Omit<MapChangeMessage, 'type'>;
+type CommandPayload = Omit<CommandMessage, 'type'>;
 
 /**
  * Single entry point for "server-pushed" messages — mount once at the app
@@ -55,6 +58,15 @@ export function useServerTransport(streamUrl: string): UseServerTransport {
     unlistens.push(
       await listen<MapChangePayload>('map-change', (event) => {
         const parsed = mapChangeMessage.safeParse({ type: 'map-change', ...event.payload });
+        if (parsed.success) dispatchServerEvent(parsed.data);
+      }),
+    );
+    // Backend-owned global hotkey presses. The browser/SSE path gets these
+    // for free via the discriminated union in `useServerStream`; the Tauri
+    // path needs its own listener because Rust emits via `app.emit`.
+    unlistens.push(
+      await listen<CommandPayload>('command', (event) => {
+        const parsed = commandMessage.safeParse({ type: 'command', ...event.payload });
         if (parsed.success) dispatchServerEvent(parsed.data);
       }),
     );

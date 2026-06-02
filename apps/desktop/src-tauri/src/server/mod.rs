@@ -12,6 +12,7 @@
 
 pub mod config;
 pub mod events;
+pub mod hotkeys;
 pub mod logs;
 pub mod parse_log_regexes;
 pub mod parse_screenshot_regexes;

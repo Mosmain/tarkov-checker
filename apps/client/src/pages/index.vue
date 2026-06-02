@@ -9,24 +9,22 @@ import AirdropStatusBanner from '@/features/airdrop/components/AirdropStatusBann
 import { useMapSettingsStore } from '@/features/map/store';
 import { useOverlayStore } from '@/features/overlay/store';
 import { useHotkeysStore } from '@/features/hotkeys/store';
-import { useTauriOverlay } from '@/features/overlay/composables/useTauriOverlay';
 import { showOverlayChrome } from '@/shared/tauri';
 import { useTransportStatus } from '@/features/server/composables/useTransportStatus';
-import { useGlobalShortcut } from '@/features/hotkeys/composables/useGlobalShortcut';
-import { useBrowserShortcut } from '@/features/hotkeys/composables/useBrowserShortcut';
+import { useServerEvent } from '@/features/server/composables/useServerEvents';
 import { useCloseConfirm } from '@/features/overlay/composables/useCloseConfirm';
 import { useAirdropStore } from '@/features/airdrop/store';
 import { useAirdropTracker } from '@/features/airdrop/composables/useAirdropTracker';
 
 const { mapCode } = storeToRefs(useMapSettingsStore());
 const { clickThrough: overlayClickThrough } = storeToRefs(useOverlayStore());
-const { lockHotkey, zoomInHotkey, zoomOutHotkey, floorUpHotkey, floorDownHotkey, airdropHotkey } =
-  storeToRefs(useHotkeysStore());
+// Only the lock combo is still client-owned; the rest arrive as backend
+// `command` events (see below) so they fire regardless of focus.
+const { lockHotkey } = storeToRefs(useHotkeysStore());
 
 const airdropStore = useAirdropStore();
 useAirdropTracker();
 
-const { isTauri } = useTauriOverlay();
 const status = useTransportStatus();
 const confirmClose = useCloseConfirm();
 
@@ -38,19 +36,29 @@ const mapError = ref<string | null>(null);
 // component mounts (e.g. immediately after a `:key` swap on map change).
 const mapRef = ref<InstanceType<typeof MapView> | null>(null);
 
-// Bind each map action to BOTH transports: the Tauri global shortcut (overlay)
-// and the page-level listener (browser / LAN phone). Each no-ops in the other's
-// context, so exactly one fires. Lock stays overlay-only (no window to lock in
-// a browser), wired separately in App.vue.
-function bindShortcut(combo: Ref<string>, action: () => void): void {
-  useGlobalShortcut(isTauri, combo, action);
-  useBrowserShortcut(isTauri, combo, action);
-}
-bindShortcut(zoomInHotkey, () => mapRef.value?.zoomIn());
-bindShortcut(zoomOutHotkey, () => mapRef.value?.zoomOut());
-bindShortcut(floorUpHotkey, () => mapRef.value?.nextFloor());
-bindShortcut(floorDownHotkey, () => mapRef.value?.prevFloor());
-bindShortcut(airdropHotkey, () => airdropStore.press());
+// Hotkeys are owned by the backend now: it registers OS-global shortcuts (which
+// fire even while the game is focused) and broadcasts a `command` event. Every
+// client — overlay webview, browser, LAN phone — dispatches it here, so the
+// action runs regardless of which client (if any) has focus.
+useServerEvent('command', (msg) => {
+  switch (msg.action) {
+    case 'zoom-in':
+      mapRef.value?.zoomIn();
+      break;
+    case 'zoom-out':
+      mapRef.value?.zoomOut();
+      break;
+    case 'floor-up':
+      mapRef.value?.nextFloor();
+      break;
+    case 'floor-down':
+      mapRef.value?.prevFloor();
+      break;
+    case 'airdrop':
+      airdropStore.press();
+      break;
+  }
+});
 </script>
 
 <template>

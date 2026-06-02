@@ -25,6 +25,17 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-global-shortcut = "2"
+# Standalone global-hotkey registration for the headless backend (run_headless),
+# where there is no Tauri/plugin event loop. In the windowed app the plugin
+# above owns registration; the two never coexist in one process (the plugin
+# installs a process-global GlobalHotKeyEvent handler — see the hotkey rework
+# notes). Same accelerator-string parser the client emits.
+global-hotkey = "0.7"
+# Win32 message pump for the headless hotkey thread: the global-hotkey crate
+# needs a GetMessage/PeekMessage loop on the thread that owns its hidden
+# message window, otherwise WM_HOTKEY is never delivered. Version pinned to
+# match the one global-hotkey already pulls (no extra lockfile entry).
+windows-sys = { version = "0.59", features = ["Win32_UI_WindowsAndMessaging", "Win32_Foundation"] }
 tauri-plugin-window-state = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

@@ -1,4 +1,5 @@
 import type { ServerConfigResponse, ServerConfigUpdate } from '@shared/config-api';
+import type { HotkeyConfig, HotkeyPatch } from '@shared/hotkeys-api';
 
 /**
  * The full set of Tauri IPC commands the Rust side exposes (see
@@ -18,6 +19,22 @@ export interface IpcContract {
   update_config: {
     args: { patch: ServerConfigUpdate };
     result: ServerConfigResponse;
+  };
+  get_hotkeys: {
+    args: undefined;
+    result: HotkeyConfig;
+  };
+  update_hotkeys: {
+    args: { patch: HotkeyPatch };
+    result: HotkeyConfig;
+  };
+  suspend_hotkeys: {
+    args: undefined;
+    result: void;
+  };
+  resume_hotkeys: {
+    args: undefined;
+    result: void;
   };
 }
 

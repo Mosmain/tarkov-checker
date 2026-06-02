@@ -41,11 +41,21 @@ pub struct WatcherSlot {
 
 impl Default for WatcherSlot {
     fn default() -> Self {
+        Self::with_sender(events::channel())
+    }
+}
+
+impl WatcherSlot {
+    /// Build a slot around an existing broadcast sender. Used by `run()` /
+    /// `run_headless()`, which create the channel up front so the hotkey
+    /// press handler can push `Command` events into the same stream the
+    /// watchers feed.
+    pub fn with_sender(event_tx: broadcast::Sender<ServerEvent>) -> Self {
         Self {
             apply_lock: AsyncMutex::new(()),
             screenshots: Mutex::new(None),
             logs: Mutex::new(None),
-            event_tx: events::channel(),
+            event_tx,
         }
     }
 }

@@ -3449,6 +3449,7 @@ dependencies = [
  "anyhow",
  "axum",
  "futures-util",
+ "global-hotkey",
  "local-ip-address",
  "mime_guess",
  "notify",
@@ -3468,6 +3469,7 @@ dependencies = [
  "tokio-stream",
  "tower",
  "tower-http",
+ "windows-sys 0.59.0",
  "winreg 0.52.0",
 ]
 
