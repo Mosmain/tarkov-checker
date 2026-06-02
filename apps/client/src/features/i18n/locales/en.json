@@ -16,6 +16,8 @@
     "md": "M",
     "lg": "L"
   },
+  "edgeIndicators": "Edge arrows",
+  "edgeIndicatorsHint": "When zoomed in, show small arrows on the map edge pointing at off-screen extracts.",
   "player": "Player",
   "playerFollow": "Auto-follow",
   "playerFollowHint": "Recenter the map on every new position. S/M/L also zoom in; On just follows at your current zoom.",

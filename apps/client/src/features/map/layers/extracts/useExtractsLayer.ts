@@ -1,6 +1,8 @@
 import L, { type Marker, type LayerGroup } from 'leaflet';
+import { FACTION_COLORS } from '@shared/maps';
 import { makeIcon } from './icon';
 import { buildTooltipHtml, sortedEntries, type ExtractEntry } from './tooltip';
+import { createEdgeIndicators, type EdgeArrow } from './useEdgeIndicators';
 import { extractsForMap } from '@/features/map/data/extracts';
 import { useMapSettingsStore } from '@/features/map/store';
 import type { MapLayerContext } from '../registry';
@@ -35,10 +37,11 @@ interface RawExtract {
 export function useExtractsLayer(ctx: MapLayerContext): void {
   const { map, mapCode } = ctx;
   const { t, locale } = useI18n();
-  const { extractFactions, extractLabelMode, extractLabelSize } =
+  const { extractFactions, extractLabelMode, extractLabelSize, edgeIndicators } =
     storeToRefs(useMapSettingsStore());
 
   let extractsLayer: LayerGroup | null = null;
+  let edge: ReturnType<typeof createEdgeIndicators> | null = null;
   const entries: MarkerEntry[] = [];
   const state = {
     visibleFactions: new Set<string>(extractFactions.value),
@@ -79,6 +82,34 @@ export function useExtractsLayer(ctx: MapLayerContext): void {
         entry.marker.unbindTooltip();
         extractsLayer.removeLayer(entry.marker);
       }
+    }
+    edge?.update();
+  }
+
+  // Off-screen extract arrows (opt-in). One arrow per visible merged extract,
+  // coloured by its first visible faction; the overlay itself decides which
+  // are off-screen on each map move.
+  function arrowData(): EdgeArrow[] {
+    const out: EdgeArrow[] = [];
+    for (const entry of entries) {
+      const first = effectiveEntries(entry)[0];
+      if (!first) continue;
+      out.push({
+        lat: entry.extract.position.z,
+        lng: entry.extract.position.x,
+        color: FACTION_COLORS[first.faction],
+      });
+    }
+    return out;
+  }
+
+  function syncEdge(): void {
+    if (edgeIndicators.value && map.value) {
+      if (edge) edge.update();
+      else edge = createEdgeIndicators(map.value, arrowData);
+    } else if (edge) {
+      edge.destroy();
+      edge = null;
     }
   }
 
@@ -149,6 +180,7 @@ export function useExtractsLayer(ctx: MapLayerContext): void {
       entries.push({ marker, extract: ex });
     }
     refreshMarkers();
+    syncEdge();
   }
 
   // Single source of truth for "the map exists now": loads markers + attaches
@@ -162,10 +194,15 @@ export function useExtractsLayer(ctx: MapLayerContext): void {
       if (m) {
         m.on('click', reopenAllPermanentTooltips);
         loadExtracts();
+      } else if (edge) {
+        edge.destroy();
+        edge = null;
       }
     },
     { immediate: true },
   );
+
+  watch(edgeIndicators, syncEdge);
 
   watch(locale, () => {
     loadExtracts();
@@ -201,6 +238,8 @@ export function useExtractsLayer(ctx: MapLayerContext): void {
   );
 
   onBeforeUnmount(() => {
+    edge?.destroy();
+    edge = null;
     if (extractsLayer && map.value) {
       map.value.removeLayer(extractsLayer);
     }

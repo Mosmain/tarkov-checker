@@ -31,6 +31,8 @@ export const useMapSettingsStore = defineStore('map-settings', () => {
     labelSizeSchema,
     'md' as ExtractLabelSize,
   );
+  // Off-screen extract arrows on the viewport edge. Opt-in, off by default.
+  const edgeIndicators = persistedRef('tc.map.edgeIndicators', z.boolean(), false);
   const playerFollow = persistedRef(
     'tc.map.playerFollow',
     playerFollowSchema,
@@ -43,6 +45,7 @@ export const useMapSettingsStore = defineStore('map-settings', () => {
     extractFactions,
     extractLabelMode,
     extractLabelSize,
+    edgeIndicators,
     playerFollow,
     autoMapSwitch,
   };

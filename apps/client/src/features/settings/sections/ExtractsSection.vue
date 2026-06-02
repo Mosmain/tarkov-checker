@@ -2,7 +2,8 @@
 import { FACTION_COLORS } from '@shared/maps';
 import { useMapSettingsStore, type ExtractFactionFilter } from '@/features/map/store';
 
-const { extractFactions, extractLabelMode, extractLabelSize } = storeToRefs(useMapSettingsStore());
+const { extractFactions, extractLabelMode, extractLabelSize, edgeIndicators } =
+  storeToRefs(useMapSettingsStore());
 const { t } = useI18n();
 
 const FACTION_OPTIONS: ReadonlyArray<{
@@ -65,6 +66,14 @@ const labelSizeOptions = computed(() => [
         size="small"
         fluid
       />
+    </div>
+
+    <div class="mt-3">
+      <div class="flex items-center justify-between gap-3">
+        <label class="text-sm" for="extract-edge-indicators">{{ t('edgeIndicators') }}</label>
+        <ToggleSwitch v-model="edgeIndicators" input-id="extract-edge-indicators" />
+      </div>
+      <p class="mt-1.5 text-[10px] leading-relaxed opacity-70">{{ t('edgeIndicatorsHint') }}</p>
     </div>
   </Fieldset>
 </template>
