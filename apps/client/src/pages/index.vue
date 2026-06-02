@@ -2,6 +2,7 @@
 import MapView from '@/features/map/components/MapView.vue';
 import OverlayHeader from '@/features/overlay/components/OverlayHeader.vue';
 import OverlayBorder from '@/features/overlay/components/OverlayBorder.vue';
+import TarkovTimeChip from '@/features/tarkov-time/TarkovTimeChip.vue';
 import OverlayLockIndicator from '@/features/overlay/components/OverlayLockIndicator.vue';
 import OverlayErrors from '@/features/overlay/components/OverlayErrors.vue';
 import AirdropStatusBanner from '@/features/airdrop/components/AirdropStatusBanner.vue';
@@ -62,6 +63,8 @@ useGlobalShortcut(isTauri, airdropHotkey, () => airdropStore.press());
   <OverlayErrors :map-error="mapError" @dismiss-map="mapError = null" @retry="mapRef?.reload()" />
 
   <AirdropStatusBanner />
+
+  <TarkovTimeChip />
 
   <OverlayBorder v-if="showOverlayChrome && !overlayClickThrough" />
 
