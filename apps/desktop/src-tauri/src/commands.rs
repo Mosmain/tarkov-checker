@@ -30,7 +30,7 @@ pub async fn update_config(
 ) -> Result<ResolvedPaths, String> {
     store.apply(patch).await.map_err(|e| e.to_string())?;
     let resolved = paths::resolve(&store.overrides().await);
-    crate::watcher::apply_resolved(&app, slot.inner(), &resolved).await;
+    crate::watcher::apply_resolved(Some(&app), slot.inner(), &resolved).await;
     Ok(resolved)
 }
 

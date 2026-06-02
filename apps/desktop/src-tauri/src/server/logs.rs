@@ -148,7 +148,7 @@ fn find_latest_map_id_in_file(path: &Path) -> Option<String> {
 }
 
 fn emit_map_change(
-    app: &AppHandle,
+    app: Option<&AppHandle>,
     state: &Mutex<State>,
     event_tx: &broadcast::Sender<ServerEvent>,
     raw_map_id: String,
@@ -165,22 +165,22 @@ fn emit_map_change(
     drop(guard);
 
     let t = now_ms();
-    // Tauri webview path — unchanged shape.
-    let payload = MapChangePayload {
-        t,
-        raw_map_id: raw_map_id.clone(),
-    };
-    if let Err(err) = app.emit("map-change", &payload) {
-        eprintln!("[logs-watcher] emit failed: {err}");
+    if let Some(app) = app {
+        let payload = MapChangePayload {
+            t,
+            raw_map_id: raw_map_id.clone(),
+        };
+        if let Err(err) = app.emit("map-change", &payload) {
+            eprintln!("[logs-watcher] emit failed: {err}");
+        }
     }
-    // HTTP /events path — same data, tagged enum. `send` errors only on
-    // zero subscribers (normal when /events is unopened); ignore.
+    // HTTP /events path — unconditional; no Tauri webview needed.
     let _ = event_tx.send(ServerEvent::MapChange { t, raw_map_id });
 }
 
 /// Seek + read appended bytes for the currently-tailed log file, parse line
 /// by line, emit on hit. Idempotent — safe to call on every poll tick.
-fn read_appended(app: &AppHandle, state: &Mutex<State>, event_tx: &broadcast::Sender<ServerEvent>) {
+fn read_appended(app: Option<&AppHandle>, state: &Mutex<State>, event_tx: &broadcast::Sender<ServerEvent>) {
     // Snapshot the path + offset under the lock so the actual I/O happens
     // outside it.
     let snapshot: Option<(PathBuf, u64, String)> = {
@@ -257,7 +257,7 @@ fn read_appended(app: &AppHandle, state: &Mutex<State>, event_tx: &broadcast::Se
 /// only on startup — when we discover a brand-new folder mid-session, the
 /// folder is empty and we just wait for the tail to pick up new lines.
 fn attach_to_session(
-    app: &AppHandle,
+    app: Option<&AppHandle>,
     state: &Mutex<State>,
     event_tx: &broadcast::Sender<ServerEvent>,
     folder: PathBuf,
@@ -336,7 +336,7 @@ fn check_within_session_rotation(state: &Mutex<State>) {
 /// here so we don't have to thread name-comparison logic through the event
 /// channel.
 fn check_new_session_folder(
-    app: &AppHandle,
+    app: Option<&AppHandle>,
     state: &Mutex<State>,
     event_tx: &broadcast::Sender<ServerEvent>,
     logs_dir: &Path,
@@ -389,7 +389,7 @@ impl Drop for LogsWatcher {
 ///     `application_NNN.log` is rotated inside the active session.
 pub fn start(
     logs_dir: PathBuf,
-    app: AppHandle,
+    app: Option<AppHandle>,
     event_tx: broadcast::Sender<ServerEvent>,
 ) -> Result<LogsWatcher> {
     let state = Arc::new(Mutex::new(State {
@@ -400,7 +400,7 @@ pub fn start(
 
     // Initial seed from latest existing session, if any.
     if let Some(latest) = list_session_folders(&logs_dir).last().cloned() {
-        attach_to_session(&app, &state, &event_tx, latest, true);
+        attach_to_session(app.as_ref(), &state, &event_tx, latest, true);
     } else {
         eprintln!(
             "[logs-watcher] no existing tarkov log sessions yet at {}",
@@ -440,7 +440,7 @@ pub fn start(
                     break;
                 }
                 check_new_session_folder(
-                    &app_for_folders,
+                    app_for_folders.as_ref(),
                     &state_for_folders,
                     &event_tx_for_folders,
                     &logs_dir_for_folders,
@@ -462,7 +462,7 @@ pub fn start(
             while !stop_for_tail.load(Ordering::SeqCst) {
                 std::thread::sleep(Duration::from_millis(300));
                 check_within_session_rotation(&state_for_tail);
-                read_appended(&app_for_tail, &state_for_tail, &event_tx_for_tail);
+                read_appended(app_for_tail.as_ref(), &state_for_tail, &event_tx_for_tail);
             }
         })
         .context("spawn logs tail watcher thread")?;

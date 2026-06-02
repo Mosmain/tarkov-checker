@@ -41,7 +41,7 @@ const ALLOWED_ORIGINS: &[&str] = &[
 pub struct Deps {
     pub config_store: Arc<ConfigStore>,
     pub watcher_slot: Arc<WatcherSlot>,
-    pub app_handle: AppHandle,
+    pub app_handle: Option<AppHandle>,
 }
 
 /// Per-server shared state. Cheap to clone (Arc all the way down).
@@ -138,7 +138,7 @@ async fn events_sse(
 /// supported: \\server\share"}`).
 async fn put_config_http(
     State(state): State<AppState>,
-    Extension(app): Extension<AppHandle>,
+    Extension(app): Extension<Option<AppHandle>>,
     Json(patch): Json<ConfigPatch>,
 ) -> Result<Json<ResolvedPaths>, (StatusCode, Json<ConfigError>)> {
     state.config_store.apply(patch).await.map_err(|e| {
@@ -150,7 +150,7 @@ async fn put_config_http(
         )
     })?;
     let resolved = paths::resolve(&state.config_store.overrides().await);
-    watcher::apply_resolved(&app, &state.watcher_slot, &resolved).await;
+    watcher::apply_resolved(app.as_ref(), &state.watcher_slot, &resolved).await;
     Ok(Json(resolved))
 }
 

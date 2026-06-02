@@ -7,6 +7,7 @@
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
+    "backend:dev": "cargo run --manifest-path src-tauri/Cargo.toml --bin tarkov-checker-headless",
     "lint": "echo \"(no JS sources to lint)\"",
     "typecheck": "echo \"(no TS sources to typecheck)\""
   },

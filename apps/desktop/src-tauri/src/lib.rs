@@ -40,7 +40,7 @@ pub fn run() {
             // Cheap clones, no double state to keep in sync.
             let slot = Arc::new(WatcherSlot::default());
             let resolved = paths::resolve(&tauri::async_runtime::block_on(store.overrides()));
-            tauri::async_runtime::block_on(watcher::apply_resolved(&app_handle, &slot, &resolved));
+            tauri::async_runtime::block_on(watcher::apply_resolved(Some(&app_handle), &slot, &resolved));
 
             app.manage(store.clone());
             app.manage(slot.clone());
@@ -51,7 +51,7 @@ pub fn run() {
             http_server::spawn(http_server::Deps {
                 config_store: store,
                 watcher_slot: slot,
-                app_handle: app_handle.clone(),
+                app_handle: Some(app_handle.clone()),
             });
 
             // Clamp restored window onto a visible monitor (handles 2K→FHD moves).
@@ -63,6 +63,41 @@ pub fn run() {
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+/// Run only the HTTP server + filesystem watchers (no Tauri window). Lets a
+/// browser / LAN client use the helper without launching the overlay.
+pub fn run_headless() {
+    tauri::async_runtime::block_on(async {
+        let data_dir = match config::data_dir() {
+            Ok(d) => d,
+            Err(e) => {
+                eprintln!("[headless] config dir: {e:#}");
+                return;
+            }
+        };
+        if let Err(e) = std::fs::create_dir_all(&data_dir) {
+            eprintln!("[headless] create data dir: {e:#}");
+            return;
+        }
+        let store = match ConfigStore::load(data_dir.join("config.json")).await {
+            Ok(s) => Arc::new(s),
+            Err(e) => {
+                eprintln!("[headless] load config: {e:#}");
+                return;
+            }
+        };
+        let slot = Arc::new(WatcherSlot::default());
+        let resolved = paths::resolve(&store.overrides().await);
+        watcher::apply_resolved(None, &slot, &resolved).await;
+        http_server::spawn(http_server::Deps {
+            config_store: store,
+            watcher_slot: slot,
+            app_handle: None,
+        });
+        eprintln!("[headless] tarkov-checker backend up — http://0.0.0.0:47474 (Ctrl+C to stop)");
+        std::future::pending::<()>().await;
+    });
 }
 
 /// Reposition the window if the window-state plugin restored coordinates that

@@ -115,7 +115,7 @@ pub struct ScreenshotWatcher {
 /// quiet for the whole window are reported.
 pub fn start(
     dir: PathBuf,
-    app: AppHandle,
+    app: Option<AppHandle>,
     event_tx: tokio::sync::broadcast::Sender<crate::server::events::ServerEvent>,
 ) -> Result<ScreenshotWatcher> {
     let (tx, rx) = mpsc::channel::<notify_debouncer_full::DebounceEventResult>();
@@ -144,7 +144,7 @@ pub fn start(
                     Err(_) => continue,
                 };
                 for ev in events {
-                    handle_event(&app_handle, &event_tx, ev);
+                    handle_event(app_handle.as_ref(), &event_tx, ev);
                 }
             }
         })
@@ -156,7 +156,7 @@ pub fn start(
 }
 
 fn handle_event(
-    app: &AppHandle,
+    app: Option<&AppHandle>,
     event_tx: &tokio::sync::broadcast::Sender<crate::server::events::ServerEvent>,
     ev: DebouncedEvent,
 ) {
@@ -177,23 +177,19 @@ fn handle_event(
         };
         let yaw = parsed.orientation.map(quaternion_to_yaw_degrees);
         let t = chrono_now_ms();
-        // Tauri webview path — unchanged. Uses the private PositionPayload
-        // struct so the webview's existing `listen("position", ...)` keeps
-        // working bit-for-bit.
-        let payload = PositionPayload {
-            t,
-            x: parsed.position.x,
-            y: parsed.position.y,
-            z: parsed.position.z,
-            yaw,
-        };
-        if let Err(err) = app.emit("position", &payload) {
-            eprintln!("[screenshot-watcher] emit failed: {err}");
+        if let Some(app) = app {
+            let payload = PositionPayload {
+                t,
+                x: parsed.position.x,
+                y: parsed.position.y,
+                z: parsed.position.z,
+                yaw,
+            };
+            if let Err(err) = app.emit("position", &payload) {
+                eprintln!("[screenshot-watcher] emit failed: {err}");
+            }
         }
-        // HTTP /events path — same data, ServerEvent wire-shape (tagged
-        // enum). `send` errors only when there are zero subscribers; that
-        // is the normal case when nobody has opened /events, so we ignore
-        // it silently.
+        // HTTP /events path — unconditional; no Tauri webview needed.
         let _ = event_tx.send(crate::server::events::ServerEvent::Position {
             t,
             x: parsed.position.x,

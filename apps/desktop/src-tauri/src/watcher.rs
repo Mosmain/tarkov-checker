@@ -76,7 +76,7 @@ impl WatcherSlot {
 /// Acquires `apply_lock` for the full duration so that concurrent calls
 /// (e.g. two rapid `update_config` IPC commands) are serialised rather
 /// than interleaved — preventing duplicate watcher instances.
-pub async fn apply_resolved(app: &AppHandle, slot: &WatcherSlot, resolved: &ResolvedPaths) {
+pub async fn apply_resolved(app: Option<&AppHandle>, slot: &WatcherSlot, resolved: &ResolvedPaths) {
     let _guard = slot.apply_lock.lock().await;
 
     let screenshots_dir = match (
@@ -87,7 +87,7 @@ pub async fn apply_resolved(app: &AppHandle, slot: &WatcherSlot, resolved: &Reso
         _ => None,
     };
     match screenshots_dir {
-        Some(dir) => match screenshots::start(dir, app.clone(), slot.event_tx.clone()) {
+        Some(dir) => match screenshots::start(dir, app.cloned(), slot.event_tx.clone()) {
             Ok(w) => slot.replace_screenshots(Some(w)),
             Err(err) => {
                 eprintln!("[watcher] screenshots start failed: {err:#}");
@@ -102,7 +102,7 @@ pub async fn apply_resolved(app: &AppHandle, slot: &WatcherSlot, resolved: &Reso
         _ => None,
     };
     match logs_dir {
-        Some(dir) => match logs::start(dir, app.clone(), slot.event_tx.clone()) {
+        Some(dir) => match logs::start(dir, app.cloned(), slot.event_tx.clone()) {
             Ok(w) => slot.replace_logs(Some(w)),
             Err(err) => {
                 eprintln!("[watcher] logs start failed: {err:#}");
