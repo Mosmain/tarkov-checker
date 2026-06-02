@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import SettingsPanel from '@/features/settings/SettingsPanel.vue';
 import { isTauri } from '@/shared/tauri';
+import { useOverlayHeaderActive } from '../composables/useOverlayHeaderActive';
 import type { TransportStatus } from '@/features/server/composables/useServerTransport';
 
 interface Props {
@@ -30,20 +31,34 @@ const statusIconClass = computed(() => {
   }
 });
 
-// The bar expands on hover and must STAY expanded while dragging — the OS move
-// loop steals pointer events, so `:hover` drops the instant the drag starts.
-// Track dragging explicitly and clear it on release: mouseup, or the first
-// button-less mousemove as a fallback if the OS swallowed the mouseup. VueUse's
-// useEventListener owns the add/remove + teardown, so no manual cleanup.
-const hovered = ref(false);
-const dragging = ref(false);
-const dragBarActive = computed(() => hovered.value || dragging.value);
+// Shared with sibling chrome (the floating clock slides down when this is
+// active). The bar expands on hover and must STAY expanded while dragging —
+// the OS move loop steals pointer events, so `:hover` drops the instant the
+// drag starts. Track dragging explicitly and clear it on release: mouseup, or
+// the first button-less mousemove as a fallback if the OS swallowed the mouseup.
+const { hovered, dragging, active: dragBarActive } = useOverlayHeaderActive();
 
 useEventListener(window, 'mouseup', () => {
   dragging.value = false;
 });
 useEventListener(window, 'mousemove', (e: MouseEvent) => {
   if (dragging.value && e.buttons === 0) dragging.value = false;
+});
+
+// The band unmounts when locked, so its @mouseleave never fires — reset
+// explicitly so the shared state (and the clock) don't get stuck "active".
+watch(
+  () => props.overlayClickThrough,
+  (locked) => {
+    if (locked) {
+      hovered.value = false;
+      dragging.value = false;
+    }
+  },
+);
+onBeforeUnmount(() => {
+  hovered.value = false;
+  dragging.value = false;
 });
 
 // Explicit @mousedown rather than data-tauri-drag-region, which is flaky on
