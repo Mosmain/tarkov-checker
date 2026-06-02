@@ -6,7 +6,7 @@ import type { PlayerFollow } from './layers/player/usePlayerLayer';
 const extractFactionSchema = z.enum(['pmc', 'scav', 'shared']);
 const labelModeSchema = z.enum(['hover', 'always']);
 const labelSizeSchema = z.enum(['sm', 'md', 'lg']);
-const playerFollowSchema = z.enum(['off', 'sm', 'md', 'lg']);
+const playerFollowSchema = z.enum(['off', 'on', 'sm', 'md', 'lg']);
 const mapCodeSchema = z.string().refine((s): s is TarkovMapCode => s in TARKOV_MAPS);
 const autoMapSwitchSchema = z.boolean();
 

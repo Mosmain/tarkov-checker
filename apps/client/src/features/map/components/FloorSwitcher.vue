@@ -11,6 +11,9 @@ const props = defineProps<{
 
 const { t } = useI18n();
 
+// Touch devices (phone) need bigger tap targets than the small mouse buttons.
+const coarse = useMediaQuery('(pointer: coarse)');
+
 const emit = defineEmits<{
   (e: 'select', id: string): void;
 }>();
@@ -61,7 +64,8 @@ onBeforeUnmount(() => {
     >
       <div
         v-if="open"
-        class="absolute bottom-12 left-0 flex flex-col gap-1.5"
+        class="absolute bottom-12 left-0 flex flex-col"
+        :class="coarse ? 'gap-2' : 'gap-1.5'"
         role="listbox"
         aria-orientation="vertical"
         :aria-label="t('floor')"
@@ -70,7 +74,8 @@ onBeforeUnmount(() => {
           v-for="floor in floors"
           :key="floor.id"
           rounded
-          size="small"
+          :size="coarse ? undefined : 'small'"
+          :class="coarse ? 'min-h-[44px] min-w-[44px]' : ''"
           :severity="floor.id === current ? 'primary' : 'secondary'"
           :label="floor.label"
           role="option"
@@ -82,9 +87,10 @@ onBeforeUnmount(() => {
     </Transition>
 
     <Button
-      size="small"
+      :size="coarse ? undefined : 'small'"
       severity="secondary"
       class="!bg-surface-800/80 hover:!bg-surface-800 !border-surface-700 backdrop-blur"
+      :class="coarse ? 'min-h-[44px]' : ''"
       :aria-expanded="open"
       aria-haspopup="listbox"
       :aria-label="t('floor')"

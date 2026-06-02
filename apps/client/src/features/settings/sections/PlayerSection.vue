@@ -6,6 +6,7 @@ const { t } = useI18n();
 
 const playerFollowOptions = computed(() => [
   { label: t('playerFollowOptions.off'), value: 'off' as const },
+  { label: t('playerFollowOptions.on'), value: 'on' as const },
   { label: t('playerFollowOptions.sm'), value: 'sm' as const },
   { label: t('playerFollowOptions.md'), value: 'md' as const },
   { label: t('playerFollowOptions.lg'), value: 'lg' as const },

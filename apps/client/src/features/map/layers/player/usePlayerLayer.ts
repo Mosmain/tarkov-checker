@@ -3,9 +3,10 @@ import { useServerEvent } from '@/features/server/composables/useServerEvents';
 import { useMapSettingsStore } from '@/features/map/store';
 import type { MapLayerContext } from '../registry';
 
-export type PlayerFollow = 'off' | 'sm' | 'md' | 'lg';
+// 'on' follows without changing zoom; sm/md/lg also zoom in by the delta.
+export type PlayerFollow = 'off' | 'on' | 'sm' | 'md' | 'lg';
 
-const FOLLOW_ZOOM_DELTA: Readonly<Record<Exclude<PlayerFollow, 'off'>, number>> = {
+const FOLLOW_ZOOM_DELTA: Readonly<Record<'sm' | 'md' | 'lg', number>> = {
   sm: 1,
   md: 2,
   lg: 3,
@@ -61,12 +62,18 @@ export function usePlayerLayer(ctx: MapLayerContext): void {
     }
 
     const changed = pos.x !== lastX || pos.z !== lastZ || yaw !== lastYaw;
-    if (changed && playerFollow.value !== 'off') {
-      const targetZoom = Math.min(
-        initialZoom.value + FOLLOW_ZOOM_DELTA[playerFollow.value],
-        map.value.getMaxZoom(),
-      );
-      map.value.setView(latLng, targetZoom, { animate: true, duration: 0.4 });
+    const follow = playerFollow.value;
+    if (changed && follow !== 'off') {
+      if (follow === 'on') {
+        // Recenter only — keep whatever zoom the user has set.
+        map.value.panTo(latLng, { animate: true, duration: 0.4 });
+      } else {
+        const targetZoom = Math.min(
+          initialZoom.value + FOLLOW_ZOOM_DELTA[follow],
+          map.value.getMaxZoom(),
+        );
+        map.value.setView(latLng, targetZoom, { animate: true, duration: 0.4 });
+      }
     }
     if (changed) {
       lastX = pos.x;

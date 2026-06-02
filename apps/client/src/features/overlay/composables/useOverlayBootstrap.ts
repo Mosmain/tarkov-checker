@@ -46,12 +46,19 @@ export function useOverlayBootstrap(overlayClickThrough: Ref<boolean>): void {
   watch(overlayClickThrough, (locked) => void overlay.setClickThrough(locked));
   document.documentElement.classList.add('overlay-window');
 
+  // Locking pins the window on top regardless of the user's always-on-top
+  // setting, so the overlay stays visible "out of raid"; unlocking restores
+  // their choice. Effective = user choice OR locked.
+  function applyAlwaysOnTop(): void {
+    void overlay.setAlwaysOnTop(alwaysOnTop.value || overlayClickThrough.value);
+  }
+
   // Replay persisted values to the native window before the user interacts
   // with anything. Same calls fire on each subsequent store change.
-  void overlay.setAlwaysOnTop(alwaysOnTop.value);
+  applyAlwaysOnTop();
   void overlay.setOpacity(opacity.value);
   void overlay.setZoom(Number(zoom.value) / 100);
-  watch(alwaysOnTop, (v) => void overlay.setAlwaysOnTop(v));
+  watch([alwaysOnTop, overlayClickThrough], applyAlwaysOnTop);
   watch(opacity, (v) => void overlay.setOpacity(v));
   watch(zoom, (v) => void overlay.setZoom(Number(v) / 100));
 }
