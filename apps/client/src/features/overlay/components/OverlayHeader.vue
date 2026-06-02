@@ -58,74 +58,87 @@ async function startDrag(event: MouseEvent): Promise<void> {
 </script>
 
 <template>
-  <!-- Drag bar. The full-width outer strip is both the hover trigger and the
-       drag region (grabbable anywhere across the top, even when the window is
-       dragged mostly past a screen edge). Collapsed it's a short, airy grabber
-       nub floating below the edge; on hover/drag it unfurls from the centre
-       into a near-full-width title bar carrying the map name, and stays open
-       while dragging. The right-hand controls sit on top of it (higher z).
-       Tauri/preview + unlocked only. -->
+  <!-- OVERLAY (Tauri/preview), unlocked: a full-width top band that is both the
+       hover trigger and the drag region (grabbable anywhere, even when the
+       window is dragged mostly past a screen edge). Idle, only a small airy
+       grabber nub shows; hovering/dragging reveals two SEPARATE, never-
+       overlapping zones — a drag pill (left, flex-1) and the control cluster
+       (right, auto-width) — as flex siblings, so they can't collide. The pill
+       is visual only; the band owns the drag. -->
   <div
     v-if="tauriChrome && !overlayClickThrough"
-    class="absolute top-0 right-0 left-0 z-[1000] flex justify-center px-2 pt-2 pb-2"
+    class="absolute top-0 right-0 left-0 z-[1000] flex h-12 cursor-grab items-start px-2 pt-2 active:cursor-grabbing"
     @mousedown="startDrag"
     @mouseenter="hovered = true"
     @mouseleave="hovered = false"
   >
+    <!-- Idle grabber nub (centred), cross-fades out when the bar is active. -->
     <div
-      :title="t('overlay.move')"
-      :aria-label="t('overlay.move')"
-      class="flex cursor-grab items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-2xl text-surface-0 ring-1 ring-white/10 backdrop-blur transition-all duration-200 ease-out select-none active:cursor-grabbing"
-      :class="
-        dragBarActive
-          ? 'h-11 w-full bg-surface-900/90 px-4 shadow-lg'
-          : 'h-1.5 w-12 bg-surface-500/70 px-0 shadow-md'
-      "
+      class="pointer-events-none absolute top-1.5 left-1/2 h-1.5 w-12 -translate-x-1/2 rounded-full bg-surface-500/70 shadow-md transition-opacity duration-200"
+      :class="dragBarActive ? 'opacity-0' : 'opacity-100'"
+      aria-hidden="true"
+    />
+
+    <!-- Revealed chrome: drag pill + controls, flex siblings (no overlap). -->
+    <div
+      class="flex h-10 w-full items-center gap-2 transition-all duration-200 ease-out"
+      :class="dragBarActive ? 'translate-y-0 opacity-100' : 'pointer-events-none -translate-y-1 opacity-0'"
     >
-      <i
-        class="pi pi-bars shrink-0 text-xs transition-opacity duration-150 pointer-events-none"
-        :class="dragBarActive ? 'opacity-90' : 'opacity-0'"
-      />
-      <span
-        class="text-sm font-medium transition-opacity duration-150 pointer-events-none"
-        :class="dragBarActive ? 'opacity-100' : 'opacity-0'"
-        >{{ mapDisplayName }}</span
+      <!-- Drag pill: visual only; mousedown falls through to the band. -->
+      <div
+        :title="t('overlay.move')"
+        :aria-label="t('overlay.move')"
+        class="pointer-events-none flex h-10 min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-2xl bg-surface-800/85 px-4 text-surface-0 ring-1 ring-white/10 backdrop-blur select-none"
       >
+        <i class="pi pi-bars shrink-0 text-xs opacity-90" aria-hidden="true" />
+        <span class="truncate text-sm font-medium">{{ mapDisplayName }}</span>
+      </div>
+
+      <!-- Controls: own pointer events, never start a drag. -->
+      <div class="flex shrink-0 items-center gap-2" @mousedown.stop>
+        <span
+          class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-surface-800/85 ring-1 ring-white/10 backdrop-blur"
+          :title="'ws: ' + status"
+        >
+          <i :class="['text-[10px]', statusIconClass]" aria-hidden="true" />
+          <span class="sr-only" aria-live="polite">Connection: {{ status }}</span>
+        </span>
+        <SettingsPanel />
+        <Button
+          rounded
+          severity="secondary"
+          class="!bg-surface-800/85 hover:!bg-red-900 !border-surface-700 backdrop-blur"
+          :aria-label="t('close')"
+          @click="$emit('close')"
+        >
+          <template #icon>
+            <i class="pi pi-times text-sm" />
+          </template>
+        </Button>
+      </div>
     </div>
   </div>
 
-  <div class="absolute top-3 right-3 z-[1001] flex items-center gap-2">
-    <!-- Browser: status dot + map name (no window drag there). Tauri: compact
-         status dot only — the map name lives in the drag bar, and the locked
-         state needs nothing but the connection state. -->
+  <!-- OVERLAY locked: just the connection dot — no interactive chrome. -->
+  <div v-else-if="tauriChrome" class="absolute top-3 right-3 z-[1000]">
     <span
-      v-if="!tauriChrome"
-      class="inline-flex items-center gap-2 rounded-md bg-surface-800/70 px-3 py-1 text-sm font-medium text-surface-0 backdrop-blur pointer-events-none select-none"
-    >
-      <i :class="['text-[10px]', statusIconClass]" :title="'ws: ' + status" aria-hidden="true" />
-      <span>{{ mapDisplayName }}</span>
-      <span class="sr-only" aria-live="polite">Connection: {{ status }}</span>
-    </span>
-    <span
-      v-else
       class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-surface-800/70 backdrop-blur pointer-events-none"
       :title="'ws: ' + status"
     >
       <i :class="['text-[10px]', statusIconClass]" aria-hidden="true" />
       <span class="sr-only" aria-live="polite">Connection: {{ status }}</span>
     </span>
-    <SettingsPanel v-if="!overlayClickThrough" />
-    <Button
-      v-if="tauriChrome && !overlayClickThrough"
-      rounded
-      severity="secondary"
-      class="!bg-surface-800/80 hover:!bg-red-900 !border-surface-700 backdrop-blur"
-      :aria-label="t('close')"
-      @click="$emit('close')"
+  </div>
+
+  <!-- BROWSER: no window drag — keep a static status + map name pill + settings. -->
+  <div v-else class="absolute top-3 right-3 z-[1000] flex items-center gap-2">
+    <span
+      class="inline-flex items-center gap-2 rounded-md bg-surface-800/70 px-3 py-1 text-sm font-medium text-surface-0 backdrop-blur pointer-events-none select-none"
     >
-      <template #icon>
-        <i class="pi pi-times text-sm" />
-      </template>
-    </Button>
+      <i :class="['text-[10px]', statusIconClass]" :title="'ws: ' + status" aria-hidden="true" />
+      <span>{{ mapDisplayName }}</span>
+      <span class="sr-only" aria-live="polite">Connection: {{ status }}</span>
+    </span>
+    <SettingsPanel />
   </div>
 </template>
