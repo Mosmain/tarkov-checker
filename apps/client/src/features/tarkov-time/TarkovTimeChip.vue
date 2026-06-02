@@ -13,8 +13,10 @@ onBeforeUnmount(() => clearInterval(timer));
 </script>
 
 <template>
+  <!-- Sits below the top header band (h-12) so the full-width drag bar doesn't
+       cover it on hover; still upper-left, always visible. -->
   <div
-    class="pointer-events-none absolute top-3 left-3 z-[1000] inline-flex items-center gap-1.5 rounded-md bg-surface-800/70 px-2 py-1 font-mono text-xs tabular-nums text-surface-0 backdrop-blur select-none"
+    class="pointer-events-none absolute top-14 left-3 z-[1000] inline-flex items-center gap-1.5 rounded-md bg-surface-800/70 px-2 py-1 font-mono text-xs tabular-nums text-surface-0 backdrop-blur select-none"
     aria-hidden="true"
   >
     <i class="pi pi-clock text-[10px] opacity-70" />
