@@ -58,48 +58,43 @@ async function startDrag(event: MouseEvent): Promise<void> {
 </script>
 
 <template>
-  <!-- Drag affordance. The full-width outer strip is the drag region (so the
-       window stays grabbable even when dragged mostly past a screen edge), and
-       @mousedown works anywhere across it. The visible part is an airy pill
-       floating below the top edge — clear of the dashed border and the
-       right-hand controls — that grows from a grabber into a labelled bar.
-       Hover/expand is scoped to the centre, so reaching for the controls won't
-       trigger it, and `dragging` keeps it open once the OS takes over the move.
-       Tauri + unlocked only. -->
+  <!-- Drag bar. The full-width outer strip is both the hover trigger and the
+       drag region (grabbable anywhere across the top, even when the window is
+       dragged mostly past a screen edge). Collapsed it's a short, airy grabber
+       nub floating below the edge; on hover/drag it unfurls from the centre
+       into a near-full-width title bar carrying the map name, and stays open
+       while dragging. The right-hand controls sit on top of it (higher z).
+       Tauri/preview + unlocked only. -->
   <div
     v-if="tauriChrome && !overlayClickThrough"
-    class="absolute top-0 right-0 left-0 z-[1000] flex justify-center"
+    class="absolute top-0 right-0 left-0 z-[1000] flex justify-center px-2 pt-2 pb-2"
     @mousedown="startDrag"
+    @mouseenter="hovered = true"
+    @mouseleave="hovered = false"
   >
     <div
-      class="flex justify-center px-10 pt-2 pb-3"
-      @mouseenter="hovered = true"
-      @mouseleave="hovered = false"
+      :title="t('overlay.move')"
+      :aria-label="t('overlay.move')"
+      class="flex cursor-grab items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-2xl text-surface-0 ring-1 ring-white/10 backdrop-blur transition-all duration-200 ease-out select-none active:cursor-grabbing"
+      :class="
+        dragBarActive
+          ? 'h-11 w-full bg-surface-900/90 px-4 shadow-lg'
+          : 'h-1.5 w-12 bg-surface-500/70 px-0 shadow-md'
+      "
     >
-      <div
-        :title="t('overlay.move')"
-        :aria-label="t('overlay.move')"
-        class="flex cursor-grab items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-full text-surface-0 ring-1 ring-white/10 backdrop-blur transition-all duration-200 ease-out select-none active:cursor-grabbing"
-        :class="
-          dragBarActive
-            ? 'h-8 max-w-[20rem] bg-surface-800/90 px-4 shadow-lg'
-            : 'h-2.5 max-w-[3rem] bg-surface-700/70 px-0 shadow-md'
-        "
+      <i
+        class="pi pi-bars shrink-0 text-xs transition-opacity duration-150 pointer-events-none"
+        :class="dragBarActive ? 'opacity-90' : 'opacity-0'"
+      />
+      <span
+        class="text-sm font-medium transition-opacity duration-150 pointer-events-none"
+        :class="dragBarActive ? 'opacity-100' : 'opacity-0'"
+        >{{ mapDisplayName }}</span
       >
-        <i
-          class="pi pi-bars shrink-0 text-xs transition-opacity duration-150 pointer-events-none"
-          :class="dragBarActive ? 'opacity-90' : 'opacity-0'"
-        />
-        <span
-          class="text-sm font-medium transition-opacity duration-150 pointer-events-none"
-          :class="dragBarActive ? 'opacity-100' : 'opacity-0'"
-          >{{ mapDisplayName }}</span
-        >
-      </div>
     </div>
   </div>
 
-  <div class="absolute top-3 right-3 z-[1000] flex items-center gap-2">
+  <div class="absolute top-3 right-3 z-[1001] flex items-center gap-2">
     <!-- Browser: status dot + map name (no window drag there). Tauri: compact
          status dot only — the map name lives in the drag bar, and the locked
          state needs nothing but the connection state. -->

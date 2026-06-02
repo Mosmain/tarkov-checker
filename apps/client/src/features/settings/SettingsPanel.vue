@@ -40,29 +40,9 @@ const isDesktop = useMediaQuery('(min-width: 640px)');
   <Drawer
     v-model:visible="open"
     :position="isDesktop ? 'right' : 'full'"
-    :show-close-icon="false"
+    :header="t('settings')"
     :class="isDesktop ? '!w-[26rem]' : ''"
   >
-    <!-- Explicit, prominent close button: when the overlay is small the drawer
-         opens full-screen, leaving no outside area to click-dismiss and making
-         Esc non-obvious. -->
-    <template #header>
-      <div class="flex w-full items-center justify-between gap-3">
-        <span class="text-lg font-semibold">{{ t('settings') }}</span>
-        <Button
-          rounded
-          text
-          severity="secondary"
-          :aria-label="t('close')"
-          @click="open = false"
-        >
-          <template #icon>
-            <i class="pi pi-times text-lg" />
-          </template>
-        </Button>
-      </div>
-    </template>
-
     <div class="space-y-4">
       <component :is="sec.component" v-for="sec in mainSections" :key="sec.id" />
 
