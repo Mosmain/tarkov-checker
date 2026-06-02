@@ -18,9 +18,12 @@ const { active: headerActive } = useOverlayHeaderActive();
 </script>
 
 <template>
+  <!-- Slide via transform (composited), not `top` (layout) — matches the
+       header's transform/opacity reveal so the two move in lockstep.
+       translate-y-11 (44px) lands it at top-14 from the top-3 base. -->
   <div
-    class="pointer-events-none absolute left-3 z-[1000] inline-flex items-center gap-1.5 rounded-md bg-surface-800/70 px-2 py-1 font-mono text-xs tabular-nums text-surface-0 backdrop-blur transition-[top] duration-200 ease-out select-none"
-    :class="headerActive ? 'top-14' : 'top-3'"
+    class="pointer-events-none absolute top-3 left-3 z-[1000] inline-flex items-center gap-1.5 rounded-md bg-surface-800/70 px-2 py-1 font-mono text-xs tabular-nums text-surface-0 backdrop-blur transition-transform duration-200 ease-out select-none"
+    :class="headerActive ? 'translate-y-11' : 'translate-y-0'"
     aria-hidden="true"
   >
     <i class="pi pi-clock text-[10px] opacity-70" />
