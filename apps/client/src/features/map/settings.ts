@@ -3,6 +3,24 @@ import MapSection from '@/features/settings/sections/MapSection.vue';
 import ExtractsSection from '@/features/settings/sections/ExtractsSection.vue';
 import PlayerSection from '@/features/settings/sections/PlayerSection.vue';
 
-registerSettingsSection({ id: 'map', group: 'main', order: 10, component: MapSection });
-registerSettingsSection({ id: 'extracts', group: 'main', order: 20, component: ExtractsSection });
-registerSettingsSection({ id: 'player', group: 'main', order: 30, component: PlayerSection });
+registerSettingsSection({
+  id: 'map',
+  group: 'layers',
+  order: 10,
+  titleKey: 'map',
+  component: MapSection,
+});
+registerSettingsSection({
+  id: 'extracts',
+  group: 'layers',
+  order: 20,
+  titleKey: 'extracts',
+  component: ExtractsSection,
+});
+registerSettingsSection({
+  id: 'player',
+  group: 'layers',
+  order: 30,
+  titleKey: 'player',
+  component: PlayerSection,
+});

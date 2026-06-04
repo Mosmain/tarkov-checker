@@ -28,7 +28,7 @@ const labelSizeOptions = computed(() => [
 </script>
 
 <template>
-  <Fieldset :legend="t('extracts')">
+  <div class="space-y-3">
     <div class="flex flex-col gap-1">
       <label
         v-for="opt in FACTION_OPTIONS"
@@ -41,7 +41,7 @@ const labelSizeOptions = computed(() => [
       </label>
     </div>
 
-    <div class="mt-3">
+    <div>
       <p class="mb-1.5 text-xs opacity-60">{{ t('labels') }}</p>
       <SelectButton
         v-model="extractLabelMode"
@@ -55,7 +55,7 @@ const labelSizeOptions = computed(() => [
       <p class="mt-1.5 text-[10px] leading-relaxed opacity-70">{{ t('labelHint') }}</p>
     </div>
 
-    <div class="mt-3">
+    <div>
       <p class="mb-1.5 text-xs opacity-60">{{ t('labelSize') }}</p>
       <SelectButton
         v-model="extractLabelSize"
@@ -68,12 +68,12 @@ const labelSizeOptions = computed(() => [
       />
     </div>
 
-    <div class="mt-3">
+    <div>
       <div class="flex items-center justify-between gap-3">
         <label class="text-sm" for="extract-edge-indicators">{{ t('edgeIndicators') }}</label>
         <ToggleSwitch v-model="edgeIndicators" input-id="extract-edge-indicators" />
       </div>
       <p class="mt-1.5 text-[10px] leading-relaxed opacity-70">{{ t('edgeIndicatorsHint') }}</p>
     </div>
-  </Fieldset>
+  </div>
 </template>

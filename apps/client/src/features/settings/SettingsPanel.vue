@@ -1,11 +1,40 @@
 <script setup lang="ts">
+import { z } from 'zod';
 import { useSettingsSections } from './registry';
+import { persistedRef } from '@/shared/persisted-store';
 
 const { t } = useI18n();
-const mainSections = useSettingsSections('main');
-const systemSections = useSettingsSections('system');
+const layersSections = useSettingsSections('layers');
+const settingsSections = useSettingsSections('settings');
 const open = ref(false);
 const isDesktop = useMediaQuery('(min-width: 640px)');
+
+// Only surface a tab that actually has visible sections — e.g. on a phone the
+// Settings tab keeps just Language, while overlay/hotkeys/paths/pairing are
+// desktop/overlay-only and filtered out by the registry.
+const tabs = computed(() =>
+  [
+    { value: 'layers', label: t('settingsTabs.layers'), sections: layersSections.value },
+    { value: 'settings', label: t('settingsTabs.settings'), sections: settingsSections.value },
+  ].filter((tab) => tab.sections.length > 0),
+);
+
+const activeTab = persistedRef('tc.settings.tab', z.enum(['layers', 'settings']), 'layers');
+
+// Expanded accordion panels per tab. Desktop opens every section by default so
+// all controls are visible at a glance; on a phone they start collapsed to keep
+// the drawer short. The default is snapshotted once from the section ids — after
+// that the user's expand/collapse choices persist.
+const openLayers = persistedRef(
+  'tc.settings.open.layers',
+  z.array(z.string()),
+  isDesktop.value ? layersSections.value.map((s) => s.id) : [],
+);
+const openSettings = persistedRef(
+  'tc.settings.open.settings',
+  z.array(z.string()),
+  isDesktop.value ? settingsSections.value.map((s) => s.id) : [],
+);
 </script>
 
 <template>
@@ -43,18 +72,32 @@ const isDesktop = useMediaQuery('(min-width: 640px)');
     :header="t('settings')"
     :class="isDesktop ? '!w-[26rem]' : ''"
   >
-    <div class="space-y-4">
-      <component :is="sec.component" v-for="sec in mainSections" :key="sec.id" />
-
-      <div v-if="systemSections.length" class="pt-2 mt-2 border-t border-surface-700">
-        <p class="mb-3 text-[10px] font-semibold uppercase tracking-wider opacity-70">
-          {{ t('systemSection') }}
-        </p>
-
-        <div class="space-y-4">
-          <component :is="sec.component" v-for="sec in systemSections" :key="sec.id" />
-        </div>
-      </div>
-    </div>
+    <Tabs v-model:value="activeTab">
+      <TabList>
+        <Tab v-for="tab in tabs" :key="tab.value" :value="tab.value">{{ tab.label }}</Tab>
+      </TabList>
+      <TabPanels class="!px-0">
+        <TabPanel value="layers" class="!px-0 !pb-0">
+          <Accordion v-model:value="openLayers" multiple>
+            <AccordionPanel v-for="sec in layersSections" :key="sec.id" :value="sec.id">
+              <AccordionHeader>{{ t(sec.titleKey) }}</AccordionHeader>
+              <AccordionContent>
+                <component :is="sec.component" />
+              </AccordionContent>
+            </AccordionPanel>
+          </Accordion>
+        </TabPanel>
+        <TabPanel value="settings" class="!px-0 !pb-0">
+          <Accordion v-model:value="openSettings" multiple>
+            <AccordionPanel v-for="sec in settingsSections" :key="sec.id" :value="sec.id">
+              <AccordionHeader>{{ t(sec.titleKey) }}</AccordionHeader>
+              <AccordionContent>
+                <component :is="sec.component" />
+              </AccordionContent>
+            </AccordionPanel>
+          </Accordion>
+        </TabPanel>
+      </TabPanels>
+    </Tabs>
   </Drawer>
 </template>

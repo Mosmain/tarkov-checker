@@ -2,16 +2,20 @@ import { computed, shallowReactive, type ComputedRef, type Component } from 'vue
 import { useMediaQuery } from '@vueuse/core';
 import { isTauri } from '@/shared/tauri';
 
-export type SectionGroup = 'main' | 'system';
+export type SectionGroup = 'layers' | 'settings';
 export type SectionVisibility = 'always' | 'tauri' | 'desktop-or-tauri';
 
 export interface SettingsSection {
   id: string;
+  /** Which drawer tab the section lives under: `layers` (what's drawn on the
+   * map) or `settings` (app/system preferences). */
   group: SectionGroup;
   /** Ascending; use multiples of 10 so future insertions fit between existing entries.
-   * main: 10 map, 20 extracts, 30 player, 40 airdrop, 50 overlay, 60 hotkeys
-   * system: 10 language, 20 paths, 30 pairing */
+   * layers: 10 map, 20 extracts, 30 player, 40 airdrop
+   * settings: 10 overlay, 20 hotkeys, 30 language, 40 paths, 50 pairing */
   order: number;
+  /** i18n key for the accordion header label (the section title). */
+  titleKey: string;
   visible?: SectionVisibility;
   /** Sync `Component` or `defineAsyncComponent(() => import('...'))` —
    *  Vue resolves both. */

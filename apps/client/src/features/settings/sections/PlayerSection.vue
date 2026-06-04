@@ -14,7 +14,7 @@ const playerFollowOptions = computed(() => [
 </script>
 
 <template>
-  <Fieldset :legend="t('player')">
+  <div>
     <p class="mb-1.5 text-xs opacity-60">{{ t('playerFollow') }}</p>
     <SelectButton
       v-model="playerFollow"
@@ -26,5 +26,5 @@ const playerFollowOptions = computed(() => [
       fluid
     />
     <p class="mt-1.5 text-[10px] leading-relaxed opacity-70">{{ t('playerFollowHint') }}</p>
-  </Fieldset>
+  </div>
 </template>

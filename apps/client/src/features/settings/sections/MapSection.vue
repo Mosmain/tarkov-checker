@@ -13,21 +13,19 @@ const mapOptions = computed(() =>
 </script>
 
 <template>
-  <Fieldset :legend="t('map')">
-    <div class="space-y-3">
-      <Select
-        v-model="mapCode"
-        :options="mapOptions"
-        option-label="label"
-        option-value="value"
-        :aria-label="t('map')"
-        fluid
-      />
-      <div class="flex items-center justify-between gap-3">
-        <label class="text-sm" for="map-auto-switch">{{ t('autoMapSwitch') }}</label>
-        <ToggleSwitch v-model="autoMapSwitch" input-id="map-auto-switch" />
-      </div>
-      <p class="text-[10px] leading-relaxed opacity-70">{{ t('autoMapSwitchHint') }}</p>
+  <div class="space-y-3">
+    <Select
+      v-model="mapCode"
+      :options="mapOptions"
+      option-label="label"
+      option-value="value"
+      :aria-label="t('map')"
+      fluid
+    />
+    <div class="flex items-center justify-between gap-3">
+      <label class="text-sm" for="map-auto-switch">{{ t('autoMapSwitch') }}</label>
+      <ToggleSwitch v-model="autoMapSwitch" input-id="map-auto-switch" />
     </div>
-  </Fieldset>
+    <p class="text-[10px] leading-relaxed opacity-70">{{ t('autoMapSwitchHint') }}</p>
+  </div>
 </template>

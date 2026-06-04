@@ -25,7 +25,7 @@ const {
 </script>
 
 <template>
-  <Fieldset :legend="t('paths.heading')">
+  <div class="space-y-3">
     <Message
       v-if="pathsError"
       :severity="pathsError.kind === 'no-helper' ? 'warn' : 'error'"
@@ -105,5 +105,5 @@ const {
         {{ t('paths.mobileHint') }}
       </p>
     </div>
-  </Fieldset>
+  </div>
 </template>

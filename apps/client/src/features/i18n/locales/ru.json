@@ -29,6 +29,10 @@
     "lg": "L"
   },
   "settings": "Настройки",
+  "settingsTabs": {
+    "layers": "Слои",
+    "settings": "Настройки"
+  },
   "close": "Закрыть",
   "systemSection": "Системные",
   "floor": "Уровень",

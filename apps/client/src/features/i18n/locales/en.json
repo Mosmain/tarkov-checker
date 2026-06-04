@@ -29,6 +29,10 @@
     "lg": "L"
   },
   "settings": "Settings",
+  "settingsTabs": {
+    "layers": "Layers",
+    "settings": "Settings"
+  },
   "close": "Close",
   "systemSection": "System",
   "floor": "Floor",
