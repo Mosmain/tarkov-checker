@@ -67,6 +67,8 @@
   "overlay": {
     "heading": "Overlay",
     "alwaysOnTop": "Always on top",
+    "minimizeToTray": "Minimize to tray",
+    "minimizeToTrayHint": "Closing the window hides it to the system tray and keeps it running. Restore or quit from the tray icon.",
     "clickThrough": "Click-through",
     "clickThroughWarning": "Once enabled, you can't click the window. Restart the app to re-enable interaction.",
     "opacity": "Opacity",

@@ -10,6 +10,11 @@ export const useOverlayStore = defineStore('overlay', () => {
   const mapOpacity = persistedRef('tc.overlay.mapOpacity', z.number().min(0).max(1), 1);
   const zoom = persistedRef('tc.overlay.zoom', overlayZoomSchema, '100' as OverlayZoom);
 
+  // When on, the ✕ button hides the window to the system tray (keeps running)
+  // instead of quitting; restore/quit from the tray. Opt-in — default off keeps
+  // the ✕ as a confirmed quit.
+  const minimizeToTray = persistedRef('tc.overlay.minimizeToTray', z.boolean(), false);
+
   // Session-only: booting into a locked overlay with a broken hotkey would be
   // unrecoverable, so the locked state is intentionally NOT persisted.
   const clickThrough = ref(false);
@@ -19,5 +24,5 @@ export const useOverlayStore = defineStore('overlay', () => {
   // persisted — pairing is per-action, never "remembered open".
   const pairingModalOpen = ref(false);
 
-  return { alwaysOnTop, opacity, mapOpacity, zoom, clickThrough, pairingModalOpen };
+  return { alwaysOnTop, opacity, mapOpacity, zoom, minimizeToTray, clickThrough, pairingModalOpen };
 });

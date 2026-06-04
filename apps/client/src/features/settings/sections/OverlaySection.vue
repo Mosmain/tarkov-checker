@@ -2,7 +2,11 @@
 import { useOverlayStore } from '@/features/overlay/store';
 import { useOverlaySync } from '@/features/overlay/composables/useOverlaySync';
 
-const { alwaysOnTop: overlayAlwaysOnTop, zoom: overlayZoom } = storeToRefs(useOverlayStore());
+const {
+  alwaysOnTop: overlayAlwaysOnTop,
+  zoom: overlayZoom,
+  minimizeToTray: overlayMinimizeToTray,
+} = storeToRefs(useOverlayStore());
 const { opacityPercent, mapOpacityPercent, mapOpacityDisabled } = useOverlaySync();
 const { t } = useI18n();
 
@@ -19,6 +23,16 @@ const overlayZoomOptions = computed(() => [
     <div class="flex items-center justify-between gap-3">
       <label class="text-sm" for="overlay-always-on-top">{{ t('overlay.alwaysOnTop') }}</label>
       <ToggleSwitch v-model="overlayAlwaysOnTop" input-id="overlay-always-on-top" />
+    </div>
+
+    <div>
+      <div class="flex items-center justify-between gap-3">
+        <label class="text-sm" for="overlay-minimize-tray">{{ t('overlay.minimizeToTray') }}</label>
+        <ToggleSwitch v-model="overlayMinimizeToTray" input-id="overlay-minimize-tray" />
+      </div>
+      <p class="mt-1.5 text-[10px] leading-relaxed opacity-70">
+        {{ t('overlay.minimizeToTrayHint') }}
+      </p>
     </div>
 
     <div>
