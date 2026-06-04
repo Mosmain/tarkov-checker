@@ -66,11 +66,17 @@ const openSettings = persistedRef(
     </template>
   </Button>
 
+  <!-- Non-modal so the map stays bright and live behind the drawer: toggling a
+       layer (extracts, labels, follow, edge arrows) is previewed in real time.
+       Mobile uses a bottom-sheet (auto height, capped) that hugs its content so
+       the map peeks above it; desktop keeps the right-side panel. -->
   <Drawer
     v-model:visible="open"
-    :position="isDesktop ? 'right' : 'full'"
+    :modal="false"
+    :dismissable="false"
+    :position="isDesktop ? 'right' : 'bottom'"
     :header="t('settings')"
-    :class="isDesktop ? '!w-[26rem]' : ''"
+    :class="isDesktop ? '!w-[26rem]' : '!h-auto !max-h-[85dvh] !rounded-t-2xl'"
   >
     <Tabs v-model:value="activeTab">
       <TabList>
