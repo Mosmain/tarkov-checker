@@ -4,7 +4,7 @@ import { useSettingsSections } from './registry';
 import { persistedRef } from '@/shared/persisted-store';
 
 const { t } = useI18n();
-const systemSections = useSettingsSections('system');
+const systemSections = useSettingsSections();
 const open = ref(false);
 const isDesktop = useMediaQuery('(min-width: 640px)');
 

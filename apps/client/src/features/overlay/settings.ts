@@ -4,7 +4,6 @@ import PairingSection from '@/features/settings/sections/PairingSection.vue';
 
 registerSettingsSection({
   id: 'overlay',
-  group: 'system',
   order: 10,
   visible: 'tauri',
   titleKey: 'overlay.heading',
@@ -16,7 +15,6 @@ registerSettingsSection({
 // from a phone makes no sense.
 registerSettingsSection({
   id: 'pairing',
-  group: 'system',
   order: 50,
   visible: 'tauri',
   titleKey: 'pairing.heading',
