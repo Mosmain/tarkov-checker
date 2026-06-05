@@ -179,8 +179,8 @@ key back in the running app.
 `apps/client/src/features/map/` is split into three sibling folders:
 
 - `composables/` — **framework hooks** for Leaflet/Vue plumbing:
-  `useLeafletMap`. Nothing here knows about extracts, player markers, or future
-  quest markers — pure map/Leaflet glue.
+  `useLeafletMap`, `useFloorSwitcher`, `useLayerVisibility`. Nothing here knows
+  about extracts, player markers, or future quest markers — pure map/Leaflet glue.
 - `components/` — **UI surfaces** mounted by the page:
   - `LayerRail.vue` — on-map left rail (vertically centered). Top icon = base map
     selector flyout (MapSection component). Below that, one icon per layer **category**

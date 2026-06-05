@@ -11,8 +11,10 @@ interface FloorInfo {
 export interface UseFloorSwitcher {
   currentFloor: Ref<string | null>;
   setActiveFloor: (id: string) => void;
-  nextFloor: () => void;
-  prevFloor: () => void;
+  /** Step to a higher floor (toward the top of the list); clamps at the topmost. */
+  floorUp: () => void;
+  /** Step to a lower floor (toward the bottom); clamps at the lowest. */
+  floorDown: () => void;
 }
 
 /**
@@ -70,25 +72,27 @@ export function useFloorSwitcher(
     currentFloor.value = id;
   }
 
+  // Floors are ordered top-to-bottom (index 0 = highest), so "up" steps toward
+  // index 0. Clamp at both ends — no wrap-around, so repeated presses at the top
+  // or bottom do nothing (matches the rail stepper's disabled-at-edge buttons).
   function shiftFloor(delta: 1 | -1): void {
     const floorIds = floors.map((f) => f.id);
     if (floorIds.length <= 1) return;
     const active = currentFloor.value ?? defaultFloor;
     if (active === null) return;
-    const idx = floorIds.indexOf(active);
-    // Wrap around so repeated presses cycle the list.
-    const nextIdx = (idx + delta + floorIds.length) % floorIds.length;
+    const nextIdx = floorIds.indexOf(active) + delta;
+    if (nextIdx < 0 || nextIdx >= floorIds.length) return;
     const next = floorIds[nextIdx];
     if (next) setActiveFloor(next);
   }
 
-  function nextFloor(): void {
-    shiftFloor(1);
-  }
-
-  function prevFloor(): void {
+  function floorUp(): void {
     shiftFloor(-1);
   }
 
-  return { currentFloor, setActiveFloor, nextFloor, prevFloor };
+  function floorDown(): void {
+    shiftFloor(1);
+  }
+
+  return { currentFloor, setActiveFloor, floorUp, floorDown };
 }

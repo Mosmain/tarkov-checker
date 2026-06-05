@@ -29,8 +29,8 @@ const {
   setActiveFloor,
   zoomIn,
   zoomOut,
-  nextFloor,
-  prevFloor,
+  floorUp,
+  floorDown,
   reload,
 } = useLeafletMap(mapContainer, props.mapCode);
 
@@ -66,7 +66,7 @@ useEventListener(
   { capture: true, passive: false },
 );
 
-defineExpose({ zoomIn, zoomOut, nextFloor, prevFloor, reload });
+defineExpose({ zoomIn, zoomOut, floorUp, floorDown, reload });
 
 watch(
   locale,

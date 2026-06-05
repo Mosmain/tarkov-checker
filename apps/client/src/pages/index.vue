@@ -49,10 +49,10 @@ useServerEvent('command', (msg) => {
       mapRef.value?.zoomOut();
       break;
     case 'floor-up':
-      mapRef.value?.nextFloor();
+      mapRef.value?.floorUp();
       break;
     case 'floor-down':
-      mapRef.value?.prevFloor();
+      mapRef.value?.floorDown();
       break;
     case 'airdrop':
       airdropStore.press();

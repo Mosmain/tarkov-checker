@@ -33,8 +33,7 @@
   "settingsGroups": {
     "player": "Игрок",
     "loot": "Лут",
-    "quests": "Квесты",
-    "system": "Система"
+    "quests": "Квесты"
   },
   "close": "Закрыть",
   "floorWheelHint": "Уровень — Alt + колесо для смены",

@@ -33,8 +33,7 @@
   "settingsGroups": {
     "player": "Player",
     "loot": "Loot",
-    "quests": "Quests",
-    "system": "System"
+    "quests": "Quests"
   },
   "close": "Close",
   "floorWheelHint": "Floor — Alt + scroll to change",
