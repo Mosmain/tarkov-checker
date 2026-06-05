@@ -86,16 +86,15 @@ For nested or dynamic routes (`/raids/[id]`), see [Vue Router file-based docs](h
 2. Inside the feature: `./X` and `../X` imports.
 3. Other features depend on yours via `@/features/<name>/<thing>`.
 4. If the feature has persisted user settings — create `store.ts` using [`persistedRef`](./src/shared/persisted-store.ts) from `@/shared/persisted-store`. Each setting gets its own key like `tc.<name>.<field>`.
-5. If the feature has its own settings UI:
+5. If the feature has its own SYSTEM/app settings UI (the gear drawer). Map-layer
+   settings live on the layer registration instead — see step 6.
    - Create a section component `XxxSection.vue` under [`features/settings/sections/`](./src/features/settings/sections/).
    - Create `src/features/<name>/settings.ts` that calls `registerSettingsSection()`:
      ```ts
      import { registerSettingsSection } from '@/features/settings/registry';
      registerSettingsSection({
        id: '<name>',
-       group: 'layers', // 'layers' (map/layer toggles on LayerRail) or 'system' (app config in gear drawer)
-       subgroup: 'player', // optional: 'player' | 'loot' | 'quests' (layers group only); omit for 'system' and for map
-       order: 30, // multiples of 10; layers: 10 map · 20 player, 30 extracts, 40 airdrop; system: 10 overlay, 20 hotkeys, 30 language, 40 paths, 50 pairing
+       order: 30, // multiples of 10
        titleKey: 'xxx.heading', // i18n key for the section title
        visible: 'always', // or 'tauri', 'desktop-or-tauri'
        component: XxxSection,
@@ -104,8 +103,8 @@ For nested or dynamic routes (`/raids/[id]`), see [Vue Router file-based docs](h
    - That's it — `main.ts` auto-discovers the file via `import.meta.glob('@/features/*/settings.ts', { eager: true })`.
 6. If the feature adds a map layer (new extract/player marker/etc):
    - Create `src/features/map/layers/<name>/` with `useXxxLayer.ts` and `index.ts`.
-   - Call `registerMapLayer({ id, mount: useXxxLayer })` in `index.ts`.
-   - Inside your composable, get the visibility ref via `useLayerVisibility(id)` from `composables/useLayerVisibility.ts` and `watch(visible, ...)` to add/remove your Leaflet root when toggled. The `MapLayerContext.visible` ref is wired to the on-map LayerRail toggle.
+   - Call `registerMapLayer({ id, mount: useXxxLayer, category, order, titleKey, settingsComponent })` in `index.ts` — the rail category, order, display name, and optional inline settings component all live on the layer registration (no separate `settings.ts` for layers).
+   - Inside your composable, read `ctx.visible` (wired to the on-map LayerRail toggle via `useLayerVisibility(id)`) and `watch` it to add/remove your Leaflet root when toggled.
    - `main.ts` auto-discovers via `import.meta.glob('@/features/map/layers/*/index.ts', { eager: true })`.
 
 ### Add a new locale
@@ -189,8 +188,8 @@ pnpm lint       # eslint --max-warnings=0
 - **Tarkov map calibration** (CRS, bounds, rotation) — [`@shared/maps`](../../packages/shared/src/maps.ts). Modifying calibration affects both desktop and browser.
 - **Map localization** — `useMapI18n()` composable in [`features/map/composables/useMapI18n.ts`](./src/features/map/composables/useMapI18n.ts) provides `localizedMapName(code)` with `te → t → displayName` fallback chain. Used in MapView + MapSection to stay in sync.
 - **HTTP / IPC** — single dispatch in [`features/server/api/transport.ts`](./src/features/server/api/transport.ts).
-- **Settings registry** — `registerSettingsSection()` in [`features/settings/registry.ts`](./src/features/settings/registry.ts) with `group: 'layers'` (on-map LayerRail) or `group: 'system'` (gear drawer). Each feature calls this at module load via `features/<name>/settings.ts`. Auto-discovered by `main.ts`. `'layers'` sections render in the LayerRail flyout with inline visibility toggles; `'system'` sections render in the SettingsPanel drawer as accordion items.
-- **Map layers registry** — `registerMapLayer()` in [`features/map/layers/registry.ts`](./src/features/map/layers/registry.ts). Each layer calls this via `features/map/layers/<name>/index.ts`. Auto-discovered by `main.ts`; mounted by `MapView.vue` in setup().
+- **Settings registry** — `registerSettingsSection()` in [`features/settings/registry.ts`](./src/features/settings/registry.ts) — **system/app settings only** (gear-drawer accordion). Each feature calls it at module load via `features/<name>/settings.ts`. Map-LAYER settings live on the map-layer registration instead (below).
+- **Map layers registry** — `registerMapLayer()` in [`features/map/layers/registry.ts`](./src/features/map/layers/registry.ts) — the single source of truth for layers, carrying each layer's rail `category`/`order`/`titleKey`/`settingsComponent`. Each layer calls it via `features/map/layers/<name>/index.ts`; auto-discovered by `main.ts`, mounted by `MapView.vue`, rendered by the on-map `LayerRail`. Per-layer show/hide is `useLayerVisibility`; edge-indicator layers read the rail rect from `useRailObstacle`.
 
 ## See also
 

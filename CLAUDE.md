@@ -179,8 +179,9 @@ key back in the running app.
 `apps/client/src/features/map/` is split into three sibling folders:
 
 - `composables/` — **framework hooks** for Leaflet/Vue plumbing:
-  `useLeafletMap`, `useFloorSwitcher`, `useLayerVisibility`. Nothing here knows
-  about extracts, player markers, or future quest markers — pure map/Leaflet glue.
+  `useLeafletMap`, `useFloorSwitcher`, `useLayerVisibility`, `useRailObstacle`
+  (the rail rect edge-indicator layers wrap around). Nothing here knows about
+  extracts, player markers, or future quest markers — pure map/Leaflet glue.
 - `components/` — **UI surfaces** mounted by the page:
   - `LayerRail.vue` — on-map left rail (vertically centered). Top icon = base map
     selector flyout (MapSection component). Below that, one icon per layer **category**
@@ -214,7 +215,9 @@ key back in the running app.
         useAirdropLayer.ts      # purple uncertainty circle around the predicted drop
         index.ts                # registerMapLayer call
 
-  Each `index.ts` calls `registerMapLayer({ id, mount })` at module load;
+  Each `index.ts` calls `registerMapLayer({ id, mount, category, order, titleKey,
+  settingsComponent? })` at module load (the rail metadata lives here — there is
+  no second registry for layers);
   `main.ts` loads all index files via `import.meta.glob('@/features/map/layers/*/index.ts', { eager: true })`.
   `MapView.vue` reads the registry with `useMapLayers()` and calls
   `mount(ctx)` for each layer in setup(). `MapLayerContext` (in `layers/registry.ts`)
@@ -373,38 +376,35 @@ Booting into a locked overlay with a broken hotkey would be unrecoverable, so
 `ref()` (not `persistedRef`) any time boot-time recoverability matters more than
 user-visible continuity; default to `persistedRef` everywhere else.
 
-## Settings UI registry
+## Settings & layer registries
 
-Settings sections use a registry pattern similar to map layers, split into two
-surfaces: the on-map LayerRail (for layer toggles) and the gear drawer (for system config).
+**Two SEPARATE registries, one per surface — no shared-id matching across them.**
 
-- `features/settings/registry.ts` — `registerSettingsSection()` and
-  `useSettingsSections(group)` with `SectionGroup = 'layers' | 'system'` (renamed from
-  `'settings'`). Added `SectionSubgroup = 'player' | 'loot' | 'quests'` and optional
-  `subgroup` field on `SettingsSection`. Visibility logic: `'always'` (desktop + phone,
-  default), `'tauri'` (overlay only), `'desktop-or-tauri'` (phone at ≥640px or overlay).
-  Order uses multiples of 10. Registry also requires a `titleKey` (i18n string for the
-  section label). Currently:
-  - layers: 10 map (no subgroup) · 20 player, 30 extracts, 40 airdrop (subgroup `player`)
-  - system: 10 overlay (tauri-only), 20 hotkeys (desktop-or-tauri), 30 language, 40 paths (desktop-or-tauri), 50 pairing (tauri-only)
-- `features/<name>/settings.ts` — each feature with settings calls
-  `registerSettingsSection({ id, group, order, titleKey, visible, component })` at
-  module load. The `subgroup` field (if present) gates the category under which it
-  appears in the LayerRail; sections with the same subgroup render together.
-- `main.ts` loads all registration files via
-  `import.meta.glob('@/features/*/settings.ts', { eager: true })`.
-- **LayerRail** (`components/LayerRail.vue`) — on-map left rail. Renders `layers`
-  group sections: the map selector at the top (order 10, no subgroup), then one
-  icon per subgroup (player, loot, quests) derived from sections below. Clicking a
-  subgroup icon opens a flyout listing its layers, each with a visibility toggle +
-  settings gear. Empty subgroups (loot, quests) render as dimmed future icons.
-- **Gear drawer** (`features/settings/SettingsPanel.vue`) — opens from the top-right
-  cluster (SettingsPanel button). A **non-modal** PrimeVue `Drawer` (right-side on
-  desktop, bottom-sheet on `<640px` with `position="bottom"`). Renders `system` group
-  sections only in a single flat **Accordion**. Open-panel state persists (`tc.settings.open`,
-  keyed by section id). Desktop starts with all sections open; overlay/phone start
-  collapsed to keep the sheet short. Iterates `useSettingsSections('system')` — no
-  hard-coded list.
+- **Map-layer registry** (`features/map/layers/registry.ts`) — the single source
+  of truth for layers. `registerMapLayer({ id, mount, category, order, titleKey,
+  settingsComponent?, availability? })`; `useMapLayers()` reads them. Each layer
+  self-describes its rail `category` (`'player' | 'loot' | 'quests'`), `order`,
+  display `titleKey`, and optional inline `settingsComponent`. Layers register in
+  their own `layers/<name>/index.ts` (auto-loaded via the layers glob). Consumed by
+  the on-map **LayerRail** (`features/map/components/LayerRail.vue`): a left rail
+  with the base map selector at the top (a direct `MapSection` import — it's a
+  prerequisite, not a layer), then one icon per category (membership derived from
+  each layer's `category`; empty categories like loot/quests render as dimmed
+  future placeholders). A category flyout lists its layers, each with a visibility
+  toggle (`useLayerVisibility`) + the layer's `settingsComponent` inline via a gear.
+  `CATEGORY_META` in the rail is presentation-only (icon + which futures to tease),
+  NOT the catalogue.
+- **Settings-section registry** (`features/settings/registry.ts`) — **system/app
+  settings only** (no layer concept; no groups/subgroups). `registerSettingsSection({
+  id, order, titleKey, visible?, component })`; `useSettingsSections()` returns them
+  filtered by `visible` (`'always'` | `'tauri'` | `'desktop-or-tauri'`) and sorted by
+  `order`. Registered in `features/<name>/settings.ts` (auto-loaded via
+  `import.meta.glob('@/features/*/settings.ts', { eager: true })`). Currently: 10
+  overlay (tauri), 20 hotkeys (desktop-or-tauri), 30 language, 40 paths
+  (desktop-or-tauri), 50 pairing (tauri). Consumed by the gear **drawer**
+  (`SettingsPanel.vue`): a **non-modal** PrimeVue `Drawer` (right on desktop,
+  bottom-sheet on `<640px`) rendering a single flat **Accordion**; open-panel state
+  persists in `tc.settings.open`.
 
 Faction colours come from `FACTION_COLORS` in `packages/shared/src/maps.ts`
 so icons and tooltip stripes never drift across components.
