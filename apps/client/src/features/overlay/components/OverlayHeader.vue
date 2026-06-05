@@ -3,6 +3,7 @@ import SettingsPanel from '@/features/settings/SettingsPanel.vue';
 import MapSwitchMenu from './MapSwitchMenu.vue';
 import { isTauri } from '@/shared/tauri';
 import { useOverlayHeaderActive } from '../composables/useOverlayHeaderActive';
+import { useOverlayLock } from '../composables/useOverlayLock';
 import type { TransportStatus } from '@/features/server/composables/useServerTransport';
 
 interface Props {
@@ -11,13 +12,13 @@ interface Props {
   /** Render the Tauri overlay chrome (true under real Tauri, or the dev
    *  preview flag). Native window calls still guard on the real `isTauri`. */
   tauriChrome: boolean;
-  overlayClickThrough: boolean;
 }
 
 const props = defineProps<Props>();
 defineEmits<{ close: [] }>();
 
 const { t } = useI18n();
+const { locked, showControls } = useOverlayLock();
 
 const statusIconClass = computed(() => {
   switch (props.status) {
@@ -48,15 +49,12 @@ useEventListener(window, 'mousemove', (e: MouseEvent) => {
 
 // The band unmounts when locked, so its @mouseleave never fires — reset
 // explicitly so the shared state (and the clock) don't get stuck "active".
-watch(
-  () => props.overlayClickThrough,
-  (locked) => {
-    if (locked) {
-      hovered.value = false;
-      dragging.value = false;
-    }
-  },
-);
+watch(locked, (isLocked) => {
+  if (isLocked) {
+    hovered.value = false;
+    dragging.value = false;
+  }
+});
 onBeforeUnmount(() => {
   hovered.value = false;
   dragging.value = false;
@@ -91,7 +89,7 @@ function openMapMenu(event: MouseEvent): void {
        (right, auto-width) — as flex siblings, so they can't collide. The pill
        is visual only; the band owns the drag. -->
   <div
-    v-if="tauriChrome && !overlayClickThrough"
+    v-if="tauriChrome && showControls"
     class="sa-pt absolute top-0 right-0 left-0 z-[1000] flex h-12 cursor-grab items-start px-2 active:cursor-grabbing"
     @mousedown="startDrag"
     @mouseenter="hovered = true"

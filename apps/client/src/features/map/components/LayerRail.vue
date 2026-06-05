@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useMapLayers, type MapLayer } from '../layers/registry';
-import { useOverlayStore } from '@/features/overlay/store';
+import { useOverlayLock } from '@/features/overlay/composables/useOverlayLock';
 import { useLayerVisibility } from '../composables/useLayerVisibility';
 import { setRailObstacle } from '../composables/useRailObstacle';
 import { isTauri } from '@/shared/tauri';
@@ -57,8 +57,8 @@ const railRef = ref<HTMLElement | null>(null);
 const flyoutRef = ref<HTMLElement | null>(null);
 
 // Hide the rail (animated) while the overlay is click-through-locked.
-const { clickThrough } = storeToRefs(useOverlayStore());
-const railVisible = computed(() => !clickThrough.value);
+const { locked, showControls } = useOverlayLock();
+const railVisible = showControls;
 
 function toggle(id: string): void {
   openId.value = openId.value === id ? null : id;
@@ -70,8 +70,8 @@ onClickOutside(flyoutRef, (e) => {
   openId.value = null;
 });
 
-watch(clickThrough, (locked) => {
-  if (locked) {
+watch(locked, (isLocked) => {
+  if (isLocked) {
     openId.value = null;
     setRailObstacle(null); // arrows reflow to the true edge as the rail fades out
   }
@@ -231,7 +231,7 @@ function stepFloor(delta: number): void {
   <!-- Locked: rail hidden, but keep a read-only floor read-out so the current
        level stays glanceable while click-through is on. -->
   <div
-    v-if="clickThrough && hasFloors"
+    v-if="locked && hasFloors"
     class="sa-bottom sa-left border-surface-700 bg-surface-900/85 absolute z-[1100] flex items-center gap-1.5 rounded-md border px-2 py-1 backdrop-blur"
   >
     <i class="pi pi-clone text-[10px] opacity-50" />

@@ -7,7 +7,7 @@ import OverlayLockIndicator from '@/features/overlay/components/OverlayLockIndic
 import OverlayErrors from '@/features/overlay/components/OverlayErrors.vue';
 import AirdropStatusBanner from '@/features/airdrop/components/AirdropStatusBanner.vue';
 import { useMapSettingsStore } from '@/features/map/store';
-import { useOverlayStore } from '@/features/overlay/store';
+import { useOverlayLock } from '@/features/overlay/composables/useOverlayLock';
 import { useHotkeysStore } from '@/features/hotkeys/store';
 import { showOverlayChrome } from '@/shared/tauri';
 import { useTransportStatus } from '@/features/server/composables/useTransportStatus';
@@ -17,7 +17,7 @@ import { useAirdropStore } from '@/features/airdrop/store';
 import { useAirdropTracker } from '@/features/airdrop/composables/useAirdropTracker';
 
 const { mapCode } = storeToRefs(useMapSettingsStore());
-const { clickThrough: overlayClickThrough } = storeToRefs(useOverlayStore());
+const { showControls } = useOverlayLock();
 // Only the lock combo is still client-owned; the rest arrive as backend
 // `command` events (see below) so they fire regardless of focus.
 const { lockHotkey } = storeToRefs(useHotkeysStore());
@@ -74,7 +74,6 @@ useServerEvent('command', (msg) => {
     :map-display-name="mapDisplayName"
     :status="status"
     :tauri-chrome="showOverlayChrome"
-    :overlay-click-through="overlayClickThrough"
     @close="confirmClose"
   />
 
@@ -84,12 +83,7 @@ useServerEvent('command', (msg) => {
 
   <TarkovTimeChip :map-display-name="showOverlayChrome ? mapDisplayName : ''" />
 
-  <OverlayBorder v-if="showOverlayChrome && !overlayClickThrough" />
+  <OverlayBorder v-if="showOverlayChrome && showControls" />
 
-  <OverlayLockIndicator
-    v-if="showOverlayChrome"
-    :lock-hotkey="lockHotkey"
-    :overlay-click-through="overlayClickThrough"
-    @lock="overlayClickThrough = true"
-  />
+  <OverlayLockIndicator v-if="showOverlayChrome" :lock-hotkey="lockHotkey" />
 </template>
