@@ -7,6 +7,15 @@ export interface EdgeArrow {
   color: string;
 }
 
+/** An obstacle (the on-map rail) in viewport coords that left-edge arrows wrap
+ * around. Supplied by the caller — this util never touches the DOM for it. */
+export interface EdgeObstacle {
+  readonly right: number;
+  readonly top: number;
+  readonly bottom: number;
+  readonly width: number;
+}
+
 const MARGIN = 18; // px inset from the container edge
 const ARROW_PX = 22;
 const RAIL_GAP = 16; // arrow-centre offset past the rail's right edge
@@ -21,7 +30,11 @@ const RAIL_PAD = 6; // extend the avoid band slightly past the rail's top/bottom
  * map move/zoom we recompute each target's container point; off-screen ones get
  * an arrow clamped to the inset rectangle edge, rotated to point outward.
  */
-export function createEdgeIndicators(map: LeafletMap, getArrows: () => EdgeArrow[]) {
+export function createEdgeIndicators(
+  map: LeafletMap,
+  getArrows: () => EdgeArrow[],
+  getObstacle: () => EdgeObstacle | null = () => null,
+) {
   const overlay = document.createElement('div');
   overlay.className = 'edge-indicators';
   map.getContainer().appendChild(overlay);
@@ -51,21 +64,18 @@ export function createEdgeIndicators(map: LeafletMap, getArrows: () => EdgeArrow
 
     // The on-map left rail is an obstacle: left-edge arrows whose y falls within
     // its vertical span get pushed out to the rail's right edge, so they wrap
-    // around the panel instead of hiding behind it. Measured each frame, so it
-    // follows the rail's changing height (floor stepper) and disappears entirely
-    // when the rail is hidden (locked overlay).
-    const containerRect = map.getContainer().getBoundingClientRect();
-    const railEl = document.querySelector('.layer-rail');
+    // around the panel instead of hiding behind it. The obstacle rect (viewport
+    // coords) is supplied by the caller and converted into container coords here;
+    // null when the rail is hidden (locked overlay), so arrows revert to the edge.
+    const obstacle = getObstacle();
     let avoid: { right: number; top: number; bottom: number } | null = null;
-    if (railEl) {
-      const r = railEl.getBoundingClientRect();
-      if (r.width > 0) {
-        avoid = {
-          right: r.right - containerRect.left,
-          top: r.top - containerRect.top,
-          bottom: r.bottom - containerRect.top,
-        };
-      }
+    if (obstacle && obstacle.width > 0) {
+      const containerRect = map.getContainer().getBoundingClientRect();
+      avoid = {
+        right: obstacle.right - containerRect.left,
+        top: obstacle.top - containerRect.top,
+        bottom: obstacle.bottom - containerRect.top,
+      };
     }
 
     let used = 0;

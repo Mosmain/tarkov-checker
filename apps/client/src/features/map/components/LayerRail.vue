@@ -2,6 +2,7 @@
 import { useMapLayers, type MapLayer } from '../layers/registry';
 import { useOverlayStore } from '@/features/overlay/store';
 import { useLayerVisibility } from '../composables/useLayerVisibility';
+import { setRailObstacle } from '../composables/useRailObstacle';
 import { isTauri } from '@/shared/tauri';
 import MapSection from '@/features/settings/sections/MapSection.vue';
 
@@ -70,12 +71,30 @@ onClickOutside(flyoutRef, (e) => {
 });
 
 watch(clickThrough, (locked) => {
-  if (locked) openId.value = null;
+  if (locked) {
+    openId.value = null;
+    setRailObstacle(null); // arrows reflow to the true edge as the rail fades out
+  }
 });
 
 useEventListener(window, 'blur', () => {
   openId.value = null;
 });
+
+// Publish the rail's rect (viewport coords) so edge-indicator layers can wrap
+// around it without scraping the DOM. Republish whenever it appears or moves.
+function publishRail(): void {
+  const el = railRef.value;
+  if (!el) {
+    setRailObstacle(null);
+    return;
+  }
+  const r = el.getBoundingClientRect();
+  setRailObstacle({ left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width });
+}
+onMounted(publishRail);
+useEventListener(window, 'resize', publishRail);
+onBeforeUnmount(() => setRailObstacle(null));
 
 const openCategory = computed(() => categories.value.find((c) => c.key === openId.value) ?? null);
 const isMapOpen = computed(() => openId.value === 'map');
@@ -100,7 +119,7 @@ function stepFloor(delta: number): void {
 </script>
 
 <template>
-  <Transition name="rail">
+  <Transition name="rail" @after-enter="publishRail">
     <div
       v-if="railVisible"
       ref="railRef"

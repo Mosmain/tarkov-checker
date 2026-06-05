@@ -5,7 +5,7 @@ import { buildTooltipHtml, sortedEntries, type ExtractEntry } from './tooltip';
 import { createEdgeIndicators, type EdgeArrow } from './useEdgeIndicators';
 import { extractsForMap } from '@/features/map/data/extracts';
 import { useMapSettingsStore } from '@/features/map/store';
-import { useOverlayStore } from '@/features/overlay/store';
+import { useRailObstacle } from '@/features/map/composables/useRailObstacle';
 import type { MapLayerContext } from '../registry';
 
 export type LabelMode = 'hover' | 'always';
@@ -40,7 +40,7 @@ export function useExtractsLayer(ctx: MapLayerContext): void {
   const { t, locale } = useI18n();
   const { extractFactions, extractLabelMode, extractLabelSize, edgeIndicators } =
     storeToRefs(useMapSettingsStore());
-  const { clickThrough } = storeToRefs(useOverlayStore());
+  const railRect = useRailObstacle();
 
   let extractsLayer: LayerGroup | null = null;
   let edge: ReturnType<typeof createEdgeIndicators> | null = null;
@@ -108,7 +108,7 @@ export function useExtractsLayer(ctx: MapLayerContext): void {
   function syncEdge(): void {
     if (edgeIndicators.value && visible.value && map.value) {
       if (edge) edge.update();
-      else edge = createEdgeIndicators(map.value, arrowData);
+      else edge = createEdgeIndicators(map.value, arrowData, () => railRect.value);
     } else if (edge) {
       edge.destroy();
       edge = null;
@@ -226,19 +226,9 @@ export function useExtractsLayer(ctx: MapLayerContext): void {
 
   watch(visible, applyVisible);
 
-  // Locking the overlay slides the on-map rail out (CSS transition) with no map
-  // event to recompute edge arrows — drive update() across the transition window
-  // so the arrows re-flow around the (dis)appearing rail in sync.
-  let railAnimRaf = 0;
-  watch(clickThrough, () => {
-    cancelAnimationFrame(railAnimRaf);
-    const start = performance.now();
-    const tick = (): void => {
-      edge?.update();
-      if (performance.now() - start < 260) railAnimRaf = requestAnimationFrame(tick);
-    };
-    railAnimRaf = requestAnimationFrame(tick);
-  });
+  // The LayerRail publishes its rect (and null when it hides on lock); repaint
+  // the edge arrows whenever it changes so they re-flow around the rail.
+  watch(railRect, () => edge?.update());
 
   watch(extractLabelMode, (mode) => {
     if (state.labelMode === mode) return;
@@ -265,7 +255,6 @@ export function useExtractsLayer(ctx: MapLayerContext): void {
   );
 
   onBeforeUnmount(() => {
-    cancelAnimationFrame(railAnimRaf);
     edge?.destroy();
     edge = null;
     if (extractsLayer && map.value) {
