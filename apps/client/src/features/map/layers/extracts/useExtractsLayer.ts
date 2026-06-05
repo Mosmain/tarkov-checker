@@ -5,6 +5,7 @@ import { buildTooltipHtml, sortedEntries, type ExtractEntry } from './tooltip';
 import { createEdgeIndicators, type EdgeArrow } from './useEdgeIndicators';
 import { extractsForMap } from '@/features/map/data/extracts';
 import { useMapSettingsStore } from '@/features/map/store';
+import { useOverlayStore } from '@/features/overlay/store';
 import type { MapLayerContext } from '../registry';
 
 export type LabelMode = 'hover' | 'always';
@@ -35,10 +36,11 @@ interface RawExtract {
 }
 
 export function useExtractsLayer(ctx: MapLayerContext): void {
-  const { map, mapCode } = ctx;
+  const { map, mapCode, visible } = ctx;
   const { t, locale } = useI18n();
   const { extractFactions, extractLabelMode, extractLabelSize, edgeIndicators } =
     storeToRefs(useMapSettingsStore());
+  const { clickThrough } = storeToRefs(useOverlayStore());
 
   let extractsLayer: LayerGroup | null = null;
   let edge: ReturnType<typeof createEdgeIndicators> | null = null;
@@ -104,7 +106,7 @@ export function useExtractsLayer(ctx: MapLayerContext): void {
   }
 
   function syncEdge(): void {
-    if (edgeIndicators.value && map.value) {
+    if (edgeIndicators.value && visible.value && map.value) {
       if (edge) edge.update();
       else edge = createEdgeIndicators(map.value, arrowData);
     } else if (edge) {
@@ -126,6 +128,14 @@ export function useExtractsLayer(ctx: MapLayerContext): void {
     const i18nKey = `extractNames.${mapCode}.${ex.key}`;
     const v = t(i18nKey);
     return v === i18nKey ? ex.key : v;
+  }
+
+  function applyVisible(): void {
+    if (!map.value || !extractsLayer) return;
+    const has = map.value.hasLayer(extractsLayer);
+    if (visible.value && !has) extractsLayer.addTo(map.value);
+    if (!visible.value && has) map.value.removeLayer(extractsLayer);
+    syncEdge();
   }
 
   function loadExtracts(): void {
@@ -181,6 +191,7 @@ export function useExtractsLayer(ctx: MapLayerContext): void {
     }
     refreshMarkers();
     syncEdge();
+    applyVisible();
   }
 
   // Single source of truth for "the map exists now": loads markers + attaches
@@ -213,6 +224,22 @@ export function useExtractsLayer(ctx: MapLayerContext): void {
     refreshMarkers();
   });
 
+  watch(visible, applyVisible);
+
+  // Locking the overlay slides the on-map rail out (CSS transition) with no map
+  // event to recompute edge arrows — drive update() across the transition window
+  // so the arrows re-flow around the (dis)appearing rail in sync.
+  let railAnimRaf = 0;
+  watch(clickThrough, () => {
+    cancelAnimationFrame(railAnimRaf);
+    const start = performance.now();
+    const tick = (): void => {
+      edge?.update();
+      if (performance.now() - start < 260) railAnimRaf = requestAnimationFrame(tick);
+    };
+    railAnimRaf = requestAnimationFrame(tick);
+  });
+
   watch(extractLabelMode, (mode) => {
     if (state.labelMode === mode) return;
     state.labelMode = mode;
@@ -238,6 +265,7 @@ export function useExtractsLayer(ctx: MapLayerContext): void {
   );
 
   onBeforeUnmount(() => {
+    cancelAnimationFrame(railAnimRaf);
     edge?.destroy();
     edge = null;
     if (extractsLayer && map.value) {

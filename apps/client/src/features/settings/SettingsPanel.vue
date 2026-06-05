@@ -4,36 +4,18 @@ import { useSettingsSections } from './registry';
 import { persistedRef } from '@/shared/persisted-store';
 
 const { t } = useI18n();
-const layersSections = useSettingsSections('layers');
-const settingsSections = useSettingsSections('settings');
+const systemSections = useSettingsSections('system');
 const open = ref(false);
 const isDesktop = useMediaQuery('(min-width: 640px)');
 
-// Only surface a tab that actually has visible sections — e.g. on a phone the
-// Settings tab keeps just Language, while overlay/hotkeys/paths/pairing are
-// desktop/overlay-only and filtered out by the registry.
-const tabs = computed(() =>
-  [
-    { value: 'layers', label: t('settingsTabs.layers'), sections: layersSections.value },
-    { value: 'settings', label: t('settingsTabs.settings'), sections: settingsSections.value },
-  ].filter((tab) => tab.sections.length > 0),
-);
-
-const activeTab = persistedRef('tc.settings.tab', z.enum(['layers', 'settings']), 'layers');
-
-// Expanded accordion panels per tab. Desktop opens every section by default so
-// all controls are visible at a glance; on a phone they start collapsed to keep
-// the drawer short. The default is snapshotted once from the section ids — after
-// that the user's expand/collapse choices persist.
-const openLayers = persistedRef(
-  'tc.settings.open.layers',
+// System/app settings only. Map layers moved out of the drawer onto the on-map
+// LayerRail; the gear now holds the rare config (overlay/hotkeys/language/
+// paths/pairing). Desktop opens every section; the overlay/phone start
+// collapsed to keep the sheet short. Snapshotted once, then user choices persist.
+const openSections = persistedRef(
+  'tc.settings.open',
   z.array(z.string()),
-  isDesktop.value ? layersSections.value.map((s) => s.id) : [],
-);
-const openSettings = persistedRef(
-  'tc.settings.open.settings',
-  z.array(z.string()),
-  isDesktop.value ? settingsSections.value.map((s) => s.id) : [],
+  isDesktop.value ? systemSections.value.map((s) => s.id) : [],
 );
 </script>
 
@@ -66,10 +48,9 @@ const openSettings = persistedRef(
     </template>
   </Button>
 
-  <!-- Non-modal so the map stays bright and live behind the drawer: toggling a
-       layer (extracts, labels, follow, edge arrows) is previewed in real time.
-       Mobile uses a bottom-sheet (auto height, capped) that hugs its content so
-       the map peeks above it; desktop keeps the right-side panel. -->
+  <!-- System/app config only — map layers live on the on-map LayerRail now.
+       Non-modal so the map stays live behind it; bottom-sheet on the overlay/
+       phone, right-side panel on desktop. -->
   <Drawer
     v-model:visible="open"
     :modal="false"
@@ -78,32 +59,13 @@ const openSettings = persistedRef(
     :header="t('settings')"
     :class="isDesktop ? '!w-[26rem]' : '!h-auto !max-h-[85dvh] !rounded-t-2xl'"
   >
-    <Tabs v-model:value="activeTab">
-      <TabList>
-        <Tab v-for="tab in tabs" :key="tab.value" :value="tab.value">{{ tab.label }}</Tab>
-      </TabList>
-      <TabPanels class="!px-0">
-        <TabPanel value="layers" class="!px-0 !pb-0">
-          <Accordion v-model:value="openLayers" multiple>
-            <AccordionPanel v-for="sec in layersSections" :key="sec.id" :value="sec.id">
-              <AccordionHeader>{{ t(sec.titleKey) }}</AccordionHeader>
-              <AccordionContent>
-                <component :is="sec.component" />
-              </AccordionContent>
-            </AccordionPanel>
-          </Accordion>
-        </TabPanel>
-        <TabPanel value="settings" class="!px-0 !pb-0">
-          <Accordion v-model:value="openSettings" multiple>
-            <AccordionPanel v-for="sec in settingsSections" :key="sec.id" :value="sec.id">
-              <AccordionHeader>{{ t(sec.titleKey) }}</AccordionHeader>
-              <AccordionContent>
-                <component :is="sec.component" />
-              </AccordionContent>
-            </AccordionPanel>
-          </Accordion>
-        </TabPanel>
-      </TabPanels>
-    </Tabs>
+    <Accordion v-model:value="openSections" multiple>
+      <AccordionPanel v-for="sec in systemSections" :key="sec.id" :value="sec.id">
+        <AccordionHeader>{{ t(sec.titleKey) }}</AccordionHeader>
+        <AccordionContent>
+          <component :is="sec.component" />
+        </AccordionContent>
+      </AccordionPanel>
+    </Accordion>
   </Drawer>
 </template>

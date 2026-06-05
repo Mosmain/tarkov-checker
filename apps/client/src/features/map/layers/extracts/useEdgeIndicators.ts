@@ -9,6 +9,8 @@ export interface EdgeArrow {
 
 const MARGIN = 18; // px inset from the container edge
 const ARROW_PX = 22;
+const RAIL_GAP = 16; // arrow-centre offset past the rail's right edge
+const RAIL_PAD = 6; // extend the avoid band slightly past the rail's top/bottom
 
 /**
  * Renders small arrows on the viewport edge pointing at off-screen extracts.
@@ -46,6 +48,26 @@ export function createEdgeIndicators(map: LeafletMap, getArrows: () => EdgeArrow
     const cy = size.y / 2;
     const halfW = cx - MARGIN;
     const halfH = cy - MARGIN;
+
+    // The on-map left rail is an obstacle: left-edge arrows whose y falls within
+    // its vertical span get pushed out to the rail's right edge, so they wrap
+    // around the panel instead of hiding behind it. Measured each frame, so it
+    // follows the rail's changing height (floor stepper) and disappears entirely
+    // when the rail is hidden (locked overlay).
+    const containerRect = map.getContainer().getBoundingClientRect();
+    const railEl = document.querySelector('.layer-rail');
+    let avoid: { right: number; top: number; bottom: number } | null = null;
+    if (railEl) {
+      const r = railEl.getBoundingClientRect();
+      if (r.width > 0) {
+        avoid = {
+          right: r.right - containerRect.left,
+          top: r.top - containerRect.top,
+          bottom: r.bottom - containerRect.top,
+        };
+      }
+    }
+
     let used = 0;
     for (const a of getArrows()) {
       const cp = map.latLngToContainerPoint([a.lat, a.lng]);
@@ -57,8 +79,22 @@ export function createEdgeIndicators(map: LeafletMap, getArrows: () => EdgeArrow
         dx !== 0 ? halfW / Math.abs(dx) : Infinity,
         dy !== 0 ? halfH / Math.abs(dy) : Infinity,
       );
-      const ex = cx + dx * t;
+      let ex = cx + dx * t;
       const ey = cy + dy * t;
+      // Wrap a left-edge arrow around the rail panel when it'd land behind it.
+      // Only ever push rightward — as the rail slides out (lock), its right edge
+      // moves left of the arrow and the push naturally stops, so arrows glide
+      // back to the true edge instead of chasing the panel off-screen.
+      if (
+        avoid &&
+        dx < 0 &&
+        ex <= MARGIN + 1 &&
+        ey >= avoid.top - RAIL_PAD &&
+        ey <= avoid.bottom + RAIL_PAD &&
+        avoid.right + RAIL_GAP > ex
+      ) {
+        ex = avoid.right + RAIL_GAP;
+      }
       const deg = (Math.atan2(dy, dx) * 180) / Math.PI + 90; // SVG arrow points up
       const el = take(used);
       el.style.left = `${ex}px`;

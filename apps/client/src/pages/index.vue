@@ -82,7 +82,7 @@ useServerEvent('command', (msg) => {
 
   <AirdropStatusBanner />
 
-  <TarkovTimeChip />
+  <TarkovTimeChip :map-display-name="showOverlayChrome ? mapDisplayName : ''" />
 
   <OverlayBorder v-if="showOverlayChrome && !overlayClickThrough" />
 

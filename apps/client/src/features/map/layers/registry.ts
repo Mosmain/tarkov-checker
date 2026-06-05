@@ -7,6 +7,9 @@ export interface MapLayerContext {
   mapCode: TarkovMapCode;
   mapInfo: TarkovMapInfo;
   initialZoom: Ref<number>;
+  /** Per-layer visibility, driven by the on-map LayerRail toggle. The layer's
+   * composable watches this and adds/removes its Leaflet root accordingly. */
+  visible: Ref<boolean>;
 }
 
 export interface MapLayer {

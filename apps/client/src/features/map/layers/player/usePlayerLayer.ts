@@ -3,14 +3,8 @@ import { useServerEvent } from '@/features/server/composables/useServerEvents';
 import { useMapSettingsStore } from '@/features/map/store';
 import type { MapLayerContext } from '../registry';
 
-// 'on' follows without changing zoom; sm/md/lg also zoom in by the delta.
-export type PlayerFollow = 'off' | 'on' | 'sm' | 'md' | 'lg';
-
-const FOLLOW_ZOOM_DELTA: Readonly<Record<'sm' | 'md' | 'lg', number>> = {
-  sm: 1,
-  md: 2,
-  lg: 3,
-};
+// Follow simply recenters on every new position, keeping the user's zoom.
+export type PlayerFollow = 'off' | 'on';
 
 function buildPlayerIconHtml(displayYaw: number | null): string {
   if (displayYaw === null) {
@@ -20,7 +14,7 @@ function buildPlayerIconHtml(displayYaw: number | null): string {
 }
 
 export function usePlayerLayer(ctx: MapLayerContext): void {
-  const { map, mapInfo, initialZoom } = ctx;
+  const { map, mapInfo, visible } = ctx;
   const mapRotation = mapInfo.rotation;
   const yawOffset = mapInfo.yawOffset ?? 0;
 
@@ -39,7 +33,8 @@ export function usePlayerLayer(ctx: MapLayerContext): void {
     if (!map.value) return;
     const latLng: LatLngExpression = [pos.z, pos.x];
     if (!playerLayer) {
-      playerLayer = L.layerGroup().addTo(map.value);
+      playerLayer = L.layerGroup();
+      if (visible.value) playerLayer.addTo(map.value);
     }
     const displayYaw = yaw === null ? null : yaw + mapRotation + yawOffset;
     const icon = L.divIcon({
@@ -62,18 +57,9 @@ export function usePlayerLayer(ctx: MapLayerContext): void {
     }
 
     const changed = pos.x !== lastX || pos.z !== lastZ || yaw !== lastYaw;
-    const follow = playerFollow.value;
-    if (changed && follow !== 'off') {
-      if (follow === 'on') {
-        // Recenter only — keep whatever zoom the user has set.
-        map.value.panTo(latLng, { animate: true, duration: 0.4 });
-      } else {
-        const targetZoom = Math.min(
-          initialZoom.value + FOLLOW_ZOOM_DELTA[follow],
-          map.value.getMaxZoom(),
-        );
-        map.value.setView(latLng, targetZoom, { animate: true, duration: 0.4 });
-      }
+    if (changed && playerFollow.value === 'on') {
+      // Recenter only — keep whatever zoom the user has set.
+      map.value.panTo(latLng, { animate: true, duration: 0.4 });
     }
     if (changed) {
       lastX = pos.x;
@@ -81,6 +67,14 @@ export function usePlayerLayer(ctx: MapLayerContext): void {
       lastYaw = yaw;
     }
   }
+
+  function applyVisible(): void {
+    if (!playerLayer || !map.value) return;
+    const has = map.value.hasLayer(playerLayer);
+    if (visible.value && !has) playerLayer.addTo(map.value);
+    if (!visible.value && has) map.value.removeLayer(playerLayer);
+  }
+  watch(visible, applyVisible);
 
   useServerEvent('position', (msg) => {
     setPlayerPosition({ x: msg.x, y: msg.y, z: msg.z }, msg.yaw ?? null);

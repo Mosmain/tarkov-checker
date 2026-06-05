@@ -84,32 +84,35 @@ let currentRecorder: { cancel: () => void } | null = null;
 
 <template>
   <div>
-    <div class="mb-1.5 flex items-center justify-between gap-2">
-      <p class="text-xs opacity-60">{{ label }}</p>
+    <p class="mb-1 text-xs opacity-60">{{ label }}</p>
+    <!-- Combo chip + Change button on ONE line so the button is unambiguously
+         bound to the binding it edits (label sits on its own line above). -->
+    <div class="flex items-center justify-between gap-2">
+      <div
+        class="flex min-w-0 items-center gap-1 overflow-hidden rounded-md bg-surface-900/60 px-2 py-1.5 text-[11px] font-semibold tracking-wider"
+        :class="recording ? 'ring-2 ring-primary' : ''"
+      >
+        <template v-if="recording">
+          <span class="truncate opacity-70">{{ t('hotkeys.recordingPrompt') }}</span>
+        </template>
+        <template v-else>
+          <span v-for="(part, idx) in displayParts" :key="idx" class="inline-flex items-center">
+            <span class="rounded border border-surface-600 bg-surface-900 px-1.5 py-0.5 font-mono">
+              {{ part }}
+            </span>
+            <span v-if="idx < displayParts.length - 1" class="px-1 opacity-60">+</span>
+          </span>
+        </template>
+      </div>
       <Button
         :label="recording ? t('hotkeys.recording') : t('hotkeys.record')"
         size="small"
         severity="secondary"
         :outlined="!recording"
         :disabled="recording"
+        class="shrink-0"
         @click="startRecording"
       />
-    </div>
-    <div
-      class="inline-flex items-center gap-1 rounded-md bg-surface-900/60 px-2 py-1.5 text-[11px] font-semibold tracking-wider"
-      :class="recording ? 'ring-2 ring-primary' : ''"
-    >
-      <template v-if="recording">
-        <span class="opacity-70">{{ t('hotkeys.recordingPrompt') }}</span>
-      </template>
-      <template v-else>
-        <span v-for="(part, idx) in displayParts" :key="idx" class="inline-flex items-center">
-          <span class="rounded border border-surface-600 bg-surface-900 px-1.5 py-0.5 font-mono">
-            {{ part }}
-          </span>
-          <span v-if="idx < displayParts.length - 1" class="px-1 opacity-60">+</span>
-        </span>
-      </template>
     </div>
     <p v-if="error" class="mt-1.5 text-[10px] leading-relaxed text-amber-400">
       {{ t(error === 'altgr' ? 'hotkeys.altgr' : 'hotkeys.invalid') }}

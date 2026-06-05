@@ -2,17 +2,26 @@ import { computed, shallowReactive, type ComputedRef, type Component } from 'vue
 import { useMediaQuery } from '@vueuse/core';
 import { isTauri } from '@/shared/tauri';
 
-export type SectionGroup = 'layers' | 'settings';
+export type SectionGroup = 'layers' | 'system';
+export type SectionSubgroup = 'player' | 'loot' | 'quests';
 export type SectionVisibility = 'always' | 'tauri' | 'desktop-or-tauri';
 
 export interface SettingsSection {
   id: string;
-  /** Which drawer tab the section lives under: `layers` (what's drawn on the
-   * map) or `settings` (app/system preferences). */
+  /** Top-level group: `layers` (what's drawn on the map) or `system`
+   * (app/system preferences). */
   group: SectionGroup;
+  /** Optional layer sub-bucket, surfaced as a non-interactive divider in the
+   * drawer. Sections sharing a subgroup render contiguously under one label
+   * (`player`/`loot`/`quests`). Omit for `map` (it sits at the top, ungrouped)
+   * and for all `system` sections. A subgroup divider only appears once that
+   * bucket has a visible section, so empty future buckets (loot/quests) stay
+   * hidden until their layers ship. */
+  subgroup?: SectionSubgroup;
   /** Ascending; use multiples of 10 so future insertions fit between existing entries.
-   * layers: 10 map, 20 extracts, 30 player, 40 airdrop
-   * settings: 10 overlay, 20 hotkeys, 30 language, 40 paths, 50 pairing */
+   * Sort within a group is by `order`; keep same-subgroup sections contiguous.
+   * layers: 10 map · 20 player, 30 extracts, 40 airdrop (subgroup `player`)
+   * system: 10 overlay, 20 hotkeys, 30 language, 40 paths, 50 pairing */
   order: number;
   /** i18n key for the accordion header label (the section title). */
   titleKey: string;

@@ -3,7 +3,7 @@ import LanguageSection from '@/features/settings/sections/LanguageSection.vue';
 
 registerSettingsSection({
   id: 'language',
-  group: 'settings',
+  group: 'system',
   order: 30,
   titleKey: 'language',
   component: LanguageSection,

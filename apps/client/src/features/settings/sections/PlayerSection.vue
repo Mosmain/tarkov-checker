@@ -3,28 +3,18 @@ import { useMapSettingsStore } from '@/features/map/store';
 
 const { playerFollow } = storeToRefs(useMapSettingsStore());
 const { t } = useI18n();
-
-const playerFollowOptions = computed(() => [
-  { label: t('playerFollowOptions.off'), value: 'off' as const },
-  { label: t('playerFollowOptions.on'), value: 'on' as const },
-  { label: t('playerFollowOptions.sm'), value: 'sm' as const },
-  { label: t('playerFollowOptions.md'), value: 'md' as const },
-  { label: t('playerFollowOptions.lg'), value: 'lg' as const },
-]);
 </script>
 
 <template>
   <div>
-    <p class="mb-1.5 text-xs opacity-60">{{ t('playerFollow') }}</p>
-    <SelectButton
-      v-model="playerFollow"
-      :options="playerFollowOptions"
-      option-label="label"
-      option-value="value"
-      :allow-empty="false"
-      size="small"
-      fluid
-    />
+    <div class="flex items-center justify-between gap-3">
+      <label class="text-sm" for="player-follow">{{ t('playerFollow') }}</label>
+      <ToggleSwitch
+        :model-value="playerFollow === 'on'"
+        input-id="player-follow"
+        @update:model-value="(v: boolean) => (playerFollow = v ? 'on' : 'off')"
+      />
+    </div>
     <p class="mt-1.5 text-[10px] leading-relaxed opacity-70">{{ t('playerFollowHint') }}</p>
   </div>
 </template>

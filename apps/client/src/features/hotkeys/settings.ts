@@ -3,7 +3,7 @@ import HotkeysSection from '@/features/settings/sections/HotkeysSection.vue';
 
 registerSettingsSection({
   id: 'hotkeys',
-  group: 'settings',
+  group: 'system',
   order: 20,
   // Shown on the desktop browser + overlay (both have a keyboard), hidden on
   // phones. The combos are backend-owned now — configurable from any desktop

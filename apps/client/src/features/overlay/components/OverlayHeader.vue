@@ -119,7 +119,9 @@ function openMapMenu(event: MouseEvent): void {
         class="pointer-events-none flex h-10 min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-2xl bg-surface-800/85 px-4 text-surface-0 ring-1 ring-white/10 backdrop-blur select-none"
       >
         <i class="pi pi-arrows-alt shrink-0 text-xs opacity-90" aria-hidden="true" />
-        <span class="truncate text-sm font-medium">{{ mapDisplayName }}</span>
+        <!-- Name lives in the always-visible clock+location chip now; the pill is
+             just the drag handle. -->
+        <span class="truncate text-sm font-medium opacity-80">{{ t('overlay.move') }}</span>
       </div>
 
       <!-- Controls: own pointer events, never start a drag. -->
