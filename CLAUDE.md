@@ -5,10 +5,10 @@
 - `apps/desktop` — Tauri 2 wrapper. The production artifact: Rust
   watcher/config pipeline (`src-tauri/src/server/`), the Tauri IPC
   commands the webview calls, AND an in-process HTTP server (axum) on
-  `127.0.0.1:47474` exposing `/api/ping`, `/api/config` (GET+PUT),
-  `/api/hotkeys` (GET+PUT, +suspend/resume) and `/events` (SSE). Single
-  6 MB `.exe` that ships as both the overlay
-  and the local HTTP backend for any browser pointed at the same
+  `0.0.0.0:47474` (binds all interfaces, trust model: same Wi-Fi = trusted)
+  exposing `/api/ping`, `/api/config` (GET+PUT), `/api/hotkeys` (GET+PUT,
+  +suspend/resume) and `/events` (SSE). Single 6 MB `.exe` that ships as both
+  the overlay and the local HTTP backend for any browser pointed at the same
   origin. See "In-process HTTP server" below.
 - `apps/client` — Vue + Leaflet map. Two transports, one codebase.
   Inside the Tauri webview: `invoke(...)` + `listen('position', ...)`.
@@ -176,25 +176,39 @@ key back in the running app.
 
 ## Map rendering layers
 
-`apps/client/src/features/map/` is split into two sibling folders by
-ownership:
+`apps/client/src/features/map/` is split into three sibling folders:
 
 - `composables/` — **framework hooks** for Leaflet/Vue plumbing:
-  `useLeafletMap`, `useFloorSwitcher`. Nothing here knows about extracts,
-  player markers, or future quest markers — pure map/Leaflet glue.
-- `layers/<name>/` — **domain layers** rendered on top of the map. Each
-  layer fully owns its concerns: data adapter, icon HTML, tooltip HTML,
-  the composable that wires it into Leaflet. All layers use a registry
-  pattern: `layers/registry.ts` exports `registerMapLayer()` and
-  `useMapLayers()`. Currently:
+  `useLeafletMap`. Nothing here knows about extracts, player markers, or future
+  quest markers — pure map/Leaflet glue.
+- `components/` — **UI surfaces** mounted by the page:
+  - `LayerRail.vue` — on-map left rail (vertically centered). Top icon = base map
+    selector flyout (MapSection component). Below that, one icon per layer **category**
+    (derived from registry `subgroup`: today only `player`, with `loot`/`quests`
+    dimmed future icons). Clicking a category icon opens a flyout listing its
+    layers: each row has a visibility `ToggleSwitch`, layer name, and a gear button
+    that expands that layer's settings component inline. Floor stepper at the rail's
+    bottom (multi-floor maps only) is a vertical ▲/level/▼. Rail hides when the
+    overlay is click-through-locked. When locked on a multi-floor map, a compact
+    read-only floor chip appears bottom-left. Flyouts position relative to the rail
+    via CSS `position: absolute; left: full; top: 1/2` (NOT `position: fixed`
+    which drifted in the Tauri WebView2 overlay).
+  - `MapView.vue` — mounts the Leaflet container, the LayerRail, and layer
+    composables. Wires Alt+mouse wheel (captured, throttled ~120ms) to step
+    floors instead of zooming on multi-floor maps.
+- `layers/<name>/` — **domain layers** rendered on top of the map. Each layer fully
+  owns its concerns: data adapter, icon HTML, tooltip HTML, the composable that
+  wires it into Leaflet. All layers use a registry pattern: `layers/registry.ts`
+  exports `registerMapLayer()` and `useMapLayers()`. Currently:
 
       layers/extracts/
         useExtractsLayer.ts     # Leaflet/Vue glue, data load, marker sync
         icon.ts                 # slice geometry + makeIcon (composite via CSS clip-path)
         tooltip.ts              # buildTooltipHtml + escapeHtml + sortedEntries
+        useEdgeIndicators.ts    # off-screen extract arrows; wraps left edge around the rail
         index.ts                # registerMapLayer call
       layers/player/
-        usePlayerLayer.ts       # player position marker + follow logic
+        usePlayerLayer.ts       # player position marker + recentering on follow
         index.ts                # registerMapLayer call
       layers/airdrop/
         useAirdropLayer.ts      # purple uncertainty circle around the predicted drop
@@ -203,11 +217,20 @@ ownership:
   Each `index.ts` calls `registerMapLayer({ id, mount })` at module load;
   `main.ts` loads all index files via `import.meta.glob('@/features/map/layers/*/index.ts', { eager: true })`.
   `MapView.vue` reads the registry with `useMapLayers()` and calls
-  `mount(ctx)` for each layer in setup(). When quest markers (or anything
-  else) get added later, create `layers/quests/{useQuestMarkers,icon,tooltip,index}.ts`
-  following the same pattern — no manual list to update. Airdrop's state
-  machine, tracker, and banner live in `features/airdrop/` — only the
-  Leaflet circle moved here. See "Airdrop feature" below.
+  `mount(ctx)` for each layer in setup(). `MapLayerContext` (in `layers/registry.ts`)
+  includes `visible: Ref<boolean>` driven by the LayerRail toggle; the layer composable
+  watches it and adds/removes its Leaflet root accordingly. When quest markers (or
+  anything else) get added later, create `layers/quests/{useQuestMarkers,icon,tooltip,index}.ts`
+  following the same pattern — no manual list to update. Airdrop's state machine,
+  tracker, and banner live in `features/airdrop/` — only the Leaflet circle moved here.
+  See "Airdrop feature" below.
+
+**Off-screen extract arrows** (`useEdgeIndicators.ts`): arrows render on the viewport
+edge pointing at extracts outside the visible bounds. On the overlay, the left edge
+wraps around the LayerRail — a left-edge arrow whose y falls within the rail's
+vertical span is pushed out to the rail's right edge (RAIL_GAP px beyond). Measured
+each frame via `.layer-rail` rect so arrows flow dynamically as the rail animates
+in/out on lock transitions.
 
 Extract markers are `L.divIcon` instances (not `L.icon`) — the composite
 PNG split via CSS `clip-path: polygon(...)` is built inline as HTML.
@@ -235,9 +258,8 @@ icon's top edge gives a few pixels of overlap for visual cohesion.
 marker — an SVG arrow (rotated by `yaw + mapRotation + yawOffset`) or
 a circle fallback when `yaw === null`. The marker isn't created until
 the first position arrives. On every position update with changed
-`(x, z, yaw)` and `playerFollow !== 'off'`, the map recenters and zooms
-to `initialZoom + FOLLOW_ZOOM_DELTA[mode]` — that's why `initialZoom`
-sits in `MapLayerContext`.
+`(x, z)` and `playerFollow === 'on'`, the map recenters (zoom stays
+fixed) — that's why `initialZoom` sits in `MapLayerContext`.
 
 ## Airdrop feature
 
@@ -286,9 +308,11 @@ Two surfaces read/write this state:
   axum server (see "In-process HTTP server" below). Same behaviour as
   the IPC commands, same `ResolvedPaths` shape.
 
-The HTTP server binds on `127.0.0.1:47474` — fixed port, no TCP
-exposure beyond loopback. LAN exposure is a future opt-in toggle
-(see "Future architecture").
+The HTTP server binds on `0.0.0.0:47474` — all interfaces, fixed port. Same-Wi-Fi
+machine browsers reach it via localhost/127.0.0.1 loopback; LAN phones reach it
+via the LAN IP. Trust model: same Wi-Fi = trusted (gated by `CorsLayer` for
+browser drive-by callers; LAN curl-equivalents unfiltered by design). See
+"In-process HTTP server" section for architectural reasoning.
 
 ## User settings
 
@@ -302,10 +326,11 @@ Persisted state lives in **per-feature** Pinia stores, not one big store:
     the `--extract-label-size` CSS variable on `<html>` from
     `useExtractsLayer` in `layers/extracts/useExtractsLayer.ts` — which also
     re-binds tooltips so Leaflet recomputes positions for the new height).
-  - `playerFollow` — `"off" | "sm" | "md" | "lg"` — auto-recenter + zoom on
-    every fresh position update. Wired in `layers/player/usePlayerLayer.ts`;
-    only re-centers when `(x, z)` actually changes (skips spam updates when
-    the player stands still). Zoom step: `initialZoom + FOLLOW_ZOOM_DELTA[mode]`.
+  - `edgeIndicators` — boolean, default false. Off-screen extract arrows; opt-in.
+  - `playerFollow` — `"off" | "on"` — auto-recenter map on every fresh position
+    update. Wired in `layers/player/usePlayerLayer.ts`; only recenters when
+    `(x, z)` actually changes (skips spam updates when the player stands still).
+    Zoom stays fixed at `initialZoom`.
   - `autoMapSwitch` — boolean, default `true`. When on, incoming
     `map-change` events from the logs watcher flip `mapCode` to whatever
     the game just loaded (resolved through `canonicalMapCode()` so
@@ -314,6 +339,11 @@ Persisted state lives in **per-feature** Pinia stores, not one big store:
     are silently dropped with one `console.warn`. Wiring lives in
     `features/map/composables/useAutoMapSwitch.ts`, mounted once at
     `App.vue` root.
+- **Per-layer visibility**: `composables/useLayerVisibility.ts` exports a
+  function that returns a shared `persistedRef('tc.layer.<id>.visible', z.boolean(), true)`
+  per layer id (module-level singleton). The LayerRail toggle and the layer
+  composable read/write the same ref. Consumed by `MapLayerContext.visible`
+  in `layers/registry.ts`.
 - `apps/client/src/features/i18n/store.ts` — `apiLang` (`"en" | "ru"`).
   The store's `watch(apiLang, ..., {immediate: true})` mirrors the value
   into vue-i18n's `locale`; `main.ts` calls `useI18nStore()` eagerly after
@@ -326,7 +356,8 @@ Persisted state lives in **per-feature** Pinia stores, not one big store:
   hotkeys" below.
 - `apps/client/src/features/overlay/store.ts` — Tauri-only:
   `alwaysOnTop`, `opacity` (0.3–1), `mapOpacity` (0–1), `zoom`
-  (`"75" | "100" | "125" | "150"`), plus a deliberately session-only
+  (`"75" | "100" | "125" | "150"`), `minimizeToTray` (default false; when on,
+  ✕ hides to tray instead of closing), plus a deliberately session-only
   `clickThrough` (plain `ref()`, not `persistedRef` — see note below).
 - `apps/client/src/features/airdrop/store.ts` — `dropMarkerRadius` (game
   meters, slider-bound in Settings). Wraps the airdrop state machine —
@@ -336,36 +367,44 @@ Each store uses `persistedRef` from `@/shared/persisted-store` with its
 own key (`tc.<feature>.<field>`) — corrupt persisted data falls back to
 defaults silently.
 
-**Session-only state.** `overlayClickThrough` intentionally does NOT
-use `persistedRef`. Booting into a locked overlay with a broken hotkey
-would be unrecoverable, so `App.vue` resets the value to `false` on
-every Tauri startup. Reach for plain `ref()` (not `persistedRef`) any
-time boot-time recoverability matters more than user-visible
-continuity; default to `persistedRef` everywhere else.
+**Session-only state.** `clickThrough` intentionally does NOT use `persistedRef`.
+Booting into a locked overlay with a broken hotkey would be unrecoverable, so
+`App.vue` resets the value to `false` on every Tauri startup. Reach for plain
+`ref()` (not `persistedRef`) any time boot-time recoverability matters more than
+user-visible continuity; default to `persistedRef` everywhere else.
 
 ## Settings UI registry
 
-Settings sections use a registry pattern similar to map layers: each feature
-that owns settings registers its UI section via `registerSettingsSection()`.
+Settings sections use a registry pattern similar to map layers, split into two
+surfaces: the on-map LayerRail (for layer toggles) and the gear drawer (for system config).
 
 - `features/settings/registry.ts` — `registerSettingsSection()` and
-  `useSettingsSections(group)`. Visibility logic: `'always'` (desktop +
-  phone, default), `'tauri'` (overlay only), `'desktop-or-tauri'` (phone at
-  ≥640px or overlay). Order uses multiples of 10. Currently:
-  - main: 10 map, 20 extracts, 30 player, 40 airdrop (tauri-only), 50 overlay (tauri-only), 60 hotkeys (desktop-or-tauri)
-  - system: 10 language, 20 paths (desktop-or-tauri)
+  `useSettingsSections(group)` with `SectionGroup = 'layers' | 'system'` (renamed from
+  `'settings'`). Added `SectionSubgroup = 'player' | 'loot' | 'quests'` and optional
+  `subgroup` field on `SettingsSection`. Visibility logic: `'always'` (desktop + phone,
+  default), `'tauri'` (overlay only), `'desktop-or-tauri'` (phone at ≥640px or overlay).
+  Order uses multiples of 10. Registry also requires a `titleKey` (i18n string for the
+  section label). Currently:
+  - layers: 10 map (no subgroup) · 20 player, 30 extracts, 40 airdrop (subgroup `player`)
+  - system: 10 overlay (tauri-only), 20 hotkeys (desktop-or-tauri), 30 language, 40 paths (desktop-or-tauri), 50 pairing (tauri-only)
 - `features/<name>/settings.ts` — each feature with settings calls
-  `registerSettingsSection({ id, group, order, visible, component })` at
-  module load. Currently: `map`, `airdrop`, `overlay`, `hotkeys`, `i18n`,
-  `server` (each maps to a section component under
-  `features/settings/sections/`).
+  `registerSettingsSection({ id, group, order, titleKey, visible, component })` at
+  module load. The `subgroup` field (if present) gates the category under which it
+  appears in the LayerRail; sections with the same subgroup render together.
 - `main.ts` loads all registration files via
   `import.meta.glob('@/features/*/settings.ts', { eager: true })`.
-- `SettingsPanel.vue` — gear icon in the top-right cluster next to the
-  transport-status pill (`App.vue`), opens a PrimeVue `Drawer` (right-side on
-  desktop, `position="full"` on `<640px`). Iterates `useSettingsSections('main')`
-  and `useSettingsSections('system')` to build the drawer — no hard-coded list
-  of sections.
+- **LayerRail** (`components/LayerRail.vue`) — on-map left rail. Renders `layers`
+  group sections: the map selector at the top (order 10, no subgroup), then one
+  icon per subgroup (player, loot, quests) derived from sections below. Clicking a
+  subgroup icon opens a flyout listing its layers, each with a visibility toggle +
+  settings gear. Empty subgroups (loot, quests) render as dimmed future icons.
+- **Gear drawer** (`features/settings/SettingsPanel.vue`) — opens from the top-right
+  cluster (SettingsPanel button). A **non-modal** PrimeVue `Drawer` (right-side on
+  desktop, bottom-sheet on `<640px` with `position="bottom"`). Renders `system` group
+  sections only in a single flat **Accordion**. Open-panel state persists (`tc.settings.open`,
+  keyed by section id). Desktop starts with all sections open; overlay/phone start
+  collapsed to keep the sheet short. Iterates `useSettingsSections('system')` — no
+  hard-coded list.
 
 Faction colours come from `FACTION_COLORS` in `packages/shared/src/maps.ts`
 so icons and tooltip stripes never drift across components.
@@ -389,29 +428,42 @@ is a no-op so the same code path serves both.
 
 **Overlay controls** (only rendered when `isTauri`):
 
-- **Drag region** — the transport-status pill in `App.vue`'s top-right cluster.
-  Uses an explicit `@mousedown` handler that calls `getCurrentWindow().
-startDragging()` rather than `data-tauri-drag-region` attribute, which
-  is flaky on `decorations: false + transparent: true` windows. Child
-  `<i>` and `<span>` inside the pill have `pointer-events: none` so the
-  drag start always lands on the pill itself.
-- **Close** — red ✕ button next to the gear; runs through a PrimeVue
-  `ConfirmDialog` so an accidental click can't kill the session (close
-  sits right next to settings).
-- **Lock / click-through** — bottom-right corner: a `[Ctrl][Alt][L]` Kbd
-  hint plus a lock button (`pi-lock-open` ↔ `pi-lock`). State lives on
-  `overlayClickThrough` in the store. Click on the open lock locks the
-  window; **only the global hotkey can unlock it**, because once
-  click-through is on the lock button itself isn't clickable. App.vue
-  _always_ resets `overlayClickThrough` to `false` on Tauri startup —
-  the locked state intentionally doesn't persist across sessions, so
-  the app can't boot into an unrecoverable lockout.
-- **Opacity slider** — calls `Window.setOpacity()` (Windows Layered
-  Window API). If the call rejects (the permission `core:window:
-allow-set-opacity` doesn't exist in Tauri 2.11.x), the composable
-  silently falls back to `document.documentElement.style.opacity` so the
-  slider remains visually responsive.
-- **Zoom** — `WebviewWindow.setZoom(factor)`.
+**Unlocked state:**
+- **Drag region** — the entire top bar (OverlayHeader.vue) is clickable and grabbable.
+  Uses an explicit `@mousedown` handler that calls `getCurrentWindow().startDragging()`
+  rather than `data-tauri-drag-region` attribute, which is flaky on `decorations: false +
+  transparent: true` windows. Idle, only a small nub shows; hovering/dragging reveals
+  two separate zones as flex siblings: a drag pill (left, flex-1, visual only with "move"
+  label) and the control cluster (right, auto-width with pointer events). The transport
+  status dot, settings gear, and close button all live in the cluster; only the drag
+  pill is pointer-disabled.
+- **Close** — red ✕ button. With `minimizeToTray` off (default), runs through a
+  PrimeVue `ConfirmDialog` so an accidental click can't kill the session. With it on,
+  hides the window to the system tray (reversible via the tray's Show item) with no
+  confirm.
+- **Settings gear** — opens the system settings drawer (right-side desktop, bottom-sheet
+  phone/overlay).
+- **Opacity slider** — in the gear drawer (`OverlaySection.vue`), calls
+  `Window.setOpacity()` (Windows Layered Window API). If the call rejects (the permission
+  `core:window:allow-set-opacity` doesn't exist in Tauri 2.11.x), the composable
+  silently falls back to `document.documentElement.style.opacity` so the slider remains
+  visually responsive.
+- **Zoom** — in the gear drawer, calls `WebviewWindow.setZoom(factor)`.
+
+**Locked state (click-through):**
+- **Rails & controls hide** — the top band vanishes, the LayerRail hides, and animated
+  borders disappear for a clean map-only view.
+- **Read-outs stay visible** — the clock+location pill (TarkovTimeChip, top-left),
+  the connection status dot (OverlayHeader), the floor stepper chip (LayerRail,
+  bottom-left on multi-floor maps), and the lock hotkey hint (OverlayLockIndicator,
+  bottom-right) remain always-visible.
+- **Unlock** — bottom-right corner: a `[Ctrl][Alt][L]` Kbd hint plus a lock button
+  (`pi-lock-open` ↔ `pi-lock` in OverlayLockIndicator). State lives on `clickThrough`
+  in the store. Click on the open lock or press the hotkey to toggle. **Only the
+  global hotkey can unlock it** because once click-through is on the lock button itself
+  isn't clickable (intentional escape hatch). App.vue _always_ resets `clickThrough` to
+  `false` on Tauri startup — the locked state intentionally doesn't persist across
+  sessions, so the app can't boot into an unrecoverable lockout.
 
 **Lock global shortcut** is the ONLY client-registered hotkey:
 `useGlobalShortcut` (via `@tauri-apps/plugin-global-shortcut`) binds
@@ -422,6 +474,15 @@ a click-through lockout. Handler fires on both `Pressed` and `Released`
 — toggle only on `Pressed`. **Every other hotkey is backend-owned** —
 see "Backend-owned hotkeys" below.
 
+**Floor switching** (multi-floor maps only) — three paths:
+- **GUI**: the floor stepper (▲/▼) at the bottom of the LayerRail.
+- **Hotkey**: backend-owned `floor-up`/`floor-down` actions (always global, even while
+  the game is focused).
+- **Quick**: Alt + mouse wheel over the map (MapView.vue, captured in the capture phase
+  before Leaflet's wheel-zoom, throttled ~120ms so trackpad doesn't skip floors).
+  The floor stepper reads the current floor; locking the overlay hides the rail's
+  stepper but keeps the read-only bottom-left floor chip, and hotkeys still work.
+
 **Capabilities** (`apps/desktop/src-tauri/capabilities/default.json`)
 must include the privileged window ops explicitly — `core:default`
 covers basics only:
@@ -431,7 +492,13 @@ core:window:allow-set-always-on-top
 core:window:allow-set-ignore-cursor-events
 core:window:allow-close
 core:window:allow-start-dragging
+core:window:allow-hide
+core:window:allow-show
+core:window:allow-set-focus
 core:webview:allow-set-webview-zoom
+core:tray:default
+core:menu:default
+core:app:allow-default-window-icon
 global-shortcut:allow-register
 global-shortcut:allow-unregister
 global-shortcut:allow-is-registered

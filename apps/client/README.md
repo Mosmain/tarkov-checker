@@ -21,7 +21,7 @@ Specifics about Tauri internals, Windows build quirks, and dev workflow live in 
 app/        Composition root — router config.
 pages/      File-based routes. Add a *.vue here → it becomes a route. typed-router.d.ts is regenerated on dev/build.
 features/   One folder per business feature, each fully owns its slice:
-  map/         Leaflet map framework (useLeafletMap, useFloorSwitcher), layers registry + built-in layers (extracts/player/airdrop), MapView component, static extracts dataset (data/extracts/<code>.json — one file per canonical map)
+  map/         Leaflet map framework (useLeafletMap, useLayerVisibility), layers registry + built-in layers (extracts/player/airdrop), MapView + LayerRail components, static extracts dataset (data/extracts/<code>.json — one file per canonical map)
   airdrop/     Airdrop triangulation state machine, screenshot tracker, settings section
   overlay/     Tauri overlay window controls, opacity/zoom/mapOpacity sync, tray icon, overlay-specific components
   hotkeys/     Backend-owned combos synced via thin store (fetch/PUT), HotkeyRecorder, accelerator parser; only the overlay lock stays client-registered
@@ -93,8 +93,10 @@ For nested or dynamic routes (`/raids/[id]`), see [Vue Router file-based docs](h
      import { registerSettingsSection } from '@/features/settings/registry';
      registerSettingsSection({
        id: '<name>',
-       group: 'main', // or 'system'
-       order: 30, // multiples of 10
+       group: 'layers', // 'layers' (map/layer toggles on LayerRail) or 'system' (app config in gear drawer)
+       subgroup: 'player', // optional: 'player' | 'loot' | 'quests' (layers group only); omit for 'system' and for map
+       order: 30, // multiples of 10; layers: 10 map · 20 player, 30 extracts, 40 airdrop; system: 10 overlay, 20 hotkeys, 30 language, 40 paths, 50 pairing
+       titleKey: 'xxx.heading', // i18n key for the section title
        visible: 'always', // or 'tauri', 'desktop-or-tauri'
        component: XxxSection,
      });
@@ -103,6 +105,7 @@ For nested or dynamic routes (`/raids/[id]`), see [Vue Router file-based docs](h
 6. If the feature adds a map layer (new extract/player marker/etc):
    - Create `src/features/map/layers/<name>/` with `useXxxLayer.ts` and `index.ts`.
    - Call `registerMapLayer({ id, mount: useXxxLayer })` in `index.ts`.
+   - Inside your composable, get the visibility ref via `useLayerVisibility(id)` from `composables/useLayerVisibility.ts` and `watch(visible, ...)` to add/remove your Leaflet root when toggled. The `MapLayerContext.visible` ref is wired to the on-map LayerRail toggle.
    - `main.ts` auto-discovers via `import.meta.glob('@/features/map/layers/*/index.ts', { eager: true })`.
 
 ### Add a new locale
@@ -186,7 +189,7 @@ pnpm lint       # eslint --max-warnings=0
 - **Tarkov map calibration** (CRS, bounds, rotation) — [`@shared/maps`](../../packages/shared/src/maps.ts). Modifying calibration affects both desktop and browser.
 - **Map localization** — `useMapI18n()` composable in [`features/map/composables/useMapI18n.ts`](./src/features/map/composables/useMapI18n.ts) provides `localizedMapName(code)` with `te → t → displayName` fallback chain. Used in MapView + MapSection to stay in sync.
 - **HTTP / IPC** — single dispatch in [`features/server/api/transport.ts`](./src/features/server/api/transport.ts).
-- **Settings registry** — `registerSettingsSection()` in [`features/settings/registry.ts`](./src/features/settings/registry.ts). Each feature calls this at module load via `features/<name>/settings.ts`. Auto-discovered by `main.ts`.
+- **Settings registry** — `registerSettingsSection()` in [`features/settings/registry.ts`](./src/features/settings/registry.ts) with `group: 'layers'` (on-map LayerRail) or `group: 'system'` (gear drawer). Each feature calls this at module load via `features/<name>/settings.ts`. Auto-discovered by `main.ts`. `'layers'` sections render in the LayerRail flyout with inline visibility toggles; `'system'` sections render in the SettingsPanel drawer as accordion items.
 - **Map layers registry** — `registerMapLayer()` in [`features/map/layers/registry.ts`](./src/features/map/layers/registry.ts). Each layer calls this via `features/map/layers/<name>/index.ts`. Auto-discovered by `main.ts`; mounted by `MapView.vue` in setup().
 
 ## See also
