@@ -57,7 +57,7 @@ const openSections = persistedRef(
     :dismissable="false"
     :position="isDesktop ? 'right' : 'bottom'"
     :header="t('settings')"
-    :class="isDesktop ? '!w-[26rem]' : '!h-auto !max-h-[85dvh] !rounded-t-2xl'"
+    :class="isDesktop ? '!w-[26rem]' : '!h-auto !max-h-[85svh] !rounded-t-2xl'"
   >
     <Accordion v-model:value="openSections" multiple>
       <AccordionPanel v-for="sec in systemSections" :key="sec.id" :value="sec.id">

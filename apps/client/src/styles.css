@@ -80,6 +80,12 @@ body,
   height: 100%;
   margin: 0;
   background: transparent;
+  /* Fixed full-screen app shell — never page-scroll. On iOS Safari a scrollable
+     body lets the bottom toolbar retract, which swells `dvh` and breaks the
+     vertically-centred rail/flyout. Locking scroll keeps the toolbar (and the
+     `100%`/`svh` height) stable; `100%` resolves to the small viewport. */
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 /* Tauri overlay mode: round the painted area for a softer overlay shape.

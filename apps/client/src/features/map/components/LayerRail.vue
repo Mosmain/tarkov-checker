@@ -123,7 +123,7 @@ function stepFloor(delta: number): void {
     <div
       v-if="railVisible"
       ref="railRef"
-      class="layer-rail border-surface-700 bg-surface-900/85 absolute left-0 top-1/2 z-[1100] flex -translate-y-1/2 flex-col gap-1 rounded-r-xl border border-l-0 p-1 backdrop-blur"
+      class="layer-rail border-surface-700 bg-surface-900/85 absolute left-0 top-1/2 z-[1100] flex flex-col gap-1 rounded-r-xl border border-l-0 p-1 backdrop-blur"
     >
       <button
         v-tooltip.right="{ value: t('map'), disabled: openId !== null }"
@@ -185,7 +185,7 @@ function stepFloor(delta: number): void {
       <div
         v-if="openId"
         ref="flyoutRef"
-        class="border-surface-700 bg-surface-900/95 absolute left-full top-1/2 ml-1.5 max-h-[80dvh] w-60 -translate-y-1/2 overflow-y-auto rounded-xl border p-3 shadow-xl backdrop-blur"
+        class="layer-rail__flyout border-surface-700 bg-surface-900/95 absolute left-full top-1/2 ml-1.5 max-h-[80svh] w-60 overflow-y-auto rounded-xl border p-3 shadow-xl backdrop-blur"
       >
         <template v-if="isMapOpen">
           <p class="mb-2 text-[10px] font-semibold uppercase tracking-wider opacity-50">
@@ -240,6 +240,16 @@ function stepFloor(delta: number): void {
 </template>
 
 <style scoped>
+/* Vertical centring via a literal transform, NOT Tailwind's `-translate-y-1/2`.
+   Tailwind v4's translate utilities rely on @property-registered `--tw-*` vars,
+   which Safari < 16.4 (iOS 15) ignores — the composed `translate` declaration
+   then turns invalid and centring silently breaks. A plain transform works on
+   every Safari. (Paired with `top-1/2` in the template.) */
+.layer-rail,
+.layer-rail__flyout {
+  transform: translateY(-50%);
+}
+
 .rail-btn {
   display: flex;
   align-items: center;
