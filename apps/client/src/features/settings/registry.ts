@@ -2,7 +2,7 @@ import { computed, shallowReactive, type ComputedRef, type Component } from 'vue
 import { useMediaQuery } from '@vueuse/core';
 import { isTauri } from '@/shared/tauri';
 
-export type SectionVisibility = 'always' | 'tauri' | 'desktop-or-tauri';
+export type SectionVisibility = 'always' | 'tauri' | 'desktop-or-tauri' | 'browser';
 
 export interface SettingsSection {
   id: string;
@@ -32,6 +32,7 @@ export function useSettingsSections(): ComputedRef<SettingsSection[]> {
     const visible = (v: SectionVisibility = 'always'): boolean => {
       if (v === 'always') return true;
       if (v === 'tauri') return isTauri;
+      if (v === 'browser') return !isTauri;
       return isTauri || isDesktop.value;
     };
 

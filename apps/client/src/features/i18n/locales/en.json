@@ -80,6 +80,18 @@
     "quickMenuTitle": "Transparency",
     "move": "Drag to move"
   },
+  "display": {
+    "heading": "Display",
+    "fullscreen": "Fullscreen",
+    "fullscreenNA": "N/A",
+    "iosHint": "On iPhone, open this page in Safari, tap Share then “Add to Home Screen” for a full-screen, app-like view.",
+    "keepAwake": "Keep screen awake",
+    "keepAwakeHintOff": "Stop your screen from sleeping while the map is open.",
+    "keepAwakeStatusActive": "On — your screen won’t sleep while the map is open.",
+    "keepAwakeStatusVideo": "On (compatibility mode) — your screen won’t sleep while the map is open.",
+    "keepAwakeStatusTap": "Tap the map once to activate — this connection can’t use the Wake Lock API (needs HTTPS).",
+    "keepAwakeStatusBlocked": "Couldn’t keep the screen awake — the browser denied it; your screen may sleep."
+  },
   "pairing": {
     "heading": "Phone access",
     "sectionHint": "Show a QR for a phone in the same Wi-Fi to open the same map UI.",

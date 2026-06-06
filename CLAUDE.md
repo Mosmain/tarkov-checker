@@ -365,6 +365,11 @@ Persisted state lives in **per-feature** Pinia stores, not one big store:
 - `apps/client/src/features/airdrop/store.ts` — `dropMarkerRadius` (game
   meters, slider-bound in Settings). Wraps the airdrop state machine —
   `phase` and `outcome` are derived runtime state, not persisted.
+- `apps/client/src/features/display/store.ts` — browser/phone-only:
+  `keepAwake` (default `true`) plus non-persisted runtime status
+  (`keepAwakeMode` = `'wakelock' | 'video' | 'none'`, `keepAwakeActive`)
+  written by the keep-awake driver and read by the settings UI. See
+  "Mobile display (browser / phone)" below.
 
 Each store uses `persistedRef` from `@/shared/persisted-store` with its
 own key (`tc.<feature>.<field>`) — corrupt persisted data falls back to
@@ -397,17 +402,72 @@ user-visible continuity; default to `persistedRef` everywhere else.
 - **Settings-section registry** (`features/settings/registry.ts`) — **system/app
   settings only** (no layer concept; no groups/subgroups). `registerSettingsSection({
   id, order, titleKey, visible?, component })`; `useSettingsSections()` returns them
-  filtered by `visible` (`'always'` | `'tauri'` | `'desktop-or-tauri'`) and sorted by
+  filtered by `visible` (`'always'` | `'tauri'` | `'desktop-or-tauri'` | `'browser'`,
+  where `'browser'` = `!isTauri`) and sorted by
   `order`. Registered in `features/<name>/settings.ts` (auto-loaded via
   `import.meta.glob('@/features/*/settings.ts', { eager: true })`). Currently: 10
-  overlay (tauri), 20 hotkeys (desktop-or-tauri), 30 language, 40 paths
-  (desktop-or-tauri), 50 pairing (tauri). Consumed by the gear **drawer**
+  overlay (tauri), 20 hotkeys (desktop-or-tauri), 25 display (browser), 30 language,
+  40 paths (desktop-or-tauri), 50 pairing (tauri). Consumed by the gear **drawer**
   (`SettingsPanel.vue`): a **non-modal** PrimeVue `Drawer` (right on desktop,
   bottom-sheet on `<640px`) rendering a single flat **Accordion**; open-panel state
   persists in `tc.settings.open`.
 
 Faction colours come from `FACTION_COLORS` in `packages/shared/src/maps.ts`
 so icons and tooltip stripes never drift across components.
+
+## Mobile display (browser / phone)
+
+`apps/client/src/features/display/` holds the two phone/second-screen features.
+Both are browser-only (gated on `!isTauri`) — the frameless Tauri overlay has no
+browser chrome and isn't a sleeping phone, so they no-op there. VueUse
+`useFullscreen` / `useWakeLock` do the heavy lifting; the feature code is the
+gating + fallback policy.
+
+- **Fullscreen** (`composables/useFullscreenToggle.ts`, `components/FullscreenButton.vue`).
+  The button lives in the **browser branch** of `OverlayHeader.vue` (top-right
+  cluster, before the gear). Self-gates to mobile/touch (`!isStandalone &&
+  (mobileViewport || touch) && (fullscreenSupported || iOS)`). `pi-window-maximize`
+  ↔ `pi-window-minimize`. iOS Safari has **no Fullscreen API**, so on iOS the
+  button opens a PrimeVue `Popover` with an "Add to Home Screen" hint instead
+  (the PWA `display: standalone` route is the only chrome-free path on iPhone).
+  A duplicate toggle also lives in the Display settings section. `useFullscreen`
+  targets `document.documentElement` so the address bar collapses; each consumer
+  gets its own instance (no shared singleton to strand on unmount). Toggle calls
+  are `.catch(() => undefined)` — `requestFullscreen` rejects when embedded in an
+  iframe and there's nothing actionable.
+- **Keep screen awake** (`composables/useKeepAwake.ts`, default ON). Mounted once
+  in `pages/index.vue` (NOT `MapView`, which remounts on every `:key="mapCode"`
+  change). Two paths:
+  - **Secure context** (HTTPS / `localhost`): Screen Wake Lock API via VueUse.
+    Auto-acquires on mount, no user gesture; VueUse re-acquires on visibility
+    return itself, so we don't double-handle `visibilitychange` for it.
+  - **Insecure LAN HTTP** (the actual phone case — `http://<lan-ip>:5173`/`:47474`
+    is NOT a secure context, so `navigator.wakeLock` is `undefined`): fall back to
+    a muted looping off-screen `<video>` (`composables/useNoSleepVideo.ts` +
+    `assets/noSleepVideo.ts`). The clips (WebM + MP4) are taken verbatim from
+    NoSleep.js (MIT) but embedded and driven in-repo — **no `nosleep.js` runtime
+    dependency** (it's unmaintained; we only need the video trick). iOS Safari
+    plays the MP4, Android/desktop the WebM. Video playback needs a user gesture,
+    so we arm a one-shot `touchstart`/`click` listener and start on the first tap;
+    we re-play on visibility return (the video stays paused after a hide, unlike
+    the wakeLock path). The settings status line reflects which path is active
+    (`display.keepAwakeStatus*` i18n keys).
+
+`useDisplayEnv.ts` centralises the env detection: `isIos` (UA incl. iPadOS-as-Mac),
+`isStandalone` (`matchMedia('(display-mode: standalone)')` + `navigator.standalone`),
+`isMobileViewport` (`max-width: 639px`), `isTouch` (`(hover: none) and (pointer:
+coarse)`).
+
+**PWA manifest** (`apps/client/public/manifest.webmanifest` + `<link rel="manifest">`
+and the `apple-mobile-web-app-*` / `mobile-web-app-capable` meta in `index.html`):
+`display: standalone`, icon = the existing `favicon.svg` (`sizes: "any"`).
+`start_url`/`scope` are `/`, correct for the phone (`:5173`/`:47474`) and the Tauri
+release (base `/`). The hosted **GitHub Pages** build serves under base
+`/tarkov-checker/`, so its `start_url`/`scope` would mismatch — the static manifest
+isn't templated by Vite. Pages PWA install is a secondary path; template the
+manifest if it ever matters. iOS `apple-touch-icon` ideally wants a PNG — pointing
+it at the SVG works on Android, but iPhone may fall back to a page screenshot for
+the home-screen icon; rasterising `favicon.svg` to PNG is an open follow-up.
 
 ## Desktop overlay (Tauri)
 

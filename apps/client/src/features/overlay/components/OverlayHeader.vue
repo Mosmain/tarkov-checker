@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import SettingsPanel from '@/features/settings/SettingsPanel.vue';
+import FullscreenButton from '@/features/display/components/FullscreenButton.vue';
 import MapSwitchMenu from './MapSwitchMenu.vue';
 import { isTauri } from '@/shared/tauri';
 import { useOverlayHeaderActive } from '../composables/useOverlayHeaderActive';
@@ -169,6 +170,7 @@ function openMapMenu(event: MouseEvent): void {
       <span>{{ mapDisplayName }}</span>
       <span class="sr-only" aria-live="polite">Connection: {{ status }}</span>
     </span>
+    <FullscreenButton />
     <SettingsPanel />
   </div>
 
