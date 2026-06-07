@@ -18,9 +18,11 @@
 use serde::Serialize;
 use tokio::sync::broadcast;
 
+use crate::server::hotkeys::HotkeyConfig;
+
 /// Action codes the backend forwards to every client on a global-hotkey
 /// press. Mirrors the TS `hotkeyActions` list in
-/// `packages/shared/src/ws-messages.ts` (kebab-case wire values). Lock is
+/// `packages/shared/src/sse-messages.ts` (kebab-case wire values). Lock is
 /// deliberately absent — it stays a client-side overlay-only shortcut.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "kebab-case")]
@@ -58,6 +60,14 @@ pub enum ServerEvent {
     /// no client needs the originating combo, only the action.
     Command {
         action: HotkeyAction,
+    },
+    /// The backend-owned hotkey config changed (a rebind on any client).
+    /// Broadcast over SSE so every other client's view stays in sync; the
+    /// originating client already has the effective config from its PUT/IPC
+    /// response. Carries the full effective config (camelCase keys via
+    /// `HotkeyConfig`'s own serde rename).
+    Hotkeys {
+        config: HotkeyConfig,
     },
 }
 

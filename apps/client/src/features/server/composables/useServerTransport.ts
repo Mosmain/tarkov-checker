@@ -5,7 +5,7 @@ import {
   type CommandMessage,
   type MapChangeMessage,
   type PositionMessage,
-} from '@shared/ws-messages';
+} from '@shared/sse-messages';
 import { isTauri } from '@/shared/tauri';
 import { useServerStream } from './useServerStream';
 import { dispatchServerEvent } from './useServerEvents';

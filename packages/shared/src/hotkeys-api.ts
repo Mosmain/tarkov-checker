@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { hotkeyActions, type HotkeyActionCode } from './ws-messages';
+import { hotkeyActions, type HotkeyActionCode } from './sse-messages.js';
 
 /**
  * Accelerator string in Tauri/Electron format: one or more modifiers + a

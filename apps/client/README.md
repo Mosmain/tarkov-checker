@@ -184,7 +184,7 @@ pnpm lint       # eslint --max-warnings=0
 ## Where things connect
 
 - **Tauri detection** — centralized in [`shared/tauri.ts`](./src/shared/tauri.ts) as `isTauri` const. Checked at module load time, safe for non-DOM contexts. Used by transport layer, router, overlay composables, and settings visibility logic.
-- **Server-pushed messages** — schema in [`@shared/ws-messages`](../../packages/shared/src/ws-messages.ts). Position, map-change, and command (backend-owned hotkey) events; the in-process Rust helper pushes over SSE to browsers, and emits as Tauri events to the overlay webview. Client uses the same Zod schema either way.
+- **Server-pushed messages** — schema in [`@shared/sse-messages`](../../packages/shared/src/sse-messages.ts). Position, map-change, command (backend-owned hotkey press), and hotkeys (config re-sync after a rebind) events; the in-process Rust helper pushes over SSE to browsers, and emits as Tauri events to the overlay webview. Client uses the same Zod schema either way.
 - **Tarkov map calibration** (CRS, bounds, rotation) — [`@shared/maps`](../../packages/shared/src/maps.ts). Modifying calibration affects both desktop and browser.
 - **Map localization** — `useMapI18n()` composable in [`features/map/composables/useMapI18n.ts`](./src/features/map/composables/useMapI18n.ts) provides `localizedMapName(code)` with `te → t → displayName` fallback chain. Used in MapView + MapSection to stay in sync.
 - **HTTP / IPC** — single dispatch in [`features/server/api/transport.ts`](./src/features/server/api/transport.ts).

@@ -11,6 +11,8 @@ const props = defineProps<{
   modelValue: string;
   /** Human label for the action this hotkey performs. */
   label: string;
+  /** Display-only (no keyboard to record, e.g. a phone) — hides the Change button. */
+  readonly?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -105,6 +107,7 @@ let currentRecorder: { cancel: () => void } | null = null;
         </template>
       </div>
       <Button
+        v-if="!readonly"
         :label="recording ? t('hotkeys.recording') : t('hotkeys.record')"
         size="small"
         severity="secondary"

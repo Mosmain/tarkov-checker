@@ -100,6 +100,7 @@
   },
   "hotkeys": {
     "heading": "Hotkeys",
+    "rebindHint": "These fire globally from the PC. Rebind them in the overlay app on the PC — a phone has no keyboard to record a combo.",
     "lock": "Toggle lock",
     "lockHint": "Global shortcuts fire even when the game window is focused. Every binding needs at least one Ctrl / Alt / Shift.",
     "zoomIn": "Zoom in",

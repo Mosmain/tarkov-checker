@@ -33,15 +33,34 @@ export const commandMessage = z.object({
   action: z.enum(hotkeyActions),
 });
 
+/** The backend-owned hotkey config changed (a rebind on any client). Broadcast
+ * so every other client's view stays in sync — e.g. the phone's read-only list.
+ * The originating client already has the effective config from its PUT response.
+ * The `config` shape mirrors `HotkeyConfig` in `@shared/hotkeys-api`; it's
+ * inlined here (not imported) to avoid a circular import — `hotkeys-api` imports
+ * `hotkeyActions` from this module. */
+export const hotkeysMessage = z.object({
+  type: z.literal('hotkeys'),
+  config: z.object({
+    zoomIn: z.string(),
+    zoomOut: z.string(),
+    floorUp: z.string(),
+    floorDown: z.string(),
+    airdrop: z.string(),
+  }),
+});
+
 export const serverMessage = z.discriminatedUnion('type', [
   positionMessage,
   mapChangeMessage,
   commandMessage,
+  hotkeysMessage,
 ]);
 
 export type PositionMessage = z.infer<typeof positionMessage>;
 export type MapChangeMessage = z.infer<typeof mapChangeMessage>;
 export type CommandMessage = z.infer<typeof commandMessage>;
+export type HotkeysMessage = z.infer<typeof hotkeysMessage>;
 export type HotkeyActionCode = (typeof hotkeyActions)[number];
 export type ServerMessage = z.infer<typeof serverMessage>;
 export type ServerMessageType = ServerMessage['type'];

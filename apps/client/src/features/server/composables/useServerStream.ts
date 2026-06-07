@@ -1,4 +1,4 @@
-import { serverMessage } from '@shared/ws-messages';
+import { serverMessage } from '@shared/sse-messages';
 import { dispatchServerEvent } from './useServerEvents';
 
 export type StreamStatus = 'connecting' | 'open' | 'closed';

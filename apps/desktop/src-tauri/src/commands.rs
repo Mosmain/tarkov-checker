@@ -10,6 +10,7 @@ use crate::http_server::LISTEN_PORT;
 use crate::hotkeys::HotkeyController;
 use crate::lan::detect_lan_ip;
 use crate::server::config::{ConfigPatch, ConfigStore};
+use crate::server::events::ServerEvent;
 use crate::server::hotkeys::{HotkeyConfig, HotkeyPatch, HotkeyStore};
 use crate::server::paths::{self, ResolvedPaths};
 use crate::watcher::WatcherSlot;
@@ -50,6 +51,7 @@ pub async fn update_hotkeys(
     patch: HotkeyPatch,
     store: State<'_, Arc<HotkeyStore>>,
     hotkeys: State<'_, Arc<dyn HotkeyController>>,
+    slot: State<'_, Arc<WatcherSlot>>,
 ) -> Result<HotkeyConfig, String> {
     let merged = store.apply(patch).await?;
     let controller = hotkeys.inner().clone();
@@ -60,6 +62,11 @@ pub async fn update_hotkeys(
     if effective != merged {
         store.set(effective.clone()).await.map_err(|e| e.to_string())?;
     }
+    // Tell the other clients (browser/phone over SSE) the config changed —
+    // `event_sender()` is the same broadcast channel the /events stream serves.
+    let _ = slot
+        .event_sender()
+        .send(ServerEvent::Hotkeys { config: effective.clone() });
     Ok(effective)
 }
 

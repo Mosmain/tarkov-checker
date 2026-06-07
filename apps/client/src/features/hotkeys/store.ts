@@ -117,5 +117,6 @@ export const useHotkeysStore = defineStore('hotkeys', () => {
     airdropHotkey,
     load,
     setAction,
+    applyConfig,
   };
 });

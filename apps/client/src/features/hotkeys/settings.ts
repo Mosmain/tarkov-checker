@@ -4,10 +4,11 @@ import HotkeysSection from '@/features/settings/sections/HotkeysSection.vue';
 registerSettingsSection({
   id: 'hotkeys',
   order: 20,
-  // Shown on the desktop browser + overlay (both have a keyboard), hidden on
-  // phones. The combos are backend-owned now — configurable from any desktop
-  // browser, fired globally for every client via the `command` event.
-  visible: 'desktop-or-tauri',
+  // Shown everywhere — the combos are backend-owned and fire globally, so the
+  // bindings are worth seeing on any client. Rebinding needs a keyboard, so
+  // the rows go read-only on a phone (see HotkeysSection); the overlay + desktop
+  // browser stay editable.
+  visible: 'always',
   titleKey: 'hotkeys.heading',
   component: HotkeysSection,
 });

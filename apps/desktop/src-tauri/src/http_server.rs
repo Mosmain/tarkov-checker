@@ -194,6 +194,8 @@ async fn put_hotkeys_http(
             eprintln!("[hotkeys] persist effective config failed: {err:#}");
         }
     }
+    // Notify the other clients (browser/phone over SSE) so their view re-syncs.
+    let _ = state.event_tx.send(ServerEvent::Hotkeys { config: effective.clone() });
     Ok(Json(effective))
 }
 

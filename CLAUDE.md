@@ -401,7 +401,8 @@ user-visible continuity; default to `persistedRef` everywhere else.
   where `'browser'` = `!isTauri`) and sorted by
   `order`. Registered in `features/<name>/settings.ts` (auto-loaded via
   `import.meta.glob('@/features/*/settings.ts', { eager: true })`). Currently: 10
-  overlay (tauri), 20 hotkeys (desktop-or-tauri), 25 display (browser), 30 language,
+  overlay (tauri), 20 hotkeys (always; rows read-only on a phone — no keyboard
+  to record), 25 display (browser), 30 language,
   40 paths (desktop-or-tauri), 50 pairing (tauri). Consumed by the gear **drawer**
   (`SettingsPanel.vue`): a **non-modal** PrimeVue `Drawer` (right on desktop,
   bottom-sheet on `<640px`) rendering a single flat **Accordion**; open-panel state
@@ -643,12 +644,13 @@ Frontend chooses the transport in two places only:
 
 `PositionPayload` (struct in `screenshots.rs`) and `MapChangePayload`
 (struct in `logs.rs`) on the Rust side mirror `PositionMessage` and
-`MapChangeMessage` from `packages/shared/src/ws-messages.ts`. The
+`MapChangeMessage` from `packages/shared/src/sse-messages.ts`. The
 HTTP-side `ServerEvent` enum (in `server/events.rs`) is the tagged-
 union wire format for SSE. Adding a new event type touches four
 declarations (TS schema, TS discriminated union, Rust payload struct,
-new `ServerEvent` variant); the file is still called `ws-messages.ts`
-for historical reasons (was the WS schema before the SSE migration).
+new `ServerEvent` variant) — e.g. the `hotkeys` config-resync event below.
+(The file was `ws-messages.ts` before the SSE migration; renamed to
+`sse-messages.ts`.)
 
 ## Backend-owned hotkeys
 
@@ -693,10 +695,18 @@ client-registered (see "Desktop overlay").
   and the pressed combo reaches the page/webview to be re-recorded (the
   same events still drive the client-side lock shortcut).
 - Wire parity follows the same 4-declaration rule as other events:
-  `commandMessage` (zod) + union in `ws-messages.ts`, `ServerEvent::Command`
+  `commandMessage` (zod) + union in `sse-messages.ts`, `ServerEvent::Command`
   + `HotkeyAction` (kebab-case) in `server/events.rs`. The client dispatches
   `command` in `pages/index.vue` (`useServerEvent('command', …)`) to
   `mapRef`/`airdropStore`.
+- **Config re-sync:** a rebind broadcasts `ServerEvent::Hotkeys { config }`
+  (`hotkeysMessage` in `sse-messages.ts`) from BOTH PUT paths —
+  `put_hotkeys_http` (`state.event_tx`) and the `update_hotkeys` IPC command
+  (`slot.event_sender()`, same broadcast channel) — so OTHER clients re-sync
+  over SSE; the originator already has the effective config from its response.
+  `useHotkeysSync` applies it via `store.applyConfig`. This is why the
+  hotkeys section is `visible: 'always'` (read-only on a phone — no keyboard
+  to record): the phone's list stays live with what the overlay set.
 
 The logs watcher (`server/logs.rs`) tails the **latest** `log_*/`
 session folder under `logsDir` — picked by sort order (timestamps in

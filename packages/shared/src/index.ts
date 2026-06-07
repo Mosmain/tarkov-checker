@@ -1,4 +1,4 @@
-export * from './ws-messages.js';
+export * from './sse-messages.js';
 export * from './maps.js';
 export * from './parse-screenshot.js';
 export * from './parse-log.js';

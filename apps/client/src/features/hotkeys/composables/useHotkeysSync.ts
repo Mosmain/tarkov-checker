@@ -1,6 +1,7 @@
 import { useHotkeysStore } from '@/features/hotkeys/store';
 import { HOTKEY_SUSPEND_EVENT, HOTKEY_RESUME_EVENT } from '../lib/hotkey';
 import { suspendHotkeys, resumeHotkeys } from '@/features/server/api/hotkeys-api';
+import { useServerEvent } from '@/features/server/composables/useServerEvents';
 
 /**
  * Mount once at the app root. Loads the backend-owned hotkey combos into the
@@ -17,6 +18,12 @@ export function useHotkeysSync(): void {
     // Best-effort — a closed transport just leaves the defaults in place.
     void store.load().catch(() => {});
   });
+
+  // Another client rebound a combo → the backend broadcasts the effective
+  // config over SSE; apply it so this client's view stays in sync (e.g. the
+  // phone's read-only list). Browser/SSE only — the overlay is the rebind
+  // surface and already updates from its own PUT response.
+  useServerEvent('hotkeys', (msg) => store.applyConfig(msg.config));
 
   useEventListener(window, HOTKEY_SUSPEND_EVENT, () => {
     void suspendHotkeys().catch(() => {});
