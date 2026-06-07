@@ -15,7 +15,6 @@ import { useServerEvent } from '@/features/server/composables/useServerEvents';
 import { useCloseConfirm } from '@/features/overlay/composables/useCloseConfirm';
 import { useAirdropStore } from '@/features/airdrop/store';
 import { useAirdropTracker } from '@/features/airdrop/composables/useAirdropTracker';
-import { useKeepAwake } from '@/features/display/composables/useKeepAwake';
 
 const { mapCode } = storeToRefs(useMapSettingsStore());
 const { showControls } = useOverlayLock();
@@ -25,10 +24,6 @@ const { lockHotkey } = storeToRefs(useHotkeysStore());
 
 const airdropStore = useAirdropStore();
 useAirdropTracker();
-
-// Keep the phone screen awake while the map is open (browser only; no-op in
-// Tauri). Mounted here, not in MapView, which remounts on every map change.
-useKeepAwake();
 
 const status = useTransportStatus();
 const confirmClose = useCloseConfirm();
@@ -75,18 +70,17 @@ useServerEvent('command', (msg) => {
     @map-error="mapError = $event"
   />
 
-  <OverlayHeader
-    :map-display-name="mapDisplayName"
-    :status="status"
-    :tauri-chrome="showOverlayChrome"
-    @close="confirmClose"
-  />
+  <OverlayHeader :status="status" :tauri-chrome="showOverlayChrome" @close="confirmClose" />
 
   <OverlayErrors :map-error="mapError" @dismiss-map="mapError = null" @retry="mapRef?.reload()" />
 
   <AirdropStatusBanner />
 
-  <TarkovTimeChip :map-display-name="showOverlayChrome ? mapDisplayName : ''" />
+  <TarkovTimeChip
+    :map-display-name="mapDisplayName"
+    :status="showOverlayChrome ? undefined : status"
+    :compact-map-name="!showOverlayChrome"
+  />
 
   <OverlayBorder v-if="showOverlayChrome && showControls" />
 

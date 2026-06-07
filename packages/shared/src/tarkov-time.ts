@@ -29,12 +29,16 @@ export interface TarkovClock {
   readonly left: string;
   /** Right clock, +12h from the left (e.g. 23:34). */
   readonly right: string;
+  /** Seconds (e.g. 07) — identical for both clocks, which differ by exactly 12h. */
+  readonly seconds: string;
 }
 
 /** Both in-game clocks for the given real-time millisecond timestamp. */
 export function tarkovTime(nowMs: number): TarkovClock {
+  const leftMs = timeOfDayMs(nowMs, false);
   return {
-    left: formatHHMM(timeOfDayMs(nowMs, false)),
+    left: formatHHMM(leftMs),
     right: formatHHMM(timeOfDayMs(nowMs, true)),
+    seconds: String(Math.floor((leftMs % 60000) / 1000)).padStart(2, '0'),
   };
 }

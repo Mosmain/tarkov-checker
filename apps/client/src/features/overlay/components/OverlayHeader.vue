@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import SettingsPanel from '@/features/settings/SettingsPanel.vue';
-import FullscreenButton from '@/features/display/components/FullscreenButton.vue';
 import MapSwitchMenu from './MapSwitchMenu.vue';
 import { isTauri } from '@/shared/tauri';
 import { useOverlayHeaderActive } from '../composables/useOverlayHeaderActive';
@@ -8,7 +7,6 @@ import { useOverlayLock } from '../composables/useOverlayLock';
 import type { TransportStatus } from '@/features/server/composables/useServerTransport';
 
 interface Props {
-  mapDisplayName: string;
   status: TransportStatus;
   /** Render the Tauri overlay chrome (true under real Tauri, or the dev
    *  preview flag). Native window calls still guard on the real `isTauri`. */
@@ -159,18 +157,11 @@ function openMapMenu(event: MouseEvent): void {
     </span>
   </div>
 
-  <!-- BROWSER: no window drag — keep a static status + map name pill + settings.
-       Right-click the pill to switch maps (wide viewports only). -->
+  <!-- BROWSER: connection status + map name now live in the always-visible
+       clock chip (top-left), and the fullscreen/PWA helper moved to the Display
+       settings section — so the top-right cluster is just the gear, which keeps
+       the bar from overflowing on a 320px phone. -->
   <div v-else class="sa-top sa-right absolute z-[1000] flex items-center gap-2">
-    <span
-      class="inline-flex items-center gap-2 rounded-md bg-surface-800/70 px-3 py-1 text-sm font-medium text-surface-0 backdrop-blur select-none"
-      @contextmenu.prevent="openMapMenu"
-    >
-      <i :class="['text-[10px]', statusIconClass]" :title="'ws: ' + status" aria-hidden="true" />
-      <span>{{ mapDisplayName }}</span>
-      <span class="sr-only" aria-live="polite">Connection: {{ status }}</span>
-    </span>
-    <FullscreenButton />
     <SettingsPanel />
   </div>
 
