@@ -7,14 +7,6 @@ type TrayHandle = Awaited<ReturnType<typeof TrayIcon.new>>;
 
 const TRAY_ID = 'tarkov-checker-tray';
 
-async function showWindow(): Promise<void> {
-  const { getCurrentWindow } = await import('@tauri-apps/api/window');
-  const win = getCurrentWindow();
-  await win.show();
-  await win.unminimize();
-  await win.setFocus();
-}
-
 /**
  * Owns the Tauri system-tray icon lifecycle: creates the icon on mount,
  * rebuilds the menu when the UI language changes, keeps the checkmark items in
@@ -45,6 +37,27 @@ export function useTrayIcon(isTauri: boolean, overlayClickThrough: Ref<boolean>)
   // rebuilding the whole menu.
   let lockItem: CheckMenuItem | null = null;
   let aotItem: CheckMenuItem | null = null;
+
+  async function showWindow(): Promise<void> {
+    try {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      const win = getCurrentWindow();
+      await win.show();
+      await win.unminimize();
+      // A visible-but-covered window won't raise on setFocus() alone:
+      // Windows' foreground lock lets SetForegroundWindow fail silently for
+      // background processes. Pulse always-on-top to force the raise, then
+      // restore the user's setting.
+      await win.setAlwaysOnTop(true);
+      await win.setFocus();
+      if (!alwaysOnTop.value) await win.setAlwaysOnTop(false);
+    } catch (err) {
+      // Most likely a missing core:window:allow-* capability — surface it,
+      // these rejections are otherwise invisible (see CLAUDE.md).
+      // eslint-disable-next-line no-console
+      console.error('[tray] showWindow failed:', err);
+    }
+  }
 
   async function copyLanUrl(): Promise<void> {
     try {
