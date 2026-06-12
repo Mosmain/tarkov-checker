@@ -22,7 +22,8 @@
         "fullscreen": false,
         "alwaysOnTop": false,
         "transparent": true,
-        "shadow": false
+        "shadow": false,
+        "additionalBrowserArgs": "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --disable-http-cache"
       }
     ],
     "security": {

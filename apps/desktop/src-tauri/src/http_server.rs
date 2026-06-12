@@ -250,7 +250,23 @@ async fn spa_fallback(uri: Uri) -> Response {
         .first_or_octet_stream()
         .as_ref()
         .to_string();
-    ([(header::CONTENT_TYPE, mime)], asset.data.into_owned()).into_response()
+    let cache = if served.starts_with("assets/") {
+        // Vite content-hashes everything under assets/ — cacheable forever.
+        "public, max-age=31536000, immutable"
+    } else {
+        // index.html + unhashed public files (maps, fonts, manifest): always
+        // revalidate, so a self-updated exe serves its fresh frontend instead
+        // of a browser-cached copy of the previous version.
+        "no-cache"
+    };
+    (
+        [
+            (header::CONTENT_TYPE, mime),
+            (header::CACHE_CONTROL, cache.to_string()),
+        ],
+        asset.data.into_owned(),
+    )
+        .into_response()
 }
 
 #[cfg(debug_assertions)]
