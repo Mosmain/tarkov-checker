@@ -69,9 +69,13 @@ const statusDotClass = computed(() => {
       aria-hidden="true"
     >
       <i v-if="status" :class="['pi text-[9px]', statusDotClass]" />
-      <span>{{ clock.left }}<span class="opacity-50">:{{ clock.seconds }}</span></span>
+      <span
+        >{{ clock.left }}<span class="opacity-50">:{{ clock.seconds }}</span></span
+      >
       <span class="opacity-40">/</span>
-      <span>{{ clock.right }}<span class="opacity-50">:{{ clock.seconds }}</span></span>
+      <span
+        >{{ clock.right }}<span class="opacity-50">:{{ clock.seconds }}</span></span
+      >
       <span
         v-if="mapDisplayName"
         class="items-center gap-1.5"

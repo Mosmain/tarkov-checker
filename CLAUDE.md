@@ -216,7 +216,7 @@ key back in the running app.
         index.ts                # registerMapLayer call
 
   Each `index.ts` calls `registerMapLayer({ id, mount, category, order, titleKey,
-  settingsComponent? })` at module load (the rail metadata lives here — there is
+settingsComponent? })` at module load (the rail metadata lives here — there is
   no second registry for layers);
   `main.ts` loads all index files via `import.meta.glob('@/features/map/layers/*/index.ts', { eager: true })`.
   `MapView.vue` reads the registry with `useMapLayers()` and calls
@@ -400,7 +400,7 @@ user-visible continuity; default to `persistedRef` everywhere else.
 
 - **Map-layer registry** (`features/map/layers/registry.ts`) — the single source
   of truth for layers. `registerMapLayer({ id, mount, category, order, titleKey,
-  settingsComponent?, availability? })`; `useMapLayers()` reads them. Each layer
+settingsComponent?, availability? })`; `useMapLayers()` reads them. Each layer
   self-describes its rail `category` (`'player' | 'loot' | 'quests'`), `order`,
   display `titleKey`, and optional inline `settingsComponent`. Layers register in
   their own `layers/<name>/index.ts` (auto-loaded via the layers glob). Consumed by
@@ -414,7 +414,7 @@ user-visible continuity; default to `persistedRef` everywhere else.
   NOT the catalogue.
 - **Settings-section registry** (`features/settings/registry.ts`) — **system/app
   settings only** (no layer concept; no groups/subgroups). `registerSettingsSection({
-  id, order, titleKey, visible?, component })`; `useSettingsSections()` returns them
+id, order, titleKey, visible?, component })`; `useSettingsSections()` returns them
   filtered by `visible` (`'always'` | `'tauri'` | `'desktop-or-tauri'` | `'browser'`,
   where `'browser'` = `!isTauri`) and sorted by
   `order`. Registered in `features/<name>/settings.ts` (auto-loaded via
@@ -461,8 +461,9 @@ way to keep a mobile screen awake over plain HTTP: the Screen Wake Lock API need
 secure context (HTTPS / `localhost` — neither reaches a LAN phone, and it's absent
 entirely on iOS < 16.4), and the muted/unmuted looping-`<video>` trick no longer
 keeps the screen on under current iOS **or** Android (verified on iPod touch iOS 15
-+ Android). The honest fallback is the OS auto-lock setting. Don't re-add a JS
-keep-awake hack unless serving over HTTPS becomes viable.
+
+- Android). The honest fallback is the OS auto-lock setting. Don't re-add a JS
+  keep-awake hack unless serving over HTTPS becomes viable.
 
 **PWA manifest** (`apps/client/public/manifest.webmanifest` + `<link rel="manifest">`
 and the `apple-mobile-web-app-*` / `mobile-web-app-capable` meta in `index.html`):
@@ -506,10 +507,11 @@ is a no-op so the same code path serves both.
 **Overlay controls** (only rendered when `isTauri`):
 
 **Unlocked state:**
+
 - **Drag region** — the entire top bar (OverlayHeader.vue) is clickable and grabbable.
   Uses an explicit `@mousedown` handler that calls `getCurrentWindow().startDragging()`
   rather than `data-tauri-drag-region` attribute, which is flaky on `decorations: false +
-  transparent: true` windows. Idle, only a small nub shows; hovering/dragging reveals
+transparent: true` windows. Idle, only a small nub shows; hovering/dragging reveals
   two separate zones as flex siblings: a drag pill (left, flex-1, visual only with "move"
   label) and the control cluster (right, auto-width with pointer events). The transport
   status dot, settings gear, and close button all live in the cluster; only the drag
@@ -528,6 +530,7 @@ is a no-op so the same code path serves both.
 - **Zoom** — in the gear drawer, calls `WebviewWindow.setZoom(factor)`.
 
 **Locked state (click-through):**
+
 - **Rails & controls hide** — the top band vanishes, the LayerRail hides, and animated
   borders disappear for a clean map-only view.
 - **Read-outs stay visible** — the clock+location pill (TarkovTimeChip, top-left),
@@ -552,6 +555,7 @@ a click-through lockout. Handler fires on both `Pressed` and `Released`
 see "Backend-owned hotkeys" below.
 
 **Floor switching** (multi-floor maps only) — three paths:
+
 - **GUI**: the floor stepper (▲/▼) at the bottom of the LayerRail.
 - **Hotkey**: backend-owned `floor-up`/`floor-down` actions (always global, even while
   the game is focused).
@@ -602,17 +606,17 @@ axum-based HTTP server alongside the Tauri IPC layer, so the same
 process backs both the webview (via IPC) and any browser tab on the
 machine (via HTTP). One source of state, two transports.
 
-| Module                  | Role                                                                                               |
-| ----------------------- | -------------------------------------------------------------------------------------------------- |
-| `http_server.rs`        | axum routes, CorsLayer, SSE handler, listens on `0.0.0.0:47474`                                    |
+| Module                  | Role                                                                                                                                                  |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `http_server.rs`        | axum routes, CorsLayer, SSE handler, listens on `0.0.0.0:47474`                                                                                       |
 | `server/screenshots.rs` | `notify-debouncer-full` watcher (250 ms `awaitWriteFinish` equivalent); parses filename → position; opt-in recycle-bin delete after parse (see below) |
-| `server/logs.rs`        | poll-tails latest `log_*/application_NNN.log`; emits `map-change` on `rcid:` / `Location:` hits    |
-| `server/paths.rs`       | env → manual override → `winreg` auto-detect; returns `ResolvedPaths`                              |
-| `server/config.rs`      | reads/writes `%APPDATA%/tarkov-checker/config.json`; rejects UNC paths                             |
-| `server/events.rs`      | `ServerEvent` enum + `tokio::sync::broadcast` channel for HTTP-side fan-out                        |
-| `watcher.rs`            | `WatcherSlot` state holder + `apply_resolved` that atomically swaps watcher handles                |
-| `lan.rs`                | LAN IP detection for the QR pairing flow (multi-NIC heuristic — see `detect_lan_ip`)               |
-| `commands.rs`           | Tauri `#[tauri::command]` adapters mirroring the HTTP routes + `pairing_qr`                        |
+| `server/logs.rs`        | poll-tails latest `log_*/application_NNN.log`; emits `map-change` on `rcid:` / `Location:` hits                                                       |
+| `server/paths.rs`       | env → manual override → `winreg` auto-detect; returns `ResolvedPaths`                                                                                 |
+| `server/config.rs`      | reads/writes `%APPDATA%/tarkov-checker/config.json`; rejects UNC paths                                                                                |
+| `server/events.rs`      | `ServerEvent` enum + `tokio::sync::broadcast` channel for HTTP-side fan-out                                                                           |
+| `watcher.rs`            | `WatcherSlot` state holder + `apply_resolved` that atomically swaps watcher handles                                                                   |
+| `lan.rs`                | LAN IP detection for the QR pairing flow (multi-NIC heuristic — see `detect_lan_ip`)                                                                  |
+| `commands.rs`           | Tauri `#[tauri::command]` adapters mirroring the HTTP routes + `pairing_qr`                                                                           |
 
 **Trust model: same Wi-Fi = trusted.** The helper always binds
 `0.0.0.0:47474`. No bearer-token auth — browser drive-by callers are
@@ -715,9 +719,9 @@ client-registered (see "Desktop overlay").
   same events still drive the client-side lock shortcut).
 - Wire parity follows the same 4-declaration rule as other events:
   `commandMessage` (zod) + union in `sse-messages.ts`, `ServerEvent::Command`
-  + `HotkeyAction` (kebab-case) in `server/events.rs`. The client dispatches
-  `command` in `pages/index.vue` (`useServerEvent('command', …)`) to
-  `mapRef`/`airdropStore`.
+  - `HotkeyAction` (kebab-case) in `server/events.rs`. The client dispatches
+    `command` in `pages/index.vue` (`useServerEvent('command', …)`) to
+    `mapRef`/`airdropStore`.
 - **Config re-sync:** a rebind broadcasts `ServerEvent::Hotkeys { config }`
   (`hotkeysMessage` in `sse-messages.ts`) from BOTH PUT paths —
   `put_hotkeys_http` (`state.event_tx`) and the `update_hotkeys` IPC command

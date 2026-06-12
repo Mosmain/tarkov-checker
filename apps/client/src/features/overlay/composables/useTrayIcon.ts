@@ -57,9 +57,8 @@ export function useTrayIcon(isTauri: boolean, overlayClickThrough: Ref<boolean>)
   }
 
   async function buildTrayMenu(): Promise<Menu> {
-    const { Menu, MenuItem, CheckMenuItem, PredefinedMenuItem } = await import(
-      '@tauri-apps/api/menu'
-    );
+    const { Menu, MenuItem, CheckMenuItem, PredefinedMenuItem } =
+      await import('@tauri-apps/api/menu');
     const separator = () => PredefinedMenuItem.new({ item: 'Separator' });
 
     lockItem = await CheckMenuItem.new({

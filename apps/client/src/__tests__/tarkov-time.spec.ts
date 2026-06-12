@@ -25,7 +25,7 @@ describe('tarkovTime', () => {
         const [h, m] = s.split(':').map(Number);
         return (h ?? 0) * 60 + (m ?? 0);
       };
-      const diff = ((toMin(right) - toMin(left)) % (24 * 60) + 24 * 60) % (24 * 60);
+      const diff = (((toMin(right) - toMin(left)) % (24 * 60)) + 24 * 60) % (24 * 60);
       expect(diff).toBe(12 * 60);
     }
   });

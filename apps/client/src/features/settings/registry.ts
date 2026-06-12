@@ -36,6 +36,8 @@ export function useSettingsSections(): ComputedRef<SettingsSection[]> {
       return isTauri || isDesktop.value;
     };
 
-    return [...registry.values()].filter((s) => visible(s.visible)).sort((a, b) => a.order - b.order);
+    return [...registry.values()]
+      .filter((s) => visible(s.visible))
+      .sort((a, b) => a.order - b.order);
   });
 }

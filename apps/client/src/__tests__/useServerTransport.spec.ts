@@ -186,10 +186,7 @@ describe('useServerTransport — Tauri path', () => {
     const off1 = vi.fn();
     const off2 = vi.fn();
     const off3 = vi.fn();
-    listenMock
-      .mockResolvedValueOnce(off1)
-      .mockResolvedValueOnce(off2)
-      .mockResolvedValueOnce(off3);
+    listenMock.mockResolvedValueOnce(off1).mockResolvedValueOnce(off2).mockResolvedValueOnce(off3);
 
     const { result, app } = mountTransport('/events');
     await flushMounted();

@@ -32,10 +32,7 @@ const manualOpen = ref(false);
       @click="manualOpen = !manualOpen"
     >
       <span class="truncate">{{ currentMapName }}</span>
-      <i
-        class="pi text-xs opacity-60"
-        :class="manualOpen ? 'pi-chevron-up' : 'pi-chevron-down'"
-      />
+      <i class="pi text-xs opacity-60" :class="manualOpen ? 'pi-chevron-up' : 'pi-chevron-down'" />
     </button>
 
     <Listbox
