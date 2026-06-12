@@ -23,6 +23,9 @@ export const useUpdaterStore = defineStore('updater', () => {
   const installing = ref(false);
   const installFailed = ref(false);
   const lastCheck = ref<CheckOutcome>('none');
+  // Lives in the store (not the banner) so the tray's "update available"
+  // item can un-dismiss the banner when restoring the window.
+  const bannerDismissed = ref(false);
 
   async function check(): Promise<void> {
     if (!isTauri || checking.value) return;
@@ -55,5 +58,15 @@ export const useUpdaterStore = defineStore('updater', () => {
     }
   }
 
-  return { autoCheck, info, checking, installing, installFailed, lastCheck, check, install };
+  return {
+    autoCheck,
+    info,
+    checking,
+    installing,
+    installFailed,
+    lastCheck,
+    bannerDismissed,
+    check,
+    install,
+  };
 });

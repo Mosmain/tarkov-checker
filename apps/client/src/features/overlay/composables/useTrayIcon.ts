@@ -1,8 +1,7 @@
 import type { TrayIcon, TrayIconEvent } from '@tauri-apps/api/tray';
 import type { Menu, CheckMenuItem } from '@tauri-apps/api/menu';
-import { useI18nStore } from '@/features/i18n/store';
 import { useOverlayStore } from '@/features/overlay/store';
-import { useMapSettingsStore } from '@/features/map/store';
+import { useUpdaterStore } from '@/features/updater/store';
 
 type TrayHandle = Awaited<ReturnType<typeof TrayIcon.new>>;
 
@@ -24,8 +23,10 @@ async function showWindow(): Promise<void> {
  *
  * The tray is the only control surface reachable while the game is fullscreen
  * (the overlay can be hidden or click-through-locked behind it), so the menu
- * leans on actions that matter mid-game: unlock, restore, the always-on-top /
- * player-follow toggles, and the LAN-share shortcuts. Left-click restores the
+ * holds ONLY window/session-level rescues and lifecycle: unlock, restore,
+ * always-on-top, the LAN-share shortcuts, quit. Map-layer settings (player
+ * follow, labels, ...) deliberately stay out — they belong to the LayerRail,
+ * which is reachable whenever you'd actually want to flip them. Left-click restores the
  * window (Windows convention); right-click opens the menu. Since ✕ now parks
  * the overlay in the tray (see overlay store `minimizeToTray`), "Quit" here is
  * the canonical way to actually exit.
@@ -33,10 +34,10 @@ async function showWindow(): Promise<void> {
 export function useTrayIcon(isTauri: boolean, overlayClickThrough: Ref<boolean>): void {
   if (!isTauri) return;
 
-  const { t } = useI18n();
-  const { apiLang } = storeToRefs(useI18nStore());
+  const { t, locale } = useI18n();
   const { alwaysOnTop, pairingModalOpen } = storeToRefs(useOverlayStore());
-  const { playerFollow } = storeToRefs(useMapSettingsStore());
+  const updaterStore = useUpdaterStore();
+  const { info: updateInfo, bannerDismissed } = storeToRefs(updaterStore);
 
   let trayRef: TrayHandle | null = null;
   // Live references to the check items so external state changes (hotkey,
@@ -44,7 +45,6 @@ export function useTrayIcon(isTauri: boolean, overlayClickThrough: Ref<boolean>)
   // rebuilding the whole menu.
   let lockItem: CheckMenuItem | null = null;
   let aotItem: CheckMenuItem | null = null;
-  let followItem: CheckMenuItem | null = null;
 
   async function copyLanUrl(): Promise<void> {
     try {
@@ -57,13 +57,29 @@ export function useTrayIcon(isTauri: boolean, overlayClickThrough: Ref<boolean>)
   }
 
   async function buildTrayMenu(): Promise<Menu> {
+    // Snapshot every label BEFORE the first await: the locale can flip
+    // mid-build (it's set asynchronously by the i18n store), and a build
+    // interleaved with that flip produces a mixed-language menu.
+    const labels = {
+      lock: t('tray.lock'),
+      show: t('tray.showWindow'),
+      aot: t('tray.alwaysOnTop'),
+      update: updateInfo.value
+        ? t('tray.updateAvailable', { version: updateInfo.value.latest })
+        : null,
+      pair: t('tray.pairPhone'),
+      copy: t('tray.copyUrl'),
+      quit: t('tray.quit'),
+      tooltip: t('tray.tooltip'),
+    };
+
     const { Menu, MenuItem, CheckMenuItem, PredefinedMenuItem } =
       await import('@tauri-apps/api/menu');
     const separator = () => PredefinedMenuItem.new({ item: 'Separator' });
 
     lockItem = await CheckMenuItem.new({
       id: 'toggle-lock',
-      text: t('tray.lock'),
+      text: labels.lock,
       checked: overlayClickThrough.value,
       action: () => {
         overlayClickThrough.value = !overlayClickThrough.value;
@@ -71,28 +87,20 @@ export function useTrayIcon(isTauri: boolean, overlayClickThrough: Ref<boolean>)
     });
     const showItem = await MenuItem.new({
       id: 'show',
-      text: t('tray.showWindow'),
+      text: labels.show,
       action: () => void showWindow(),
     });
     aotItem = await CheckMenuItem.new({
       id: 'always-on-top',
-      text: t('tray.alwaysOnTop'),
+      text: labels.aot,
       checked: alwaysOnTop.value,
       action: () => {
         alwaysOnTop.value = !alwaysOnTop.value;
       },
     });
-    followItem = await CheckMenuItem.new({
-      id: 'player-follow',
-      text: t('tray.playerFollow'),
-      checked: playerFollow.value === 'on',
-      action: () => {
-        playerFollow.value = playerFollow.value === 'on' ? 'off' : 'on';
-      },
-    });
     const pairItem = await MenuItem.new({
       id: 'pair-phone',
-      text: t('tray.pairPhone'),
+      text: labels.pair,
       action: () => {
         void showWindow();
         pairingModalOpen.value = true;
@@ -100,12 +108,12 @@ export function useTrayIcon(isTauri: boolean, overlayClickThrough: Ref<boolean>)
     });
     const copyItem = await MenuItem.new({
       id: 'copy-url',
-      text: t('tray.copyUrl'),
+      text: labels.copy,
       action: () => void copyLanUrl(),
     });
     const quitItem = await MenuItem.new({
       id: 'quit',
-      text: t('tray.quit'),
+      text: labels.quit,
       action: () =>
         void (async () => {
           const { getCurrentWindow } = await import('@tauri-apps/api/window');
@@ -113,14 +121,30 @@ export function useTrayIcon(isTauri: boolean, overlayClickThrough: Ref<boolean>)
         })(),
     });
 
+    // Conditional: only when an update is already known. Deliberately does
+    // NOT install from the tray — install = respawn = session killed, too
+    // destructive for an impulsive menu click. It restores the window with
+    // the banner visible; the install decision happens window-in-focus.
+    const updateItem = labels.update
+      ? await MenuItem.new({
+          id: 'update-available',
+          text: labels.update,
+          action: () => {
+            bannerDismissed.value = false;
+            void showWindow();
+          },
+        })
+      : null;
+
+    // Three groups: overlay-mode toggles / window presence / LAN sharing,
+    // plus Quit at arm's length (irreversible among recoverables).
     return Menu.new({
       items: [
         lockItem,
+        aotItem,
         await separator(),
         showItem,
-        await separator(),
-        aotItem,
-        followItem,
+        ...(updateItem ? [updateItem] : []),
         await separator(),
         pairItem,
         copyItem,
@@ -162,16 +186,22 @@ export function useTrayIcon(isTauri: boolean, overlayClickThrough: Ref<boolean>)
   // Keep checkmarks in sync when state is changed from anywhere else.
   watch(overlayClickThrough, (v) => void lockItem?.setChecked(v));
   watch(alwaysOnTop, (v) => void aotItem?.setChecked(v));
-  watch(playerFollow, (v) => void followItem?.setChecked(v === 'on'));
 
-  watch(apiLang, async () => {
+  // Full rebuild on language change AND when an update appears/clears —
+  // the conditional "update available" item can't be toggled in place.
+  // Watches the actual vue-i18n `locale` (what t() reads), NOT the store's
+  // apiLang: the store applies apiLang to the locale asynchronously, so an
+  // apiLang watcher races the flip — it both misses the startup apply (tray
+  // builds before the persisted language lands, screenshot: RU app / EN tray)
+  // and rebuilds too early on a switch.
+  watch([locale, updateInfo], async () => {
     if (!trayRef) return;
     try {
       await trayRef.setMenu(await buildTrayMenu());
       await trayRef.setTooltip(t('tray.tooltip'));
     } catch (err) {
       // eslint-disable-next-line no-console
-      console.error('[tray] i18n refresh failed:', err);
+      console.error('[tray] menu refresh failed:', err);
     }
   });
 

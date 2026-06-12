@@ -7,9 +7,7 @@ const { t } = useI18n();
 const { clickThrough } = storeToRefs(useOverlayStore());
 
 const updater = useUpdaterStore();
-const { info, installing, installFailed, autoCheck } = storeToRefs(updater);
-
-const dismissed = ref(false);
+const { info, installing, installFailed, autoCheck, bannerDismissed } = storeToRefs(updater);
 
 onMounted(() => {
   if (isTauri && autoCheck.value) void updater.check();
@@ -19,7 +17,7 @@ onMounted(() => {
 <template>
   <!-- Hidden while click-through-locked: the banner is interactive chrome. -->
   <div
-    v-if="info && !dismissed && !clickThrough"
+    v-if="info && !bannerDismissed && !clickThrough"
     class="border-surface-700 bg-surface-900/95 fixed bottom-2 left-1/2 z-[1100] flex -translate-x-1/2 items-center gap-2 rounded-lg border px-3 py-1.5 text-xs shadow-lg"
   >
     <template v-if="!installFailed">
@@ -35,7 +33,7 @@ onMounted(() => {
     <button
       class="pi pi-times text-surface-400 hover:text-surface-0 cursor-pointer text-[10px]"
       :aria-label="t('close')"
-      @click="dismissed = true"
+      @click="bannerDismissed = true"
     />
   </div>
 </template>
