@@ -24,12 +24,12 @@ const clientSrc = fileURLToPath(new URL('./src', import.meta.url));
  * Change the slug here if the repo gets renamed or moved under a custom
  * domain (custom domain → keep `/`).
  */
-const GITHUB_PAGES_BASE = '/tarkov-checker/';
+const GITHUB_PAGES_BASE = '/raidmate/';
 
 export default defineConfig(({ mode, command }) => ({
   // Tauri prints its own dev-server progress; don't let Vite wipe it.
   clearScreen: false,
-  // Asset URL prefix. Pages project-page → `/tarkov-checker/`; every
+  // Asset URL prefix. Pages project-page → `/raidmate/`; every
   // other build (dev, Tauri overlay, local pnpm build) → `/`.
   base: command === 'build' && process.env.GITHUB_PAGES === 'true' ? GITHUB_PAGES_BASE : '/',
   // Lets the frontend read TAURI_ENV_* (target triple, debug flag) via import.meta.env.
@@ -89,7 +89,7 @@ export default defineConfig(({ mode, command }) => ({
       runtimeOnly: true,
     }),
     tailwindcss(),
-    // `pnpm --filter @tarkov-checker/client analyze` runs `vite build --mode analyze`
+    // `pnpm --filter @raidmate/client analyze` runs `vite build --mode analyze`
     // and pops an interactive treemap of the production bundle.
     mode === 'analyze' &&
       (visualizer({
@@ -100,7 +100,7 @@ export default defineConfig(({ mode, command }) => ({
         template: 'treemap',
       }) as PluginOption),
     // GitHub Pages SPA-history workaround: Pages has no server-side
-    // rewrite, so a deep link like `/tarkov-checker/raid` 404s. Serving
+    // rewrite, so a deep link like `/raidmate/raid` 404s. Serving
     // the same content as 404.html lets Vue Router pick the URL up
     // client-side on a fresh navigation. Cross-platform copy via Node
     // fs — avoids the bash-only `cp` step in package.json scripts.

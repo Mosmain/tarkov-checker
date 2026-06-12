@@ -16,15 +16,15 @@ describe('useLayerVisibility', () => {
     expect(useLayerVisibility('test-singleton')).toBe(useLayerVisibility('test-singleton'));
   });
 
-  it('persists a toggle to tc.layer.<id>.visible', async () => {
+  it('persists a toggle to rm.layer.<id>.visible', async () => {
     const v = useLayerVisibility('test-persist');
     v.value = false;
     await nextTick();
-    expect(localStorage.getItem('tc.layer.test-persist.visible')).toBe('false');
+    expect(localStorage.getItem('rm.layer.test-persist.visible')).toBe('false');
   });
 
   it('reads an existing persisted value on first use', () => {
-    localStorage.setItem('tc.layer.test-seeded.visible', 'false');
+    localStorage.setItem('rm.layer.test-seeded.visible', 'false');
     expect(useLayerVisibility('test-seeded').value).toBe(false);
   });
 });

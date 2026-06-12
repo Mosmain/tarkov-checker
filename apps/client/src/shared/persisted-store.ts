@@ -3,7 +3,7 @@ import type { z } from 'zod';
 /**
  * Reactive ref backed by localStorage, validated against a zod schema on read.
  *
- * Each persisted field owns its own localStorage key (convention: "tc.<area>.<name>"),
+ * Each persisted field owns its own localStorage key (convention: "rm.<area>.<name>"),
  * so adding/removing a field never breaks unrelated state — there is no monolithic
  * blob to version. Corrupt or schema-incompatible data falls back to `defaultValue`
  * silently; the bad entry is left in place so a future schema can re-validate it

@@ -26,7 +26,7 @@ const ICON_BYTES: &[u8] = include_bytes!("../icons/128x128.png");
 /// DisplayName + IconUri so Windows shows this app's name and icon on toasts
 /// instead of PowerShell's. Idempotent and best-effort: any failure just
 /// leaves toasts with a generic identity, so errors are logged, not
-/// propagated. `data_dir` is the already-created `%APPDATA%/tarkov-checker`
+/// propagated. `data_dir` is the already-created `%APPDATA%/raidmate`
 /// folder (sibling to config.json).
 pub fn register_aumid(app: &AppHandle, data_dir: &Path) {
     let aumid = app.config().identifier.clone();
@@ -54,7 +54,7 @@ fn write_registry(aumid: &str, icon_path: &Path) -> std::io::Result<()> {
 
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     let (key, _) = hkcu.create_subkey(format!("Software\\Classes\\AppUserModelId\\{aumid}"))?;
-    key.set_value("DisplayName", &"tarkov-checker")?;
+    key.set_value("DisplayName", &"RaidMate")?;
     key.set_value("IconUri", &icon_path.display().to_string())?;
     Ok(())
 }

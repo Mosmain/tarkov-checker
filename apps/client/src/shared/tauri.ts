@@ -15,14 +15,14 @@ export const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in
  * iterated without a Tauri build. It ONLY flips render gates — native window
  * calls and the IPC transport still key off `isTauri`, so they stay no-ops off
  * real Tauri. Enable via `?overlay` in the URL or
- * localStorage['tc.dev.overlayChrome'] = '1'.
+ * localStorage['rm.dev.overlayChrome'] = '1'.
  */
 function previewOverlayChrome(): boolean {
   if (!import.meta.env.DEV || typeof window === 'undefined') return false;
   try {
     return (
       new URLSearchParams(window.location.search).has('overlay') ||
-      window.localStorage.getItem('tc.dev.overlayChrome') === '1'
+      window.localStorage.getItem('rm.dev.overlayChrome') === '1'
     );
   } catch {
     return false;

@@ -1,6 +1,6 @@
 //! Backend-owned store for the global hotkey combos.
 //!
-//! Persisted in `%APPDATA%/tarkov-checker/hotkeys.json` — a sibling to
+//! Persisted in `%APPDATA%/raidmate/hotkeys.json` — a sibling to
 //! `config.json` so the `/api/config` (paths) contract stays clean. Holds
 //! the five forwarded actions only; the overlay lock combo lives client-side
 //! (see CLAUDE.md "Desktop overlay" / the hotkey rework plan).
@@ -18,9 +18,8 @@ use global_hotkey::hotkey::HotKey;
 use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
 
-/// Defaults match the client's historical `tc.hotkeys.*` values so an
-/// un-customised install behaves identically and the one-time client
-/// migration is a no-op.
+/// Defaults match the client's `DEFAULTS` so an un-customised install
+/// agrees on both ends.
 const DEFAULT_ZOOM_IN: &str = "CommandOrControl+=";
 const DEFAULT_ZOOM_OUT: &str = "CommandOrControl+-";
 const DEFAULT_FLOOR_UP: &str = "CommandOrControl+Shift+=";
@@ -160,7 +159,7 @@ mod tests {
 
     fn tmp_file() -> PathBuf {
         std::env::temp_dir().join(format!(
-            "tarkov-checker-hotkeys-test-{}-{}.json",
+            "raidmate-hotkeys-test-{}-{}.json",
             std::process::id(),
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)

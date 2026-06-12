@@ -1,4 +1,4 @@
-# @tarkov-checker/client
+# @raidmate/client
 
 Vue + Leaflet map. Runs both inside the Tauri overlay (`apps/desktop`) and as a plain browser page on phones over LAN (the same prod build the in-process Rust helper in `apps/desktop` serves at `:47474/`; dev uses Vite on `:5173`, which proxies `/api` + `/events` to the helper). Same code path, different transport (Tauri events vs SSE / `EventSource`).
 
@@ -85,7 +85,7 @@ For nested or dynamic routes (`/raids/[id]`), see [Vue Router file-based docs](h
 1. Create `src/features/<name>/` with whichever subfolders apply: `store.ts`, `composables/`, `components/`, `api/`, `lib/`.
 2. Inside the feature: `./X` and `../X` imports.
 3. Other features depend on yours via `@/features/<name>/<thing>`.
-4. If the feature has persisted user settings — create `store.ts` using [`persistedRef`](./src/shared/persisted-store.ts) from `@/shared/persisted-store`. Each setting gets its own key like `tc.<name>.<field>`.
+4. If the feature has persisted user settings — create `store.ts` using [`persistedRef`](./src/shared/persisted-store.ts) from `@/shared/persisted-store`. Each setting gets its own key like `rm.<name>.<field>`.
 5. If the feature has its own SYSTEM/app settings UI (the gear drawer). Map-layer
    settings live on the layer registration instead — see step 6.
    - Create a section component `XxxSection.vue` under [`features/settings/sections/`](./src/features/settings/sections/).

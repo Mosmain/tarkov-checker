@@ -166,7 +166,7 @@ export function useLeafletMap(
   async function loadSvgIntoMap(instance: LeafletMap): Promise<void> {
     try {
       mapError.value = null;
-      // BASE_URL is `/` for local/Tauri builds and `/tarkov-checker/` on
+      // BASE_URL is `/` for local/Tauri builds and `/raidmate/` on
       // GitHub Pages — runtime fetches need the prefix manually since
       // Vite only rewrites build-time asset references in HTML/CSS.
       const svgUrl = mapSvgPath(mapCode, `${import.meta.env.BASE_URL}maps`);

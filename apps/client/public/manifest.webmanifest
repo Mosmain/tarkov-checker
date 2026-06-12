@@ -1,6 +1,6 @@
 {
-  "name": "tarkov-checker",
-  "short_name": "tarkov-checker",
+  "name": "RaidMate",
+  "short_name": "RaidMate",
   "description": "Live Escape from Tarkov map overlay — second-screen map for your phone.",
   "start_url": "/",
   "scope": "/",

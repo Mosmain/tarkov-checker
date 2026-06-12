@@ -14,7 +14,7 @@ export type CheckOutcome = 'none' | 'latest' | 'error';
 
 export const useUpdaterStore = defineStore('updater', () => {
   // When off, no check fires on startup; the manual button still works.
-  const autoCheck = persistedRef('tc.updater.autoCheck', z.boolean(), true);
+  const autoCheck = persistedRef('rm.updater.autoCheck', z.boolean(), true);
 
   // Runtime state, deliberately not persisted: a pending update is only as
   // fresh as the process that found it.

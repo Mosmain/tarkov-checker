@@ -58,7 +58,7 @@
     "placeholderScreenshotsDir": "Documents\\Escape from Tarkov\\Screenshots",
     "errors": {
       "noHelperTitle": "The helper isn't running",
-      "noHelperBody": "Start tarkov-checker.exe on the same machine as Tarkov to configure or sync game folders here. Refresh this page once the helper is up.",
+      "noHelperBody": "Start raidmate.exe on the same machine as Tarkov to configure or sync game folders here. Refresh this page once the helper is up.",
       "otherTitle": "Couldn't load Tarkov paths"
     }
   },
@@ -133,7 +133,7 @@
   },
   "trayHint": {
     "title": "Still running",
-    "body": "tarkov-checker is now in the system tray. Open it from there, or right-click the tray icon to quit."
+    "body": "RaidMate is now in the system tray. Open it from there, or right-click the tray icon to quit."
   },
   "airdrop": {
     "armedFirst": "Drop tracker armed while facing the airdrop and press PrintScreen",
@@ -155,7 +155,7 @@
     "pairPhone": "Pair phone",
     "copyUrl": "Copy LAN URL",
     "quit": "Quit",
-    "tooltip": "tarkov-checker — running"
+    "tooltip": "RaidMate — running"
   },
   "extractNames": {
     "bigmap": {

@@ -18,7 +18,7 @@ export function useLayerVisibility(id: string): Ref<boolean> {
   if (cached) return cached;
   // scope.run only returns undefined if the scope is stopped; ours never is.
   const r = scope.run(() =>
-    persistedRef(`tc.layer.${id}.visible`, z.boolean(), true),
+    persistedRef(`rm.layer.${id}.visible`, z.boolean(), true),
   ) as Ref<boolean>;
   refs.set(id, r);
   return r;

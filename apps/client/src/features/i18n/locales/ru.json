@@ -58,7 +58,7 @@
     "placeholderScreenshotsDir": "Documents\\Escape from Tarkov\\Screenshots",
     "errors": {
       "noHelperTitle": "Хелпер не запущен",
-      "noHelperBody": "Запусти tarkov-checker.exe на той же машине что и Tarkov, чтобы настроить или синхронизировать папки игры. После запуска хелпера обнови эту страницу.",
+      "noHelperBody": "Запусти raidmate.exe на той же машине что и Tarkov, чтобы настроить или синхронизировать папки игры. После запуска хелпера обнови эту страницу.",
       "otherTitle": "Не удалось загрузить пути Tarkov"
     }
   },
@@ -133,7 +133,7 @@
   },
   "trayHint": {
     "title": "Работает в фоне",
-    "body": "tarkov-checker свёрнут в системный трей. Открой его оттуда или нажми правый клик по иконке, чтобы выйти."
+    "body": "RaidMate свёрнут в системный трей. Открой его оттуда или нажми правый клик по иконке, чтобы выйти."
   },
   "airdrop": {
     "armedFirst": "Drop-трекер запущен, смотри на дроп и нажми PrintScreen",
@@ -155,7 +155,7 @@
     "pairPhone": "Подключить телефон",
     "copyUrl": "Копировать LAN-ссылку",
     "quit": "Выход",
-    "tooltip": "tarkov-checker — работает"
+    "tooltip": "RaidMate — работает"
   },
   "extractNames": {
     "bigmap": {

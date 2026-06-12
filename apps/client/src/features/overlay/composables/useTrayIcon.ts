@@ -5,7 +5,7 @@ import { useUpdaterStore } from '@/features/updater/store';
 
 type TrayHandle = Awaited<ReturnType<typeof TrayIcon.new>>;
 
-const TRAY_ID = 'tarkov-checker-tray';
+const TRAY_ID = 'raidmate-tray';
 
 /**
  * Owns the Tauri system-tray icon lifecycle: creates the icon on mount,
