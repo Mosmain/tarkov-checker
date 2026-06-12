@@ -1,6 +1,6 @@
 [package]
 name = "raidmate"
-version = "0.1.1"
+version = "0.2.0"
 description = "Desktop overlay and helper for RaidMate"
 authors = ["raidmate"]
 edition = "2021"
