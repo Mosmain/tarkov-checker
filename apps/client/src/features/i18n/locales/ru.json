@@ -68,6 +68,12 @@
       "otherTitle": "Не удалось загрузить пути Tarkov"
     }
   },
+  "updater": {
+    "available": "Доступно обновление v{version}",
+    "install": "Обновить",
+    "installing": "Обновляем…",
+    "error": "Не получилось обновиться. Скачай новый exe вручную: GitHub → Releases."
+  },
   "overlay": {
     "heading": "Оверлей",
     "alwaysOnTop": "Поверх всех окон",

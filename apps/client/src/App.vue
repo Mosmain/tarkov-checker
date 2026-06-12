@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import MapQuickMenu from '@/features/overlay/components/MapQuickMenu.vue';
 import PairingModal from '@/features/overlay/components/PairingModal.vue';
+import UpdateBanner from '@/features/updater/components/UpdateBanner.vue';
 import { useServerTransport } from '@/features/server/composables/useServerTransport';
 import { provideTransportStatus } from '@/features/server/composables/useTransportStatus';
 import { useOverlayStore } from '@/features/overlay/store';
@@ -76,6 +77,9 @@ function onMapContextMenu(event: MouseEvent): void {
     mount it at all there.
   -->
   <PairingModal v-if="isTauri" />
+  <!-- Self-update is a Tauri-only concern: browsers/phones always load the
+       SPA the helper serves, they have nothing to update themselves. -->
+  <UpdateBanner v-if="isTauri" />
   <div
     class="relative h-full w-screen text-surface-0"
     :class="isTauri ? '' : 'bg-surface-950'"

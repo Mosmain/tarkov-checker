@@ -4,6 +4,7 @@ mod http_server;
 mod lan;
 mod notify;
 mod server;
+mod updater;
 mod watcher;
 
 use std::sync::{Arc, Mutex};
@@ -86,9 +87,14 @@ pub fn run() {
             commands::pairing_qr,
             commands::copy_lan_url,
             commands::notify_tray_hint,
+            commands::check_update,
+            commands::install_update,
         ])
         .setup(move |app| {
             let app_handle = app.handle().clone();
+
+            // Sweep the `.old.exe` a previous self-update left behind.
+            updater::cleanup_old();
 
             // Register our AppUserModelID (name + favicon) so the tray-hint
             // toast is attributed to this app instead of PowerShell.

@@ -68,6 +68,12 @@
       "otherTitle": "Couldn't load Tarkov paths"
     }
   },
+  "updater": {
+    "available": "Update v{version} available",
+    "install": "Update",
+    "installing": "Updating…",
+    "error": "Update failed. Grab the new exe manually: GitHub → Releases."
+  },
   "overlay": {
     "heading": "Overlay",
     "alwaysOnTop": "Always on top",

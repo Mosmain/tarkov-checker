@@ -1,6 +1,6 @@
 [package]
 name = "tarkov-checker-desktop"
-version = "0.0.0"
+version = "0.1.0"
 description = "Desktop wrapper for tarkov-checker"
 authors = ["tarkov-checker"]
 edition = "2021"
@@ -105,6 +105,10 @@ trash = "5"
 # the wrong interface (Hyper-V switch, WSL2 vNIC) — the pairing modal
 # surfaces the picked value so the user notices.
 local-ip-address = "0.6"
+# HTTP client for the portable self-updater (GitHub releases/latest +
+# asset download). native-tls = schannel on Windows — avoids rustls/ring,
+# whose build scripts are flaky on this host (see "Windows build quirks").
+reqwest = { version = "0.12", default-features = false, features = ["native-tls", "json"] }
 
 [dev-dependencies]
 # `oneshot` extension on Router for unit-testing handlers in-process —

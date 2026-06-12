@@ -173,3 +173,33 @@ pub async fn copy_lan_url(app: AppHandle) -> Result<String, String> {
 pub async fn notify_tray_hint(app: AppHandle, title: String, body: String) -> Result<(), String> {
     crate::notify::show_toast(&app, &title, &body)
 }
+
+/// Asks GitHub whether a newer release exists. `None` = up to date (or the
+/// repo has no published releases yet). Network failures surface as `Err` —
+/// the webview logs and stays silent, no nagging.
+#[tauri::command]
+pub async fn check_update() -> Result<Option<crate::updater::UpdateInfo>, String> {
+    crate::updater::check().await.map_err(|e| format!("{e:#}"))
+}
+
+/// Portable self-update: re-checks GitHub (the webview never supplies a URL,
+/// so it can't point the updater anywhere else), downloads the new exe, swaps
+/// it in via the rename dance, relaunches and exits. See `updater.rs`.
+#[tauri::command]
+pub async fn install_update(app: AppHandle) -> Result<(), String> {
+    let info = crate::updater::check()
+        .await
+        .map_err(|e| format!("{e:#}"))?
+        .ok_or_else(|| "already up to date".to_string())?;
+    let exe = crate::updater::download_and_swap(&info.download_url)
+        .await
+        .map_err(|e| format!("{e:#}"))?;
+    // --updated: the fresh instance sleeps ~1.5s (main.rs) so this one can
+    // release :47474 and the OS hotkeys before it claims them.
+    std::process::Command::new(exe)
+        .arg("--updated")
+        .spawn()
+        .map_err(|e| e.to_string())?;
+    app.exit(0);
+    Ok(())
+}
