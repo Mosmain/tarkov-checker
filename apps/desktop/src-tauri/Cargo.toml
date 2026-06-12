@@ -1,22 +1,22 @@
 [package]
-name = "tarkov-checker-desktop"
-version = "0.1.1"
-description = "Desktop wrapper for tarkov-checker"
-authors = ["tarkov-checker"]
+name = "raidmate"
+version = "0.2.0"
+description = "Desktop overlay and helper for RaidMate"
+authors = ["raidmate"]
 edition = "2021"
 rust-version = "1.77"
-default-run = "tarkov-checker-desktop"
+default-run = "raidmate"
 
 [lib]
-name = "tarkov_checker_desktop_lib"
+name = "raidmate_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [[bin]]
-name = "tarkov-checker-desktop"
+name = "raidmate"
 path = "src/main.rs"
 
 [[bin]]
-name = "tarkov-checker-headless"
+name = "raidmate-headless"
 path = "src/bin/headless.rs"
 
 [build-dependencies]

@@ -15,7 +15,7 @@ function detectInitialLang(): ApiLang {
 }
 
 export const useI18nStore = defineStore('i18n', () => {
-  const apiLang = persistedRef('tc.i18n.apiLang', apiLangSchema, detectInitialLang());
+  const apiLang = persistedRef('rm.i18n.apiLang', apiLangSchema, detectInitialLang());
 
   // Mirror the persisted apiLang into the vue-i18n instance: on first read
   // (initial value), and on every subsequent change. `setLocale` is lazy —

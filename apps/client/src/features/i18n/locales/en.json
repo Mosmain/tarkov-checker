@@ -53,18 +53,12 @@
     "mobileHint": "Open this page on the machine running Tarkov to configure paths.",
     "deleteScreenshots": "Delete screenshots after reading",
     "deleteScreenshotsHint": "Sends each Tarkov screenshot to the Recycle Bin once its position has been read. Keeps the folder from filling up. Off by default.",
-    "source": {
-      "env": "from .env",
-      "manual": "manual",
-      "detected": "auto-detected",
-      "missing": "not found"
-    },
     "missingTooltip": "Folder doesn't exist on disk yet.",
     "placeholderGameDir": "D:\\EFT",
     "placeholderScreenshotsDir": "Documents\\Escape from Tarkov\\Screenshots",
     "errors": {
       "noHelperTitle": "The helper isn't running",
-      "noHelperBody": "Start tarkov-checker.exe on the same machine as Tarkov to configure or sync game folders here. Refresh this page once the helper is up.",
+      "noHelperBody": "Start raidmate.exe on the same machine as Tarkov to configure or sync game folders here. Refresh this page once the helper is up.",
       "otherTitle": "Couldn't load Tarkov paths"
     }
   },
@@ -72,7 +66,12 @@
     "available": "Update v{version} available",
     "install": "Update",
     "installing": "Updating…",
-    "error": "Update failed. Grab the new exe manually: GitHub → Releases."
+    "error": "Update failed. Grab the new exe manually: GitHub → Releases.",
+    "checkButton": "Check for updates",
+    "upToDate": "Up to date",
+    "checkFailed": "Check failed",
+    "updateTo": "Update to v{version}",
+    "autoCheckLabel": "Check for updates on startup"
   },
   "overlay": {
     "heading": "Overlay",
@@ -134,7 +133,7 @@
   },
   "trayHint": {
     "title": "Still running",
-    "body": "tarkov-checker is now in the system tray. Open it from there, or right-click the tray icon to quit."
+    "body": "RaidMate is now in the system tray. Open it from there, or right-click the tray icon to quit."
   },
   "airdrop": {
     "armedFirst": "Drop tracker armed while facing the airdrop and press PrintScreen",
@@ -149,14 +148,14 @@
     "radiusHint": "How big the predicted-landing circle is on the map. Two-shot triangulation isn't perfectly precise — the circle just makes the uncertainty honest. Adjust to taste."
   },
   "tray": {
-    "lock": "Lock (click-through)",
+    "lock": "Lock overlay (clicks pass to game)",
     "showWindow": "Show window",
     "alwaysOnTop": "Always on top",
-    "playerFollow": "Player follow",
+    "updateAvailable": "Update available: v{version}",
     "pairPhone": "Pair phone",
     "copyUrl": "Copy LAN URL",
     "quit": "Quit",
-    "tooltip": "tarkov-checker — running"
+    "tooltip": "RaidMate — running"
   },
   "extractNames": {
     "bigmap": {

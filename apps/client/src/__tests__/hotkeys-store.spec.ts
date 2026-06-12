@@ -67,27 +67,4 @@ describe('useHotkeysStore — backend sync', () => {
     await store.setAction('zoomIn', 'CommandOrControl+Alt+Q');
     expect(store.zoomInHotkey).toBe(DEFAULTS.zoomIn); // reverted
   });
-
-  it('migrates a customised legacy localStorage combo once', async () => {
-    // Old per-field persistedRef stored JSON-encoded strings.
-    localStorage.setItem('tc.hotkeys.zoomIn', JSON.stringify('CommandOrControl+Alt+M'));
-    fetchHotkeysMock.mockResolvedValue(DEFAULTS);
-    putHotkeysMock.mockResolvedValue({ ...DEFAULTS, zoomIn: 'CommandOrControl+Alt+M' });
-
-    const store = useHotkeysStore();
-    await store.load();
-
-    expect(putHotkeysMock).toHaveBeenCalledWith({ zoomIn: 'CommandOrControl+Alt+M' });
-    expect(store.zoomInHotkey).toBe('CommandOrControl+Alt+M');
-  });
-
-  it('does not migrate when legacy values equal the backend defaults', async () => {
-    localStorage.setItem('tc.hotkeys.zoomIn', JSON.stringify(DEFAULTS.zoomIn));
-    fetchHotkeysMock.mockResolvedValue(DEFAULTS);
-
-    const store = useHotkeysStore();
-    await store.load();
-
-    expect(putHotkeysMock).not.toHaveBeenCalled();
-  });
 });

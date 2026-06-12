@@ -1,17 +1,18 @@
 {
   "$schema": "https://schema.tauri.app/config/2.0.0",
-  "productName": "tarkov-checker",
-  "identifier": "dev.tarkov-checker.desktop",
+  "productName": "RaidMate",
+  "mainBinaryName": "raidmate",
+  "identifier": "dev.raidmate.desktop",
   "build": {
     "frontendDist": "../../client/dist",
     "devUrl": "http://localhost:5173",
-    "beforeDevCommand": "pnpm --filter @tarkov-checker/client dev",
-    "beforeBuildCommand": "pnpm --filter @tarkov-checker/client build"
+    "beforeDevCommand": "pnpm --filter @raidmate/client dev",
+    "beforeBuildCommand": "pnpm --filter @raidmate/client build"
   },
   "app": {
     "windows": [
       {
-        "title": "tarkov-checker",
+        "title": "RaidMate",
         "label": "main",
         "width": 360,
         "height": 360,
@@ -22,7 +23,8 @@
         "fullscreen": false,
         "alwaysOnTop": false,
         "transparent": true,
-        "shadow": false
+        "shadow": false,
+        "additionalBrowserArgs": "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --disable-http-cache"
       }
     ],
     "security": {

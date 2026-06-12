@@ -89,6 +89,7 @@ pub fn run() {
             commands::notify_tray_hint,
             commands::check_update,
             commands::install_update,
+            commands::open_releases_page,
         ])
         .setup(move |app| {
             let app_handle = app.handle().clone();
@@ -202,7 +203,7 @@ pub fn run_headless() {
             hotkey_store,
             hotkeys,
         });
-        eprintln!("[headless] tarkov-checker backend up — http://0.0.0.0:47474 (Ctrl+C to stop)");
+        eprintln!("[headless] raidmate backend up — http://0.0.0.0:47474 (Ctrl+C to stop)");
         std::future::pending::<()>().await;
     });
 }

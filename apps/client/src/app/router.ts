@@ -14,7 +14,7 @@ import { isTauri } from '@/shared/tauri';
  * window is re-opened. The browser build keeps web history so deep links
  * (e.g. /raid on a phone) survive bookmarking.
  *
- * `import.meta.env.BASE_URL` (`/` for local builds, `/tarkov-checker/` for
+ * `import.meta.env.BASE_URL` (`/` for local builds, `/raidmate/` for
  * the GitHub Pages project page — see `vite.config.ts`) prefixes every
  * route so deep links land under the right subpath.
  */

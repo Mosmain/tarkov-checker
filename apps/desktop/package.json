@@ -1,5 +1,5 @@
 {
-  "name": "@tarkov-checker/desktop",
+  "name": "@raidmate/desktop",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -7,7 +7,7 @@
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
-    "backend:dev": "cargo run --manifest-path src-tauri/Cargo.toml --bin tarkov-checker-headless",
+    "backend:dev": "cargo run --manifest-path src-tauri/Cargo.toml --bin raidmate-headless",
     "lint": "echo \"(no JS sources to lint)\"",
     "typecheck": "echo \"(no TS sources to typecheck)\""
   },

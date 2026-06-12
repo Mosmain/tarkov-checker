@@ -2,6 +2,7 @@
 import { z } from 'zod';
 import { useSettingsSections } from './registry';
 import { persistedRef } from '@/shared/persisted-store';
+import AboutFooter from '@/features/updater/components/AboutFooter.vue';
 
 const { t } = useI18n();
 const systemSections = useSettingsSections();
@@ -13,7 +14,7 @@ const isDesktop = useMediaQuery('(min-width: 640px)');
 // paths/pairing). Desktop opens every section; the overlay/phone start
 // collapsed to keep the sheet short. Snapshotted once, then user choices persist.
 const openSections = persistedRef(
-  'tc.settings.open',
+  'rm.settings.open',
   z.array(z.string()),
   isDesktop.value ? systemSections.value.map((s) => s.id) : [],
 );
@@ -67,5 +68,6 @@ const openSections = persistedRef(
         </AccordionContent>
       </AccordionPanel>
     </Accordion>
+    <AboutFooter />
   </Drawer>
 </template>

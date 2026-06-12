@@ -2971,6 +2971,41 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8dcc9c7d52a811697d2151c701e0d08956f92b0e24136cf4cf27b57a6a0d9bf"
 
 [[package]]
+name = "raidmate"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "futures-util",
+ "global-hotkey",
+ "local-ip-address",
+ "mime_guess",
+ "notify",
+ "notify-debouncer-full",
+ "once_cell",
+ "qrcode",
+ "regex",
+ "reqwest 0.12.28",
+ "rust-embed",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-clipboard-manager",
+ "tauri-plugin-global-shortcut",
+ "tauri-plugin-window-state",
+ "tauri-winrt-notification",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-stream",
+ "tower",
+ "tower-http",
+ "trash",
+ "windows-sys 0.59.0",
+ "winreg 0.52.0",
+]
+
+[[package]]
 name = "raw-window-handle"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3762,41 +3797,6 @@ name = "target-lexicon"
 version = "0.12.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "61c41af27dd6d1e27b1b16b489db798443478cef1f06a660c96db617ba5de3b1"
-
-[[package]]
-name = "tarkov-checker-desktop"
-version = "0.1.1"
-dependencies = [
- "anyhow",
- "axum",
- "futures-util",
- "global-hotkey",
- "local-ip-address",
- "mime_guess",
- "notify",
- "notify-debouncer-full",
- "once_cell",
- "qrcode",
- "regex",
- "reqwest 0.12.28",
- "rust-embed",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-clipboard-manager",
- "tauri-plugin-global-shortcut",
- "tauri-plugin-window-state",
- "tauri-winrt-notification",
- "thiserror 1.0.69",
- "tokio",
- "tokio-stream",
- "tower",
- "tower-http",
- "trash",
- "windows-sys 0.59.0",
- "winreg 0.52.0",
-]
 
 [[package]]
 name = "tauri"

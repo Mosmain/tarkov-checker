@@ -19,7 +19,7 @@ try {
   const parsed = JSON.parse(readFileSync(filepath, 'utf8'));
   autoImportGlobals = parsed.globals ?? {};
 } catch {
-  // File missing — regenerate by running `pnpm --filter @tarkov-checker/client dev`
+  // File missing — regenerate by running `pnpm --filter @raidmate/client dev`
   // once. Until then auto-import names will be flagged as no-undef.
 }
 

@@ -1,6 +1,6 @@
 //! User-overrides store for Tarkov directory paths.
 //!
-//! Persisted in `%APPDATA%/tarkov-checker/config.json`. JSON shape:
+//! Persisted in `%APPDATA%/raidmate/config.json`. JSON shape:
 //! `{ gameDir?, screenshotsDir? }`, both nullable. UNC paths are
 //! rejected at the validation layer (see `normalize`) — they cannot be
 //! watched reliably and would be a privacy-leak surface if accepted.
@@ -136,7 +136,7 @@ fn normalize(v: Option<String>) -> Result<Option<String>, String> {
 
 pub fn data_dir() -> Result<PathBuf> {
     let appdata = std::env::var("APPDATA").context("APPDATA env var unset")?;
-    let dir = Path::new(&appdata).join("tarkov-checker");
+    let dir = Path::new(&appdata).join("raidmate");
     Ok(dir)
 }
 

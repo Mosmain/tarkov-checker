@@ -10,7 +10,7 @@ name: Deploy frontend to GitHub Pages
 # the deploy step refuses to upload.
 #
 # The published URL is `https://<user>.github.io/<repo>/` for project
-# pages — by default `https://mosmain.github.io/tarkov-checker/`.
+# pages — by default `https://mosmain.github.io/raidmate/`.
 # Update `GITHUB_PAGES_BASE` in `apps/client/vite.config.ts` and
 # `ALLOWED_ORIGINS` in `apps/desktop/src-tauri/src/http_server.rs` if
 # the URL changes (rename, custom domain).
@@ -47,15 +47,15 @@ jobs:
 
       - uses: ./.github/actions/install-js
 
-      # GITHUB_PAGES=true flips Vite's `base` to `/tarkov-checker/` and
+      # GITHUB_PAGES=true flips Vite's `base` to `/raidmate/` and
       # turns on the 404.html fallback plugin (SPA-history workaround
       # for Pages — see vite.config.ts).
       - name: Build SPA
         env:
           GITHUB_PAGES: 'true'
         run: |
-          pnpm --filter @tarkov-checker/shared build
-          pnpm --filter @tarkov-checker/client build
+          pnpm --filter @raidmate/shared build
+          pnpm --filter @raidmate/client build
 
       # Pages artifact is just a tarball of the dist/ folder; the deploy
       # job below unpacks it into the published site.

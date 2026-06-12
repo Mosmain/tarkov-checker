@@ -79,7 +79,7 @@ struct PingResponse {
 
 async fn ping() -> Json<PingResponse> {
     Json(PingResponse {
-        name: "tarkov-checker",
+        name: "raidmate",
         version: env!("CARGO_PKG_VERSION"),
         status: "ok",
     })
@@ -250,7 +250,23 @@ async fn spa_fallback(uri: Uri) -> Response {
         .first_or_octet_stream()
         .as_ref()
         .to_string();
-    ([(header::CONTENT_TYPE, mime)], asset.data.into_owned()).into_response()
+    let cache = if served.starts_with("assets/") {
+        // Vite content-hashes everything under assets/ — cacheable forever.
+        "public, max-age=31536000, immutable"
+    } else {
+        // index.html + unhashed public files (maps, fonts, manifest): always
+        // revalidate, so a self-updated exe serves its fresh frontend instead
+        // of a browser-cached copy of the previous version.
+        "no-cache"
+    };
+    (
+        [
+            (header::CONTENT_TYPE, mime),
+            (header::CACHE_CONTROL, cache.to_string()),
+        ],
+        asset.data.into_owned(),
+    )
+        .into_response()
 }
 
 #[cfg(debug_assertions)]
@@ -366,7 +382,7 @@ mod tests {
 
     fn tmp_json(tag: &str) -> std::path::PathBuf {
         std::env::temp_dir().join(format!(
-            "tarkov-checker-test-{tag}-{}-{}.json",
+            "raidmate-test-{tag}-{}-{}.json",
             std::process::id(),
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
@@ -428,7 +444,7 @@ mod tests {
             .unwrap();
         assert_eq!(response.status(), StatusCode::OK);
         let body = body_text(response).await;
-        assert!(body.contains("\"name\":\"tarkov-checker\""), "body: {body}");
+        assert!(body.contains("\"name\":\"raidmate\""), "body: {body}");
         assert!(body.contains("\"status\":\"ok\""), "body: {body}");
     }
 

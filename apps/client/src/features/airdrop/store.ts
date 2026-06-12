@@ -79,7 +79,7 @@ export const useAirdropStore = defineStore('airdrop', () => {
   // banner ticks down the remaining distance as they approach.
   const playerCurrentPos = ref<{ readonly x: number; readonly z: number } | null>(null);
   const dropMarkerRadius = persistedRef(
-    'tc.airdrop.dropMarkerRadius',
+    'rm.airdrop.dropMarkerRadius',
     dropMarkerRadiusSchema,
     DROP_MARKER_RADIUS_DEFAULT,
   );

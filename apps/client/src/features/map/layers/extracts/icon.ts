@@ -6,7 +6,7 @@ export const EXTRACT_ICON_SIZE = 26;
 /** Canonical render order — keeps composite slices stable across reorderings. */
 export const FACTION_ORDER: ReadonlyArray<FactionKey> = ['pmc', 'scav', 'shared'];
 
-// `BASE_URL` is `/` for local/Tauri builds and `/tarkov-checker/` on
+// `BASE_URL` is `/` for local/Tauri builds and `/raidmate/` on
 // GitHub Pages — runtime URLs in HTML strings need the prefix manually
 // since Vite only rewrites build-time asset references in template/CSS.
 // Same pattern as `mapSvgPath(...)` in useLeafletMap.ts.
