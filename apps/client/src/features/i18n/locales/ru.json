@@ -53,12 +53,6 @@
     "mobileHint": "Открой эту страницу на машине с Tarkov, чтобы настроить пути.",
     "deleteScreenshots": "Удалять скриншоты после считывания",
     "deleteScreenshotsHint": "Отправляет каждый скриншот Tarkov в корзину после считывания позиции. Не даёт папке разрастаться. По умолчанию выключено.",
-    "source": {
-      "env": "из .env",
-      "manual": "вручную",
-      "detected": "найдено автоматически",
-      "missing": "не найдено"
-    },
     "missingTooltip": "Папка пока не существует.",
     "placeholderGameDir": "D:\\EFT",
     "placeholderScreenshotsDir": "Documents\\Escape from Tarkov\\Screenshots",
