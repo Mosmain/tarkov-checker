@@ -13,15 +13,14 @@ serves the same files for phone access on `:47474`).
 ## Dev
 
 ```pwsh
-# Terminal 1 — start the Vite dev server (from repo root)
-pnpm dev
-
-# Terminal 2 — launch the Tauri window
+# One command — Tauri spawns Vite, then opens the window
 pnpm --filter @tarkov-checker/desktop tauri:dev
 ```
 
-`beforeDevCommand` is intentionally empty in `tauri.conf.json` so the
-Vite server stays under Turbo's orchestration and isn't double-spawned.
+`beforeDevCommand` in `tauri.conf.json` is
+`pnpm --filter @tarkov-checker/client dev`, so Tauri starts the Vite
+dev server (`:5173`) itself and shuts it down on exit — no separate
+terminal needed.
 
 ## Production build
 
@@ -32,7 +31,31 @@ pnpm --filter @tarkov-checker/desktop tauri:build
 `beforeBuildCommand` builds the client first; Tauri then bundles
 `apps/client/dist` into the installer.
 
-## Out of scope (this bootstrap)
+## What this crate does
 
-Transparency, always-on-top, click-through, tray icon, custom commands.
-These land in a later session.
+More than a thin wrapper now. The same `.exe` is both the overlay and a
+local backend:
+
+- **Frameless transparent overlay** — `decorations: false`,
+  `transparent: true`, `shadow: false`. Always-on-top, click-through
+  (lock), opacity and zoom are driven from the webview via Tauri window
+  APIs.
+- **In-process axum HTTP server on `0.0.0.0:47474`** — `GET /api/ping`,
+  `GET`/`PUT /api/config`, `GET`/`PUT /api/hotkeys`,
+  `POST /api/hotkeys/{suspend,resume}`, and `GET /events` (SSE). Backs
+  any same-Wi-Fi browser/phone; release builds also serve the embedded
+  SPA from `/`.
+- **Backend-owned OS-global hotkeys** — zoom/floor/airdrop combos are
+  registered by the backend and broadcast as `command` events to every
+  client (overlay, browser, LAN phone). Only the overlay lock combo is
+  client-registered.
+- **Tauri IPC commands** — `get_config`, `update_config`, `get_hotkeys`,
+  `update_hotkeys`, `suspend_hotkeys`, `resume_hotkeys`, `pairing_qr`
+  (LAN QR pairing).
+- **System-tray icon** — created client-side via the Tauri JS tray API
+  (`apps/client/.../overlay/composables/useTrayIcon.ts`): toggle-lock,
+  show window, quit. A richer Rust-side tray menu (pair phone / copy LAN
+  URL) is still planned — see `PLAN-LAN-AND-TRAY.md`, section E.
+
+For full detail see the repo `CLAUDE.md` — "Desktop overlay",
+"Backend-owned hotkeys", and "In-process HTTP server".

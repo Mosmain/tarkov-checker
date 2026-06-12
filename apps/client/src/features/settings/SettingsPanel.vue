@@ -1,11 +1,22 @@
 <script setup lang="ts">
+import { z } from 'zod';
 import { useSettingsSections } from './registry';
+import { persistedRef } from '@/shared/persisted-store';
 
 const { t } = useI18n();
-const mainSections = useSettingsSections('main');
-const systemSections = useSettingsSections('system');
+const systemSections = useSettingsSections();
 const open = ref(false);
 const isDesktop = useMediaQuery('(min-width: 640px)');
+
+// System/app settings only. Map layers moved out of the drawer onto the on-map
+// LayerRail; the gear now holds the rare config (overlay/hotkeys/language/
+// paths/pairing). Desktop opens every section; the overlay/phone start
+// collapsed to keep the sheet short. Snapshotted once, then user choices persist.
+const openSections = persistedRef(
+  'tc.settings.open',
+  z.array(z.string()),
+  isDesktop.value ? systemSections.value.map((s) => s.id) : [],
+);
 </script>
 
 <template>
@@ -37,24 +48,24 @@ const isDesktop = useMediaQuery('(min-width: 640px)');
     </template>
   </Button>
 
+  <!-- System/app config only — map layers live on the on-map LayerRail now.
+       Non-modal so the map stays live behind it; bottom-sheet on the overlay/
+       phone, right-side panel on desktop. -->
   <Drawer
     v-model:visible="open"
-    :position="isDesktop ? 'right' : 'full'"
+    :modal="false"
+    :dismissable="false"
+    :position="isDesktop ? 'right' : 'bottom'"
     :header="t('settings')"
-    :class="isDesktop ? '!w-[26rem]' : ''"
+    :class="isDesktop ? '!w-[26rem]' : '!h-auto !max-h-[85svh] !rounded-t-2xl'"
   >
-    <div class="space-y-4">
-      <component :is="sec.component" v-for="sec in mainSections" :key="sec.id" />
-
-      <div v-if="systemSections.length" class="pt-2 mt-2 border-t border-surface-700">
-        <p class="mb-3 text-[10px] font-semibold uppercase tracking-wider opacity-70">
-          {{ t('systemSection') }}
-        </p>
-
-        <div class="space-y-4">
-          <component :is="sec.component" v-for="sec in systemSections" :key="sec.id" />
-        </div>
-      </div>
-    </div>
+    <Accordion v-model:value="openSections" multiple>
+      <AccordionPanel v-for="sec in systemSections" :key="sec.id" :value="sec.id">
+        <AccordionHeader>{{ t(sec.titleKey) }}</AccordionHeader>
+        <AccordionContent>
+          <component :is="sec.component" />
+        </AccordionContent>
+      </AccordionPanel>
+    </Accordion>
   </Drawer>
 </template>

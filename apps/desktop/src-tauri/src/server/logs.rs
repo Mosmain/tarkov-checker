@@ -78,6 +78,31 @@ struct ActiveLog {
     partial: String,
 }
 
+/// Chronological sort key parsed from a `log_*` folder name. Tarkov names
+/// sessions `log_<Y>.<M>.<D>_<H>-<M>-<S>_<version>` with the HOUR written
+/// WITHOUT a leading zero (`log_2026.06.07_3-16-27_...`), so a plain
+/// lexicographic sort puts a 3 AM session AFTER a 2 PM one (`'3' > '1'`) and
+/// the watcher latches onto the wrong (often stale) folder. Parsing the numeric
+/// components makes ordering follow actual time. Unparseable names get the
+/// all-zero key so a real, parseable session always wins `.last()`.
+fn session_sort_key(path: &Path) -> (u32, u32, u32, u32, u32, u32) {
+    fn parse(path: &Path) -> Option<(u32, u32, u32, u32, u32, u32)> {
+        let name = path.file_name()?.to_str()?;
+        let rest = name.strip_prefix(SESSION_FOLDER_PREFIX)?; // "2026.06.07_3-16-27_<ver>"
+        let mut parts = rest.split('_');
+        let mut date = parts.next()?.split('.');
+        let mut time = parts.next()?.split('-');
+        let year = date.next()?.parse().ok()?;
+        let month = date.next()?.parse().ok()?;
+        let day = date.next()?.parse().ok()?;
+        let hour = time.next()?.parse().ok()?;
+        let min = time.next()?.parse().ok()?;
+        let sec = time.next()?.parse().ok()?;
+        Some((year, month, day, hour, min, sec))
+    }
+    parse(path).unwrap_or((0, 0, 0, 0, 0, 0))
+}
+
 fn list_session_folders(logs_dir: &Path) -> Vec<PathBuf> {
     let mut out: Vec<PathBuf> = match fs::read_dir(logs_dir) {
         Ok(it) => it
@@ -93,7 +118,9 @@ fn list_session_folders(logs_dir: &Path) -> Vec<PathBuf> {
             .collect(),
         Err(_) => Vec::new(),
     };
-    out.sort();
+    // Chronological (NOT lexicographic — the hour has no leading zero); callers
+    // take `.last()` for the most recent session.
+    out.sort_by_key(|p| session_sort_key(p));
     out
 }
 
@@ -148,7 +175,7 @@ fn find_latest_map_id_in_file(path: &Path) -> Option<String> {
 }
 
 fn emit_map_change(
-    app: &AppHandle,
+    app: Option<&AppHandle>,
     state: &Mutex<State>,
     event_tx: &broadcast::Sender<ServerEvent>,
     raw_map_id: String,
@@ -165,22 +192,26 @@ fn emit_map_change(
     drop(guard);
 
     let t = now_ms();
-    // Tauri webview path — unchanged shape.
-    let payload = MapChangePayload {
-        t,
-        raw_map_id: raw_map_id.clone(),
-    };
-    if let Err(err) = app.emit("map-change", &payload) {
-        eprintln!("[logs-watcher] emit failed: {err}");
+    if let Some(app) = app {
+        let payload = MapChangePayload {
+            t,
+            raw_map_id: raw_map_id.clone(),
+        };
+        if let Err(err) = app.emit("map-change", &payload) {
+            eprintln!("[logs-watcher] emit failed: {err}");
+        }
     }
-    // HTTP /events path — same data, tagged enum. `send` errors only on
-    // zero subscribers (normal when /events is unopened); ignore.
+    // HTTP /events path — unconditional; no Tauri webview needed.
     let _ = event_tx.send(ServerEvent::MapChange { t, raw_map_id });
 }
 
 /// Seek + read appended bytes for the currently-tailed log file, parse line
 /// by line, emit on hit. Idempotent — safe to call on every poll tick.
-fn read_appended(app: &AppHandle, state: &Mutex<State>, event_tx: &broadcast::Sender<ServerEvent>) {
+fn read_appended(
+    app: Option<&AppHandle>,
+    state: &Mutex<State>,
+    event_tx: &broadcast::Sender<ServerEvent>,
+) {
     // Snapshot the path + offset under the lock so the actual I/O happens
     // outside it.
     let snapshot: Option<(PathBuf, u64, String)> = {
@@ -257,7 +288,7 @@ fn read_appended(app: &AppHandle, state: &Mutex<State>, event_tx: &broadcast::Se
 /// only on startup — when we discover a brand-new folder mid-session, the
 /// folder is empty and we just wait for the tail to pick up new lines.
 fn attach_to_session(
-    app: &AppHandle,
+    app: Option<&AppHandle>,
     state: &Mutex<State>,
     event_tx: &broadcast::Sender<ServerEvent>,
     folder: PathBuf,
@@ -336,7 +367,7 @@ fn check_within_session_rotation(state: &Mutex<State>) {
 /// here so we don't have to thread name-comparison logic through the event
 /// channel.
 fn check_new_session_folder(
-    app: &AppHandle,
+    app: Option<&AppHandle>,
     state: &Mutex<State>,
     event_tx: &broadcast::Sender<ServerEvent>,
     logs_dir: &Path,
@@ -349,8 +380,10 @@ fn check_new_session_folder(
         let guard = state.lock().expect("logs state poisoned");
         guard.active_folder.clone()
     };
+    // Compare by parsed timestamp, not path order — same leading-zero-hour
+    // pitfall as the folder sort above.
     let is_newer = match &current {
-        Some(c) => latest > *c,
+        Some(c) => session_sort_key(&latest) > session_sort_key(c),
         None => true,
     };
     if !is_newer {
@@ -389,7 +422,7 @@ impl Drop for LogsWatcher {
 ///     `application_NNN.log` is rotated inside the active session.
 pub fn start(
     logs_dir: PathBuf,
-    app: AppHandle,
+    app: Option<AppHandle>,
     event_tx: broadcast::Sender<ServerEvent>,
 ) -> Result<LogsWatcher> {
     let state = Arc::new(Mutex::new(State {
@@ -400,7 +433,7 @@ pub fn start(
 
     // Initial seed from latest existing session, if any.
     if let Some(latest) = list_session_folders(&logs_dir).last().cloned() {
-        attach_to_session(&app, &state, &event_tx, latest, true);
+        attach_to_session(app.as_ref(), &state, &event_tx, latest, true);
     } else {
         eprintln!(
             "[logs-watcher] no existing tarkov log sessions yet at {}",
@@ -440,7 +473,7 @@ pub fn start(
                     break;
                 }
                 check_new_session_folder(
-                    &app_for_folders,
+                    app_for_folders.as_ref(),
                     &state_for_folders,
                     &event_tx_for_folders,
                     &logs_dir_for_folders,
@@ -462,7 +495,7 @@ pub fn start(
             while !stop_for_tail.load(Ordering::SeqCst) {
                 std::thread::sleep(Duration::from_millis(300));
                 check_within_session_rotation(&state_for_tail);
-                read_appended(&app_for_tail, &state_for_tail, &event_tx_for_tail);
+                read_appended(app_for_tail.as_ref(), &state_for_tail, &event_tx_for_tail);
             }
         })
         .context("spawn logs tail watcher thread")?;
@@ -479,6 +512,40 @@ pub fn start(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::PathBuf;
+
+    // --- session folder ordering --------------------------------------------
+
+    #[test]
+    fn session_sort_key_orders_by_time_not_lexicographically() {
+        // EFT writes the hour without a leading zero, so a 3 AM session would
+        // sort AFTER a 2:56 PM one under a plain string sort. The parsed key
+        // must put the afternoon session later (greater).
+        let morning = PathBuf::from("log_2026.06.07_3-16-27_1.0.5.0.45464");
+        let afternoon = PathBuf::from("log_2026.06.07_14-56-33_1.0.5.0.45464");
+        assert!(
+            session_sort_key(&afternoon) > session_sort_key(&morning),
+            "14:56 must sort after 03:16"
+        );
+        // And a `.last()` over the unsorted set must pick the afternoon one.
+        let mut folders = [afternoon.clone(), morning];
+        folders.sort_by_key(|p| session_sort_key(p));
+        assert_eq!(folders.last(), Some(&afternoon));
+    }
+
+    #[test]
+    fn session_sort_key_orders_across_days() {
+        let older = PathBuf::from("log_2026.06.06_23-00-00_1.0.5.0");
+        let newer = PathBuf::from("log_2026.06.07_1-00-00_1.0.5.0");
+        assert!(session_sort_key(&newer) > session_sort_key(&older));
+    }
+
+    #[test]
+    fn session_sort_key_unparseable_sorts_first() {
+        let junk = PathBuf::from("log_not_a_timestamp");
+        let real = PathBuf::from("log_2026.06.07_3-16-27_1.0.5.0");
+        assert!(session_sort_key(&real) > session_sort_key(&junk));
+    }
 
     // --- SCENE_PRESET_RE cases -----------------------------------------------
 

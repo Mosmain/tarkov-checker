@@ -1,5 +1,6 @@
 import PrimeVue from 'primevue/config';
 import ConfirmationService from 'primevue/confirmationservice';
+import Tooltip from 'primevue/tooltip';
 import App from './App.vue';
 import { router } from '@/app/router';
 import { i18n } from '@/features/i18n';
@@ -57,4 +58,5 @@ app.use(PrimeVue, {
     },
   },
 });
+app.directive('tooltip', Tooltip);
 app.mount('#app');

@@ -11,15 +11,13 @@ const langOptions = computed(() => [
 </script>
 
 <template>
-  <Fieldset :legend="t('language')">
-    <SelectButton
-      v-model="apiLang"
-      :options="langOptions"
-      option-label="label"
-      option-value="value"
-      :allow-empty="false"
-      :aria-label="t('language')"
-      class="w-full"
-    />
-  </Fieldset>
+  <SelectButton
+    v-model="apiLang"
+    :options="langOptions"
+    option-label="label"
+    option-value="value"
+    :allow-empty="false"
+    :aria-label="t('language')"
+    fluid
+  />
 </template>

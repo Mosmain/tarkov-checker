@@ -10,9 +10,9 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./ws-messages": {
-      "types": "./dist/ws-messages.d.ts",
-      "import": "./dist/ws-messages.js"
+    "./sse-messages": {
+      "types": "./dist/sse-messages.d.ts",
+      "import": "./dist/sse-messages.js"
     },
     "./maps": {
       "types": "./dist/maps.d.ts",
@@ -27,6 +27,7 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src --max-warnings=0",
+    "lint:fix": "eslint src --max-warnings=0 --fix",
     "gen-rust-regex": "node scripts/gen-rust-regex.mjs"
   },
   "dependencies": {

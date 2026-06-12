@@ -14,7 +14,9 @@ interface UseLeafletMapResult extends UseFloorSwitcher {
   reload: () => void;
 }
 
-const PAN_PAD = 0.15;
+// Generous panning room beyond the map edges + soft (not rigid) bounds, so
+// dragging the map around doesn't hit a hard wall.
+const PAN_PAD = 0.5;
 
 function applyRotation(latLng: L.LatLng, rotationDeg: number): L.LatLng {
   if (rotationDeg === 0) return latLng;
@@ -118,7 +120,7 @@ export function useLeafletMap(
       minZoom: -5,
       maxZoom: 4,
       zoomSnap: 0.25,
-      maxBoundsViscosity: 1.0,
+      maxBoundsViscosity: 0.5,
     });
     map.value = instance;
     const markersPane = instance.createPane('extracts');

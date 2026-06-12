@@ -11,7 +11,9 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::Serialize;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
+use std::sync::Arc;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
 
@@ -115,8 +117,9 @@ pub struct ScreenshotWatcher {
 /// quiet for the whole window are reported.
 pub fn start(
     dir: PathBuf,
-    app: AppHandle,
+    app: Option<AppHandle>,
     event_tx: tokio::sync::broadcast::Sender<crate::server::events::ServerEvent>,
+    delete_screenshots: Arc<AtomicBool>,
 ) -> Result<ScreenshotWatcher> {
     let (tx, rx) = mpsc::channel::<notify_debouncer_full::DebounceEventResult>();
     let mut debouncer =
@@ -144,7 +147,7 @@ pub fn start(
                     Err(_) => continue,
                 };
                 for ev in events {
-                    handle_event(&app_handle, &event_tx, ev);
+                    handle_event(app_handle.as_ref(), &event_tx, ev, &delete_screenshots);
                 }
             }
         })
@@ -155,10 +158,18 @@ pub fn start(
     })
 }
 
+/// Whether a freshly-seen file should be sent to the recycle bin: only when
+/// the feature is enabled AND the filename parsed as a Tarkov screenshot.
+/// Files the user dropped in the folder that don't match are never touched.
+fn should_trash(path: &Path, enabled: bool) -> bool {
+    enabled && parse_screenshot_filename(path).is_some()
+}
+
 fn handle_event(
-    app: &AppHandle,
+    app: Option<&AppHandle>,
     event_tx: &tokio::sync::broadcast::Sender<crate::server::events::ServerEvent>,
     ev: DebouncedEvent,
+    delete_screenshots: &AtomicBool,
 ) {
     // Only fresh-on-disk files matter — chokidar in TS used the `add`
     // event which fires on initial discovery + new creates. notify's
@@ -177,23 +188,19 @@ fn handle_event(
         };
         let yaw = parsed.orientation.map(quaternion_to_yaw_degrees);
         let t = chrono_now_ms();
-        // Tauri webview path — unchanged. Uses the private PositionPayload
-        // struct so the webview's existing `listen("position", ...)` keeps
-        // working bit-for-bit.
-        let payload = PositionPayload {
-            t,
-            x: parsed.position.x,
-            y: parsed.position.y,
-            z: parsed.position.z,
-            yaw,
-        };
-        if let Err(err) = app.emit("position", &payload) {
-            eprintln!("[screenshot-watcher] emit failed: {err}");
+        if let Some(app) = app {
+            let payload = PositionPayload {
+                t,
+                x: parsed.position.x,
+                y: parsed.position.y,
+                z: parsed.position.z,
+                yaw,
+            };
+            if let Err(err) = app.emit("position", &payload) {
+                eprintln!("[screenshot-watcher] emit failed: {err}");
+            }
         }
-        // HTTP /events path — same data, ServerEvent wire-shape (tagged
-        // enum). `send` errors only when there are zero subscribers; that
-        // is the normal case when nobody has opened /events, so we ignore
-        // it silently.
+        // HTTP /events path — unconditional; no Tauri webview needed.
         let _ = event_tx.send(crate::server::events::ServerEvent::Position {
             t,
             x: parsed.position.x,
@@ -201,6 +208,19 @@ fn handle_event(
             z: parsed.position.z,
             yaw,
         });
+
+        // Opt-in cleanup: the position is already extracted from the filename
+        // and broadcast, so the image is no longer needed. Send it to the OS
+        // recycle bin (recoverable). Best-effort — a failure (file locked by
+        // the screenshot tool, permissions) is logged and ignored.
+        if should_trash(path, delete_screenshots.load(Ordering::Relaxed)) {
+            if let Err(err) = trash::delete(path) {
+                eprintln!(
+                    "[screenshot-watcher] recycle failed for {}: {err}",
+                    path.display()
+                );
+            }
+        }
     }
 }
 
@@ -216,6 +236,30 @@ fn chrono_now_ms() -> i64 {
 mod tests {
     use super::*;
     use std::path::Path;
+
+    // -----------------------------------------------------------------------
+    // should_trash — only parsed Tarkov screenshots are ever deleted
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn should_trash_parsed_screenshot_when_enabled() {
+        let path = Path::new("2026-05-30 12-34-56_-100.5, 50.0, 200.3_0,0,0.7,0.7_.png");
+        assert!(should_trash(path, true));
+    }
+
+    #[test]
+    fn should_not_trash_when_disabled() {
+        let path = Path::new("2026-05-30 12-34-56_-100.5, 50.0, 200.3_0,0,0.7,0.7_.png");
+        assert!(!should_trash(path, false));
+    }
+
+    #[test]
+    fn should_not_trash_unparseable_file_even_when_enabled() {
+        // A user's own file that isn't a Tarkov position screenshot must
+        // survive even with the feature on.
+        assert!(!should_trash(Path::new("my vacation.png"), true));
+        assert!(!should_trash(Path::new("notes.txt"), true));
+    }
 
     // -----------------------------------------------------------------------
     // parse_screenshot_filename

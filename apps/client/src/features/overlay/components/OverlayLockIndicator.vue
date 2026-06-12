@@ -1,27 +1,27 @@
 <script setup lang="ts">
 import { formatHotkeyParts } from '@/features/hotkeys/lib/hotkey';
+import { useOverlayLock } from '../composables/useOverlayLock';
 
 interface Props {
   lockHotkey: string;
-  overlayClickThrough: boolean;
 }
 
 const props = defineProps<Props>();
-defineEmits<{ lock: [] }>();
+const { locked, lock } = useOverlayLock();
 
 const lockHotkeyParts = computed(() => formatHotkeyParts(props.lockHotkey));
 
 // When click-through is on the lock button itself isn't clickable, so screen
 // readers need the keyboard escape route spelled out in the label.
 const lockAriaLabel = computed(() =>
-  props.overlayClickThrough
+  locked.value
     ? `Locked — press ${lockHotkeyParts.value.join(' + ')} to unlock`
     : 'Lock interaction',
 );
 </script>
 
 <template>
-  <div class="absolute bottom-3 right-3 z-[1000] flex items-center gap-2">
+  <div class="sa-bottom sa-right absolute z-[1000] flex items-center gap-2">
     <span
       class="pointer-events-none inline-flex items-center gap-1 rounded-md bg-surface-800/70 px-2 py-1 text-[10px] font-semibold tracking-wider backdrop-blur"
     >
@@ -34,13 +34,13 @@ const lockAriaLabel = computed(() =>
     </span>
     <Button
       rounded
-      :severity="overlayClickThrough ? 'primary' : 'secondary'"
+      :severity="locked ? 'primary' : 'secondary'"
       class="!bg-surface-800/80 hover:!bg-surface-800 !border-surface-700 backdrop-blur"
       :aria-label="lockAriaLabel"
-      @click="$emit('lock')"
+      @click="lock"
     >
       <template #icon>
-        <i :class="overlayClickThrough ? 'pi pi-lock' : 'pi pi-lock-open'" />
+        <i :class="locked ? 'pi pi-lock' : 'pi pi-lock-open'" />
       </template>
     </Button>
   </div>

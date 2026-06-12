@@ -5,9 +5,10 @@
 - `apps/desktop` — Tauri 2 wrapper. The production artifact: Rust
   watcher/config pipeline (`src-tauri/src/server/`), the Tauri IPC
   commands the webview calls, AND an in-process HTTP server (axum) on
-  `127.0.0.1:47474` exposing `/api/ping`, `/api/config` (GET+PUT) and
-  `/events` (SSE). Single 6 MB `.exe` that ships as both the overlay
-  and the local HTTP backend for any browser pointed at the same
+  `0.0.0.0:47474` (binds all interfaces, trust model: same Wi-Fi = trusted)
+  exposing `/api/ping`, `/api/config` (GET+PUT), `/api/hotkeys` (GET+PUT,
+  +suspend/resume) and `/events` (SSE). Single 6 MB `.exe` that ships as both
+  the overlay and the local HTTP backend for any browser pointed at the same
   origin. See "In-process HTTP server" below.
 - `apps/client` — Vue + Leaflet map. Two transports, one codebase.
   Inside the Tauri webview: `invoke(...)` + `listen('position', ...)`.
@@ -175,38 +176,64 @@ key back in the running app.
 
 ## Map rendering layers
 
-`apps/client/src/features/map/` is split into two sibling folders by
-ownership:
+`apps/client/src/features/map/` is split into three sibling folders:
 
 - `composables/` — **framework hooks** for Leaflet/Vue plumbing:
-  `useLeafletMap`, `useFloorSwitcher`. Nothing here knows about extracts,
-  player markers, or future quest markers — pure map/Leaflet glue.
-- `layers/<name>/` — **domain layers** rendered on top of the map. Each
-  layer fully owns its concerns: data adapter, icon HTML, tooltip HTML,
-  the composable that wires it into Leaflet. All layers use a registry
-  pattern: `layers/registry.ts` exports `registerMapLayer()` and
-  `useMapLayers()`. Currently:
+  `useLeafletMap`, `useFloorSwitcher`, `useLayerVisibility`, `useRailObstacle`
+  (the rail rect edge-indicator layers wrap around). Nothing here knows about
+  extracts, player markers, or future quest markers — pure map/Leaflet glue.
+- `components/` — **UI surfaces** mounted by the page:
+  - `LayerRail.vue` — on-map left rail (vertically centered). Top icon = base map
+    selector flyout (MapSection component). Below that, one icon per layer **category**
+    (derived from registry `subgroup`: today only `player`, with `loot`/`quests`
+    dimmed future icons). Clicking a category icon opens a flyout listing its
+    layers: each row has a visibility `ToggleSwitch`, layer name, and a gear button
+    that expands that layer's settings component inline. Floor stepper at the rail's
+    bottom (multi-floor maps only) is a vertical ▲/level/▼. Rail hides when the
+    overlay is click-through-locked. When locked on a multi-floor map, a compact
+    read-only floor chip appears bottom-left. Flyouts position relative to the rail
+    via CSS `position: absolute; left: full; top: 1/2` (NOT `position: fixed`
+    which drifted in the Tauri WebView2 overlay).
+  - `MapView.vue` — mounts the Leaflet container, the LayerRail, and layer
+    composables. Wires Alt+mouse wheel (captured, throttled ~120ms) to step
+    floors instead of zooming on multi-floor maps.
+- `layers/<name>/` — **domain layers** rendered on top of the map. Each layer fully
+  owns its concerns: data adapter, icon HTML, tooltip HTML, the composable that
+  wires it into Leaflet. All layers use a registry pattern: `layers/registry.ts`
+  exports `registerMapLayer()` and `useMapLayers()`. Currently:
 
-      layers/extracts/
-        useExtractsLayer.ts     # Leaflet/Vue glue, data load, marker sync
-        icon.ts                 # slice geometry + makeIcon (composite via CSS clip-path)
-        tooltip.ts              # buildTooltipHtml + escapeHtml + sortedEntries
-        index.ts                # registerMapLayer call
-      layers/player/
-        usePlayerLayer.ts       # player position marker + follow logic
-        index.ts                # registerMapLayer call
-      layers/airdrop/
-        useAirdropLayer.ts      # purple uncertainty circle around the predicted drop
-        index.ts                # registerMapLayer call
+        layers/extracts/
+          useExtractsLayer.ts     # Leaflet/Vue glue, data load, marker sync
+          icon.ts                 # slice geometry + makeIcon (composite via CSS clip-path)
+          tooltip.ts              # buildTooltipHtml + escapeHtml + sortedEntries
+          useEdgeIndicators.ts    # off-screen extract arrows; wraps left edge around the rail
+          index.ts                # registerMapLayer call
+        layers/player/
+          usePlayerLayer.ts       # player position marker + recentering on follow
+          index.ts                # registerMapLayer call
+        layers/airdrop/
+          useAirdropLayer.ts      # purple uncertainty circle around the predicted drop
+          index.ts                # registerMapLayer call
 
-  Each `index.ts` calls `registerMapLayer({ id, mount })` at module load;
+  Each `index.ts` calls `registerMapLayer({ id, mount, category, order, titleKey,
+settingsComponent? })` at module load (the rail metadata lives here — there is
+  no second registry for layers);
   `main.ts` loads all index files via `import.meta.glob('@/features/map/layers/*/index.ts', { eager: true })`.
   `MapView.vue` reads the registry with `useMapLayers()` and calls
-  `mount(ctx)` for each layer in setup(). When quest markers (or anything
-  else) get added later, create `layers/quests/{useQuestMarkers,icon,tooltip,index}.ts`
-  following the same pattern — no manual list to update. Airdrop's state
-  machine, tracker, and banner live in `features/airdrop/` — only the
-  Leaflet circle moved here. See "Airdrop feature" below.
+  `mount(ctx)` for each layer in setup(). `MapLayerContext` (in `layers/registry.ts`)
+  includes `visible: Ref<boolean>` driven by the LayerRail toggle; the layer composable
+  watches it and adds/removes its Leaflet root accordingly. When quest markers (or
+  anything else) get added later, create `layers/quests/{useQuestMarkers,icon,tooltip,index}.ts`
+  following the same pattern — no manual list to update. Airdrop's state machine,
+  tracker, and banner live in `features/airdrop/` — only the Leaflet circle moved here.
+  See "Airdrop feature" below.
+
+**Off-screen extract arrows** (`useEdgeIndicators.ts`): arrows render on the viewport
+edge pointing at extracts outside the visible bounds. On the overlay, the left edge
+wraps around the LayerRail — a left-edge arrow whose y falls within the rail's
+vertical span is pushed out to the rail's right edge (RAIL_GAP px beyond). Measured
+each frame via `.layer-rail` rect so arrows flow dynamically as the rail animates
+in/out on lock transitions.
 
 Extract markers are `L.divIcon` instances (not `L.icon`) — the composite
 PNG split via CSS `clip-path: polygon(...)` is built inline as HTML.
@@ -234,9 +261,8 @@ icon's top edge gives a few pixels of overlap for visual cohesion.
 marker — an SVG arrow (rotated by `yaw + mapRotation + yawOffset`) or
 a circle fallback when `yaw === null`. The marker isn't created until
 the first position arrives. On every position update with changed
-`(x, z, yaw)` and `playerFollow !== 'off'`, the map recenters and zooms
-to `initialZoom + FOLLOW_ZOOM_DELTA[mode]` — that's why `initialZoom`
-sits in `MapLayerContext`.
+`(x, z)` and `playerFollow === 'on'`, the map recenters (zoom stays
+fixed) — that's why `initialZoom` sits in `MapLayerContext`.
 
 ## Airdrop feature
 
@@ -283,11 +309,31 @@ Two surfaces read/write this state:
   path without a restart.
 - **HTTP**: `GET /api/config` / `PUT /api/config` on the in-process
   axum server (see "In-process HTTP server" below). Same behaviour as
-  the IPC commands, same `ResolvedPaths` shape.
+  the IPC commands, same `ConfigResponse` shape.
 
-The HTTP server binds on `127.0.0.1:47474` — fixed port, no TCP
-exposure beyond loopback. LAN exposure is a future opt-in toggle
-(see "Future architecture").
+The config get/update no longer returns bare `ResolvedPaths` — it returns
+`ConfigResponse` (`paths.rs`), which `#[serde(flatten)]`s `ResolvedPaths` and
+appends `deleteScreenshots: bool`. Wire shape is
+`{ gameDir, logsDir, screenshotsDir, deleteScreenshots }`, mirrored by
+`serverConfigResponseSchema` in `@shared/config-api`. `deleteScreenshots` is an
+opt-in (default false) flag persisted in `config.json` alongside the path
+overrides: when on, the screenshot watcher sends each parsed Tarkov screenshot
+to the **OS recycle bin** (`trash` crate) right after broadcasting its
+position — the image is never used beyond its filename, so nothing is lost, and
+the folder stops filling up over long sessions. Only files whose name parses as
+a Tarkov position screenshot are touched (`should_trash` in `screenshots.rs`);
+unrelated files the user dropped in the folder are never deleted. The flag
+reaches the watcher via a shared `Arc<AtomicBool>` on `WatcherSlot`
+(`set_delete_screenshots`), so toggling it takes effect live; both PUT paths
+(`update_config` IPC + `put_config_http`) set it before `apply_resolved`. UI is
+a `ToggleSwitch` in the Paths settings section (saves immediately, no Save
+button), so it's configured on the machine that owns the screenshots folder.
+
+The HTTP server binds on `0.0.0.0:47474` — all interfaces, fixed port. Same-Wi-Fi
+machine browsers reach it via localhost/127.0.0.1 loopback; LAN phones reach it
+via the LAN IP. Trust model: same Wi-Fi = trusted (gated by `CorsLayer` for
+browser drive-by callers; LAN curl-equivalents unfiltered by design). See
+"In-process HTTP server" section for architectural reasoning.
 
 ## User settings
 
@@ -301,10 +347,11 @@ Persisted state lives in **per-feature** Pinia stores, not one big store:
     the `--extract-label-size` CSS variable on `<html>` from
     `useExtractsLayer` in `layers/extracts/useExtractsLayer.ts` — which also
     re-binds tooltips so Leaflet recomputes positions for the new height).
-  - `playerFollow` — `"off" | "sm" | "md" | "lg"` — auto-recenter + zoom on
-    every fresh position update. Wired in `layers/player/usePlayerLayer.ts`;
-    only re-centers when `(x, z)` actually changes (skips spam updates when
-    the player stands still). Zoom step: `initialZoom + FOLLOW_ZOOM_DELTA[mode]`.
+  - `edgeIndicators` — boolean, default false. Off-screen extract arrows; opt-in.
+  - `playerFollow` — `"off" | "on"` — auto-recenter map on every fresh position
+    update. Wired in `layers/player/usePlayerLayer.ts`; only recenters when
+    `(x, z)` actually changes (skips spam updates when the player stands still).
+    Zoom stays fixed at `initialZoom`.
   - `autoMapSwitch` — boolean, default `true`. When on, incoming
     `map-change` events from the logs watcher flip `mapCode` to whatever
     the game just loaded (resolved through `canonicalMapCode()` so
@@ -313,15 +360,25 @@ Persisted state lives in **per-feature** Pinia stores, not one big store:
     are silently dropped with one `console.warn`. Wiring lives in
     `features/map/composables/useAutoMapSwitch.ts`, mounted once at
     `App.vue` root.
+- **Per-layer visibility**: `composables/useLayerVisibility.ts` exports a
+  function that returns a shared `persistedRef('tc.layer.<id>.visible', z.boolean(), true)`
+  per layer id (module-level singleton). The LayerRail toggle and the layer
+  composable read/write the same ref. Consumed by `MapLayerContext.visible`
+  in `layers/registry.ts`.
 - `apps/client/src/features/i18n/store.ts` — `apiLang` (`"en" | "ru"`).
   The store's `watch(apiLang, ..., {immediate: true})` mirrors the value
   into vue-i18n's `locale`; `main.ts` calls `useI18nStore()` eagerly after
   `app.use(createPinia())` so the persisted language is applied before any
   component reads `t()`.
-- `apps/client/src/features/hotkeys/store.ts` — per-action hotkey combos.
+- `apps/client/src/features/hotkeys/store.ts` — thin sync layer over the
+  **backend-owned** combos: `lockHotkey` stays a client `persistedRef`
+  (overlay-only), the five forwarded actions load from the backend
+  (`fetchHotkeys`) and `setAction` PUTs on change. See "Backend-owned
+  hotkeys" below.
 - `apps/client/src/features/overlay/store.ts` — Tauri-only:
   `alwaysOnTop`, `opacity` (0.3–1), `mapOpacity` (0–1), `zoom`
-  (`"75" | "100" | "125" | "150"`), plus a deliberately session-only
+  (`"75" | "100" | "125" | "150"`), `minimizeToTray` (default false; when on,
+  ✕ hides to tray instead of closing), plus a deliberately session-only
   `clickThrough` (plain `ref()`, not `persistedRef` — see note below).
 - `apps/client/src/features/airdrop/store.ts` — `dropMarkerRadius` (game
   meters, slider-bound in Settings). Wraps the airdrop state machine —
@@ -331,39 +388,104 @@ Each store uses `persistedRef` from `@/shared/persisted-store` with its
 own key (`tc.<feature>.<field>`) — corrupt persisted data falls back to
 defaults silently.
 
-**Session-only state.** `overlayClickThrough` intentionally does NOT
-use `persistedRef`. Booting into a locked overlay with a broken hotkey
-would be unrecoverable, so `App.vue` resets the value to `false` on
-every Tauri startup. Reach for plain `ref()` (not `persistedRef`) any
-time boot-time recoverability matters more than user-visible
-continuity; default to `persistedRef` everywhere else.
+**Session-only state.** `clickThrough` intentionally does NOT use `persistedRef`.
+Booting into a locked overlay with a broken hotkey would be unrecoverable, so
+`App.vue` resets the value to `false` on every Tauri startup. Reach for plain
+`ref()` (not `persistedRef`) any time boot-time recoverability matters more than
+user-visible continuity; default to `persistedRef` everywhere else.
 
-## Settings UI registry
+## Settings & layer registries
 
-Settings sections use a registry pattern similar to map layers: each feature
-that owns settings registers its UI section via `registerSettingsSection()`.
+**Two SEPARATE registries, one per surface — no shared-id matching across them.**
 
-- `features/settings/registry.ts` — `registerSettingsSection()` and
-  `useSettingsSections(group)`. Visibility logic: `'always'` (desktop +
-  phone, default), `'tauri'` (overlay only), `'desktop-or-tauri'` (phone at
-  ≥640px or overlay). Order uses multiples of 10. Currently:
-  - main: 10 map, 20 extracts, 30 player, 40 airdrop (tauri-only), 50 overlay (tauri-only), 60 hotkeys (tauri-only)
-  - system: 10 language, 20 paths (desktop-or-tauri)
-- `features/<name>/settings.ts` — each feature with settings calls
-  `registerSettingsSection({ id, group, order, visible, component })` at
-  module load. Currently: `map`, `airdrop`, `overlay`, `hotkeys`, `i18n`,
-  `server` (each maps to a section component under
-  `features/settings/sections/`).
-- `main.ts` loads all registration files via
-  `import.meta.glob('@/features/*/settings.ts', { eager: true })`.
-- `SettingsPanel.vue` — gear icon in the top-right cluster next to the
-  transport-status pill (`App.vue`), opens a PrimeVue `Drawer` (right-side on
-  desktop, `position="full"` on `<640px`). Iterates `useSettingsSections('main')`
-  and `useSettingsSections('system')` to build the drawer — no hard-coded list
-  of sections.
+- **Map-layer registry** (`features/map/layers/registry.ts`) — the single source
+  of truth for layers. `registerMapLayer({ id, mount, category, order, titleKey,
+settingsComponent?, availability? })`; `useMapLayers()` reads them. Each layer
+  self-describes its rail `category` (`'player' | 'loot' | 'quests'`), `order`,
+  display `titleKey`, and optional inline `settingsComponent`. Layers register in
+  their own `layers/<name>/index.ts` (auto-loaded via the layers glob). Consumed by
+  the on-map **LayerRail** (`features/map/components/LayerRail.vue`): a left rail
+  with the base map selector at the top (a direct `MapSection` import — it's a
+  prerequisite, not a layer), then one icon per category (membership derived from
+  each layer's `category`; empty categories like loot/quests render as dimmed
+  future placeholders). A category flyout lists its layers, each with a visibility
+  toggle (`useLayerVisibility`) + the layer's `settingsComponent` inline via a gear.
+  `CATEGORY_META` in the rail is presentation-only (icon + which futures to tease),
+  NOT the catalogue.
+- **Settings-section registry** (`features/settings/registry.ts`) — **system/app
+  settings only** (no layer concept; no groups/subgroups). `registerSettingsSection({
+id, order, titleKey, visible?, component })`; `useSettingsSections()` returns them
+  filtered by `visible` (`'always'` | `'tauri'` | `'desktop-or-tauri'` | `'browser'`,
+  where `'browser'` = `!isTauri`) and sorted by
+  `order`. Registered in `features/<name>/settings.ts` (auto-loaded via
+  `import.meta.glob('@/features/*/settings.ts', { eager: true })`). Currently: 10
+  overlay (tauri), 20 hotkeys (always; rows read-only on a phone — no keyboard
+  to record), 25 display (browser), 30 language,
+  40 paths (desktop-or-tauri), 50 pairing (tauri). Consumed by the gear **drawer**
+  (`SettingsPanel.vue`): a **non-modal** PrimeVue `Drawer` (right on desktop,
+  bottom-sheet on `<640px`) rendering a single flat **Accordion**; open-panel state
+  persists in `tc.settings.open`.
 
 Faction colours come from `FACTION_COLORS` in `packages/shared/src/maps.ts`
 so icons and tooltip stripes never drift across components.
+
+## Mobile display (browser / phone)
+
+`apps/client/src/features/display/` holds the browser/phone fullscreen affordance.
+Browser-only — the Display settings section registers with `visible: 'browser'`
+(`!isTauri`); the frameless Tauri overlay has no browser chrome, so it's moot there.
+
+- **Fullscreen** lives ONLY in the Display settings section
+  (`components/DisplaySection.vue`) — a `ToggleSwitch` bound to live fullscreen
+  state via `composables/useFullscreenToggle.ts` (VueUse `useFullscreen` on
+  `document.documentElement`, so the address bar collapses). Android/desktop get a
+  real toggle; iOS Safari has **no Fullscreen API**, so on iOS the row shows an
+  "Add to Home Screen" hint instead (the PWA `display: standalone` route is the
+  only chrome-free path on iPhone). The whole row hides once installed as a PWA
+  (`isStandalone`). The toggle is `.catch(() => undefined)` — `requestFullscreen`
+  rejects in an iframe and there's nothing actionable. (There is no on-map
+  fullscreen button — it was tried in the top-right cluster but removed to keep
+  the bar uncluttered on narrow phones; see "Top bar" below.)
+- `composables/useDisplayEnv.ts` exposes `isIos` (UA incl. iPadOS-as-Mac) and
+  `isStandalone` (`matchMedia('(display-mode: standalone)')` + `navigator.standalone`).
+
+**Top bar (browser).** The connection-status dot, the map name (only ≥380px), and
+the two in-game clocks all live in the always-visible left chip
+(`TarkovTimeChip.vue`), so the top-right browser cluster is just the settings gear
+— this keeps the bar from overflowing on a 320px-wide phone (iPod touch). The clock
+samples via `requestAnimationFrame` and swaps its ref only when the shown value
+changes (in-game time runs 7×, so a fixed interval visibly stutters the seconds).
+
+**Keep-awake was considered and deliberately dropped.** There is no reliable web
+way to keep a mobile screen awake over plain HTTP: the Screen Wake Lock API needs a
+secure context (HTTPS / `localhost` — neither reaches a LAN phone, and it's absent
+entirely on iOS < 16.4), and the muted/unmuted looping-`<video>` trick no longer
+keeps the screen on under current iOS **or** Android (verified on iPod touch iOS 15
+
+- Android). The honest fallback is the OS auto-lock setting. Don't re-add a JS
+  keep-awake hack unless serving over HTTPS becomes viable.
+
+**PWA manifest** (`apps/client/public/manifest.webmanifest` + `<link rel="manifest">`
+and the `apple-mobile-web-app-*` / `mobile-web-app-capable` meta in `index.html`):
+`display: standalone`, icon = the existing `favicon.svg` (`sizes: "any"`).
+`start_url`/`scope` are `/`, correct for the phone (`:5173`/`:47474`) and the Tauri
+release (base `/`). The hosted **GitHub Pages** build serves under base
+`/tarkov-checker/`, so its `start_url`/`scope` would mismatch — the static manifest
+isn't templated by Vite. Pages PWA install is a secondary path; template the
+manifest if it ever matters. iOS `apple-touch-icon` ideally wants a PNG — pointing
+it at the SVG works on Android, but iPhone may fall back to a page screenshot for
+the home-screen icon; rasterising `favicon.svg` to PNG is an open follow-up.
+
+**PWA manifest** (`apps/client/public/manifest.webmanifest` + `<link rel="manifest">`
+and the `apple-mobile-web-app-*` / `mobile-web-app-capable` meta in `index.html`):
+`display: standalone`, icon = the existing `favicon.svg` (`sizes: "any"`).
+`start_url`/`scope` are `/`, correct for the phone (`:5173`/`:47474`) and the Tauri
+release (base `/`). The hosted **GitHub Pages** build serves under base
+`/tarkov-checker/`, so its `start_url`/`scope` would mismatch — the static manifest
+isn't templated by Vite. Pages PWA install is a secondary path; template the
+manifest if it ever matters. iOS `apple-touch-icon` ideally wants a PNG — pointing
+it at the SVG works on Android, but iPhone may fall back to a page screenshot for
+the home-screen icon; rasterising `favicon.svg` to PNG is an open follow-up.
 
 ## Desktop overlay (Tauri)
 
@@ -384,34 +506,63 @@ is a no-op so the same code path serves both.
 
 **Overlay controls** (only rendered when `isTauri`):
 
-- **Drag region** — the transport-status pill in `App.vue`'s top-right cluster.
-  Uses an explicit `@mousedown` handler that calls `getCurrentWindow().
-startDragging()` rather than `data-tauri-drag-region` attribute, which
-  is flaky on `decorations: false + transparent: true` windows. Child
-  `<i>` and `<span>` inside the pill have `pointer-events: none` so the
-  drag start always lands on the pill itself.
-- **Close** — red ✕ button next to the gear; runs through a PrimeVue
-  `ConfirmDialog` so an accidental click can't kill the session (close
-  sits right next to settings).
-- **Lock / click-through** — bottom-right corner: a `[Ctrl][Alt][L]` Kbd
-  hint plus a lock button (`pi-lock-open` ↔ `pi-lock`). State lives on
-  `overlayClickThrough` in the store. Click on the open lock locks the
-  window; **only the global hotkey can unlock it**, because once
-  click-through is on the lock button itself isn't clickable. App.vue
-  _always_ resets `overlayClickThrough` to `false` on Tauri startup —
-  the locked state intentionally doesn't persist across sessions, so
-  the app can't boot into an unrecoverable lockout.
-- **Opacity slider** — calls `Window.setOpacity()` (Windows Layered
-  Window API). If the call rejects (the permission `core:window:
-allow-set-opacity` doesn't exist in Tauri 2.11.x), the composable
-  silently falls back to `document.documentElement.style.opacity` so the
-  slider remains visually responsive.
-- **Zoom** — `WebviewWindow.setZoom(factor)`.
+**Unlocked state:**
 
-**Global shortcut** is `tauri-plugin-global-shortcut` (Rust crate +
-`@tauri-apps/plugin-global-shortcut` npm). Registered in `App.vue`'s
-`onMounted` with combo `"CommandOrControl+Alt+L"`. Handler fires on
-both `Pressed` and `Released` — toggle only on `Pressed`.
+- **Drag region** — the entire top bar (OverlayHeader.vue) is clickable and grabbable.
+  Uses an explicit `@mousedown` handler that calls `getCurrentWindow().startDragging()`
+  rather than `data-tauri-drag-region` attribute, which is flaky on `decorations: false +
+transparent: true` windows. Idle, only a small nub shows; hovering/dragging reveals
+  two separate zones as flex siblings: a drag pill (left, flex-1, visual only with "move"
+  label) and the control cluster (right, auto-width with pointer events). The transport
+  status dot, settings gear, and close button all live in the cluster; only the drag
+  pill is pointer-disabled.
+- **Close** — red ✕ button. With `minimizeToTray` off (default), runs through a
+  PrimeVue `ConfirmDialog` so an accidental click can't kill the session. With it on,
+  hides the window to the system tray (reversible via the tray's Show item) with no
+  confirm.
+- **Settings gear** — opens the system settings drawer (right-side desktop, bottom-sheet
+  phone/overlay).
+- **Opacity slider** — in the gear drawer (`OverlaySection.vue`), calls
+  `Window.setOpacity()` (Windows Layered Window API). If the call rejects (the permission
+  `core:window:allow-set-opacity` doesn't exist in Tauri 2.11.x), the composable
+  silently falls back to `document.documentElement.style.opacity` so the slider remains
+  visually responsive.
+- **Zoom** — in the gear drawer, calls `WebviewWindow.setZoom(factor)`.
+
+**Locked state (click-through):**
+
+- **Rails & controls hide** — the top band vanishes, the LayerRail hides, and animated
+  borders disappear for a clean map-only view.
+- **Read-outs stay visible** — the clock+location pill (TarkovTimeChip, top-left),
+  the connection status dot (OverlayHeader), the floor stepper chip (LayerRail,
+  bottom-left on multi-floor maps), and the lock hotkey hint (OverlayLockIndicator,
+  bottom-right) remain always-visible.
+- **Unlock** — bottom-right corner: a `[Ctrl][Alt][L]` Kbd hint plus a lock button
+  (`pi-lock-open` ↔ `pi-lock` in OverlayLockIndicator). State lives on `clickThrough`
+  in the store. Click on the open lock or press the hotkey to toggle. **Only the
+  global hotkey can unlock it** because once click-through is on the lock button itself
+  isn't clickable (intentional escape hatch). App.vue _always_ resets `clickThrough` to
+  `false` on Tauri startup — the locked state intentionally doesn't persist across
+  sessions, so the app can't boot into an unrecoverable lockout.
+
+**Lock global shortcut** is the ONLY client-registered hotkey:
+`useGlobalShortcut` (via `@tauri-apps/plugin-global-shortcut`) binds
+`"CommandOrControl+Alt+L"` in `App.vue` to toggle click-through. Kept
+client-side on purpose — it's an overlay window op with no browser
+meaning, and the proven plugin path preserves the recovery route out of
+a click-through lockout. Handler fires on both `Pressed` and `Released`
+— toggle only on `Pressed`. **Every other hotkey is backend-owned** —
+see "Backend-owned hotkeys" below.
+
+**Floor switching** (multi-floor maps only) — three paths:
+
+- **GUI**: the floor stepper (▲/▼) at the bottom of the LayerRail.
+- **Hotkey**: backend-owned `floor-up`/`floor-down` actions (always global, even while
+  the game is focused).
+- **Quick**: Alt + mouse wheel over the map (MapView.vue, captured in the capture phase
+  before Leaflet's wheel-zoom, throttled ~120ms so trackpad doesn't skip floors).
+  The floor stepper reads the current floor; locking the overlay hides the rail's
+  stepper but keeps the read-only bottom-left floor chip, and hotkeys still work.
 
 **Capabilities** (`apps/desktop/src-tauri/capabilities/default.json`)
 must include the privileged window ops explicitly — `core:default`
@@ -422,7 +573,13 @@ core:window:allow-set-always-on-top
 core:window:allow-set-ignore-cursor-events
 core:window:allow-close
 core:window:allow-start-dragging
+core:window:allow-hide
+core:window:allow-show
+core:window:allow-set-focus
 core:webview:allow-set-webview-zoom
+core:tray:default
+core:menu:default
+core:app:allow-default-window-icon
 global-shortcut:allow-register
 global-shortcut:allow-unregister
 global-shortcut:allow-is-registered
@@ -449,17 +606,17 @@ axum-based HTTP server alongside the Tauri IPC layer, so the same
 process backs both the webview (via IPC) and any browser tab on the
 machine (via HTTP). One source of state, two transports.
 
-| Module                  | Role                                                                                               |
-| ----------------------- | -------------------------------------------------------------------------------------------------- |
-| `http_server.rs`        | axum routes, CorsLayer, SSE handler, listens on `0.0.0.0:47474`                                    |
-| `server/screenshots.rs` | `notify-debouncer-full` watcher (250 ms `awaitWriteFinish` equivalent); parses filename → position |
-| `server/logs.rs`        | poll-tails latest `log_*/application_NNN.log`; emits `map-change` on `rcid:` / `Location:` hits    |
-| `server/paths.rs`       | env → manual override → `winreg` auto-detect; returns `ResolvedPaths`                              |
-| `server/config.rs`      | reads/writes `%APPDATA%/tarkov-checker/config.json`; rejects UNC paths                             |
-| `server/events.rs`      | `ServerEvent` enum + `tokio::sync::broadcast` channel for HTTP-side fan-out                        |
-| `watcher.rs`            | `WatcherSlot` state holder + `apply_resolved` that atomically swaps watcher handles                |
-| `lan.rs`                | LAN IP detection for the QR pairing flow (multi-NIC heuristic — see `detect_lan_ip`)               |
-| `commands.rs`           | Tauri `#[tauri::command]` adapters mirroring the HTTP routes + `pairing_qr`                        |
+| Module                  | Role                                                                                                                                                  |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `http_server.rs`        | axum routes, CorsLayer, SSE handler, listens on `0.0.0.0:47474`                                                                                       |
+| `server/screenshots.rs` | `notify-debouncer-full` watcher (250 ms `awaitWriteFinish` equivalent); parses filename → position; opt-in recycle-bin delete after parse (see below) |
+| `server/logs.rs`        | poll-tails latest `log_*/application_NNN.log`; emits `map-change` on `rcid:` / `Location:` hits                                                       |
+| `server/paths.rs`       | env → manual override → `winreg` auto-detect; returns `ResolvedPaths`                                                                                 |
+| `server/config.rs`      | reads/writes `%APPDATA%/tarkov-checker/config.json`; rejects UNC paths                                                                                |
+| `server/events.rs`      | `ServerEvent` enum + `tokio::sync::broadcast` channel for HTTP-side fan-out                                                                           |
+| `watcher.rs`            | `WatcherSlot` state holder + `apply_resolved` that atomically swaps watcher handles                                                                   |
+| `lan.rs`                | LAN IP detection for the QR pairing flow (multi-NIC heuristic — see `detect_lan_ip`)                                                                  |
+| `commands.rs`           | Tauri `#[tauri::command]` adapters mirroring the HTTP routes + `pairing_qr`                                                                           |
 
 **Trust model: same Wi-Fi = trusted.** The helper always binds
 `0.0.0.0:47474`. No bearer-token auth — browser drive-by callers are
@@ -473,11 +630,18 @@ for the architectural reasoning.
 - `GET /api/config` — current `ResolvedPaths`. Origin-allowlisted via
   `CorsLayer` (Vite dev `:5173`, hosted GitHub Pages); same
   JSON shape as the Tauri `get_config` IPC command.
-- `PUT /api/config` — apply `ConfigPatch`, re-run `apply_resolved`,
-  return the new `ResolvedPaths`. UNC → 400 with `{error: "..."}`.
+- `PUT /api/config` — apply `ConfigPatch` (path overrides +
+  `deleteScreenshots`), re-run `apply_resolved`, return the new
+  `ConfigResponse`. UNC → 400 with `{error: "..."}`.
+- `GET /api/hotkeys` — backend-owned combos (`HotkeyConfig`).
+- `PUT /api/hotkeys` — apply `HotkeyPatch`, (re)register OS hotkeys,
+  return the EFFECTIVE config (a combo that can't be claimed reverts).
+  Unparseable combo → 400. See "Backend-owned hotkeys".
+- `POST /api/hotkeys/{suspend,resume}` — drop / re-claim the OS binds
+  while the settings recorder captures a combo (204).
 - `GET /events` — Server-Sent Events stream. `ServerEvent` (tagged
-  enum) frames; one `data: { type: "position"|"map-change", ... }`
-  per watcher emission. Keep-alive `: ping` every 25 s.
+  enum) frames; one `data: { type: "position"|"map-change"|"command", ... }`
+  per watcher / hotkey emission. Keep-alive `: ping` every 25 s.
 
 Events are fan-out twice in parallel by each watcher emit-site:
 
@@ -503,12 +667,69 @@ Frontend chooses the transport in two places only:
 
 `PositionPayload` (struct in `screenshots.rs`) and `MapChangePayload`
 (struct in `logs.rs`) on the Rust side mirror `PositionMessage` and
-`MapChangeMessage` from `packages/shared/src/ws-messages.ts`. The
+`MapChangeMessage` from `packages/shared/src/sse-messages.ts`. The
 HTTP-side `ServerEvent` enum (in `server/events.rs`) is the tagged-
 union wire format for SSE. Adding a new event type touches four
 declarations (TS schema, TS discriminated union, Rust payload struct,
-new `ServerEvent` variant); the file is still called `ws-messages.ts`
-for historical reasons (was the WS schema before the SSE migration).
+new `ServerEvent` variant) — e.g. the `hotkeys` config-resync event below.
+(The file was `ws-messages.ts` before the SSE migration; renamed to
+`sse-messages.ts`.)
+
+## Backend-owned hotkeys
+
+The backend is the single owner of the five forwarded hotkeys (`zoom-in`,
+`zoom-out`, `floor-up`, `floor-down`, `airdrop`). It registers them as
+**OS-global** shortcuts (fire even while the game is focused) and on a
+press broadcasts `ServerEvent::Command { action }` so EVERY client —
+overlay webview, browser, LAN phone — performs the action. The old
+focus-required `useBrowserShortcut` and per-client `useGlobalShortcut`
+wiring for these is gone; only the overlay **lock** combo stays
+client-registered (see "Desktop overlay").
+
+- Combos persist in `%APPDATA%/tarkov-checker/hotkeys.json` via
+  `server/hotkeys.rs` (`HotkeyStore`, sibling to `config.json`). Defaults
+  match the client's historical `tc.hotkeys.*` so an un-customised install
+  is unchanged; the client migrates customised localStorage values up once
+  (`tc.hotkeys.migrated`).
+- Registration lives in `src/hotkeys.rs` behind one `HotkeyController`
+  trait, with two impls that are **never** used together (the windowed app
+  and headless backend are mutually exclusive — both bind :47474):
+  - `TauriHotkeys` (`run()`): delegates to `tauri-plugin-global-shortcut`.
+    The five combos are registered via the **plugin Builder**
+    (`.with_shortcuts(...).with_handler(...)`) so registration happens on
+    Tauri's main thread without the `run_on_main_thread` deadlock that
+    registering inside our own `setup` hook would hit; a press-handler
+    reads an `Arc<Mutex<id→action>>` map and emits `command`.
+  - `StandaloneHotkeys` (`run_headless()`): there is no Tauri event loop,
+    so it owns a dedicated OS thread that creates a
+    `global_hotkey::GlobalHotKeyManager` and runs its **own Win32
+    `PeekMessage` pump**, reading `WM_HOTKEY` directly. Required because
+    `global-hotkey` needs a message pump on the manager's thread; the doc
+    even says so. It does NOT use `GlobalHotKeyEvent::set_event_handler`.
+- **Do not** run a standalone `global-hotkey` manager and the Tauri plugin
+  in the SAME process: the plugin installs a process-global
+  `GlobalHotKeyEvent::set_event_handler` (`OnceCell`), so a second
+  manager's events would route to the plugin's handler (which doesn't know
+  the ids) and the `receiver()` channel would get nothing. The two impls
+  above sidestep this by never coexisting.
+- The settings recorder brackets capture with the `HOTKEY_SUSPEND/RESUME`
+  window events; `useHotkeysSync` (App.vue) bridges them to
+  `POST /api/hotkeys/{suspend,resume}` so the backend drops its OS binds
+  and the pressed combo reaches the page/webview to be re-recorded (the
+  same events still drive the client-side lock shortcut).
+- Wire parity follows the same 4-declaration rule as other events:
+  `commandMessage` (zod) + union in `sse-messages.ts`, `ServerEvent::Command`
+  - `HotkeyAction` (kebab-case) in `server/events.rs`. The client dispatches
+    `command` in `pages/index.vue` (`useServerEvent('command', …)`) to
+    `mapRef`/`airdropStore`.
+- **Config re-sync:** a rebind broadcasts `ServerEvent::Hotkeys { config }`
+  (`hotkeysMessage` in `sse-messages.ts`) from BOTH PUT paths —
+  `put_hotkeys_http` (`state.event_tx`) and the `update_hotkeys` IPC command
+  (`slot.event_sender()`, same broadcast channel) — so OTHER clients re-sync
+  over SSE; the originator already has the effective config from its response.
+  `useHotkeysSync` applies it via `store.applyConfig`. This is why the
+  hotkeys section is `visible: 'always'` (read-only on a phone — no keyboard
+  to record): the phone's list stays live with what the overlay set.
 
 The logs watcher (`server/logs.rs`) tails the **latest** `log_*/`
 session folder under `logsDir` — picked by sort order (timestamps in
@@ -615,9 +836,28 @@ DeviceGuard').SecurityServicesRunning` → should be empty/`0`. VBS
 
 7. **Icons must exist for `tauri-build` on Windows.** At minimum
    `apps/desktop/src-tauri/icons/icon.ico` must be present (the Windows
-   Resource step depends on it). Placeholder PNGs at 32×32, 128×128,
-   128×128@2x are also referenced in `tauri.conf.json` and ship today
-   as solid purple squares — replace before any release.
+   Resource step depends on it). The icon set (`32x32.png`, `128x128.png`,
+   `128x128@2x.png`, `icon.ico`, `icon.icns`, the `Square*Logo`/`StoreLogo`
+   set) is generated from `apps/client/public/favicon.svg` via
+   `pnpm --filter @tarkov-checker/desktop exec tauri icon <path>/favicon.svg`
+   — the same mark the browser build uses. Re-run that after editing the SVG;
+   the generator also emits `ios/` + `android/` dirs which we delete (this is a
+   Windows-only desktop app). `icons/128x128.png` is also `include_bytes!`'d
+   into the binary by `src/notify.rs` for the toast icon — see item 8.
+
+8. **Toast notifications must register their own AppUserModelID.**
+   `tauri-plugin-notification` only stamps the toast's AUMID when the exe runs
+   from outside `target/{debug,release}` — but the portable .exe ships straight
+   out of `target/release` and dev runs from `target/debug`, so the plugin
+   always skips it and `notify-rust` falls back to PowerShell's identity (the
+   toast shows "PowerShell" + its icon). Fix: we don't use the plugin.
+   `src/notify.rs` registers `HKCU\Software\Classes\AppUserModelId\<identifier>`
+   with a `DisplayName` + `IconUri` (the favicon PNG, written to
+   `%APPDATA%/tarkov-checker/notification-icon.png`) at startup, then emits the
+   toast via `tauri-winrt-notification::Toast::new(<identifier>)`. No installer
+   / Start-Menu shortcut needed. Only used today for the one-time "still
+   running in the tray" hint (`commands::notify_tray_hint`, fired by the
+   client's `useCloseConfirm` gated on `tc.overlay.trayHintShown`).
 
 ## CI & releases
 

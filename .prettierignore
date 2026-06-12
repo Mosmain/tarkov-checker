@@ -23,3 +23,7 @@ apps/client/.eslintrc-auto-import.json
 
 # Claude Code local tooling (launch config, vendored skills)
 .claude/**
+
+# Agent instructions — hand-formatted (tables, aligned lists), owned by
+# whoever edits them, not by prettier
+CLAUDE.md

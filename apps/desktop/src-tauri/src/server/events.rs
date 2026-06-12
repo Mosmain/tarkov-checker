@@ -18,6 +18,22 @@
 use serde::Serialize;
 use tokio::sync::broadcast;
 
+use crate::server::hotkeys::HotkeyConfig;
+
+/// Action codes the backend forwards to every client on a global-hotkey
+/// press. Mirrors the TS `hotkeyActions` list in
+/// `packages/shared/src/sse-messages.ts` (kebab-case wire values). Lock is
+/// deliberately absent — it stays a client-side overlay-only shortcut.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum HotkeyAction {
+    ZoomIn,
+    ZoomOut,
+    FloorUp,
+    FloorDown,
+    Airdrop,
+}
+
 /// Wire-shape that goes onto the SSE stream. Tagged enum: the `type`
 /// field tells the client which variant arrived. Field names match the
 /// existing `position` / `map-change` Tauri-event payloads so the
@@ -38,6 +54,25 @@ pub enum ServerEvent {
         #[serde(rename = "rawMapId")]
         raw_map_id: String,
     },
+    /// A backend-registered global hotkey was pressed. Fanned out to the
+    /// SSE stream; the Tauri side also `app.emit("command", …)` so the
+    /// overlay webview reacts. Browser/phone clients dispatch the action;
+    /// no client needs the originating combo, only the action.
+    Command { action: HotkeyAction },
+    /// The backend-owned hotkey config changed (a rebind on any client).
+    /// Broadcast over SSE so every other client's view stays in sync; the
+    /// originating client already has the effective config from its PUT/IPC
+    /// response. Carries the full effective config (camelCase keys via
+    /// `HotkeyConfig`'s own serde rename).
+    Hotkeys { config: HotkeyConfig },
+}
+
+/// Payload for the Tauri `command` webview event. The channel name already
+/// carries the discriminator, so this is the `Command` variant minus its
+/// `type` tag — mirrors how `position`/`map-change` payloads are emitted.
+#[derive(Debug, Clone, Copy, Serialize)]
+pub struct CommandPayload {
+    pub action: HotkeyAction,
 }
 
 /// Capacity for the broadcast buffer. A position event is ~64 bytes

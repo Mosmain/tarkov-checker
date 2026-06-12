@@ -1,28 +1,30 @@
 <script setup lang="ts">
 import MapView from '@/features/map/components/MapView.vue';
 import OverlayHeader from '@/features/overlay/components/OverlayHeader.vue';
+import OverlayBorder from '@/features/overlay/components/OverlayBorder.vue';
+import TarkovTimeChip from '@/features/tarkov-time/TarkovTimeChip.vue';
 import OverlayLockIndicator from '@/features/overlay/components/OverlayLockIndicator.vue';
 import OverlayErrors from '@/features/overlay/components/OverlayErrors.vue';
 import AirdropStatusBanner from '@/features/airdrop/components/AirdropStatusBanner.vue';
 import { useMapSettingsStore } from '@/features/map/store';
-import { useOverlayStore } from '@/features/overlay/store';
+import { useOverlayLock } from '@/features/overlay/composables/useOverlayLock';
 import { useHotkeysStore } from '@/features/hotkeys/store';
-import { useTauriOverlay } from '@/features/overlay/composables/useTauriOverlay';
+import { showOverlayChrome } from '@/shared/tauri';
 import { useTransportStatus } from '@/features/server/composables/useTransportStatus';
-import { useGlobalShortcut } from '@/features/hotkeys/composables/useGlobalShortcut';
+import { useServerEvent } from '@/features/server/composables/useServerEvents';
 import { useCloseConfirm } from '@/features/overlay/composables/useCloseConfirm';
 import { useAirdropStore } from '@/features/airdrop/store';
 import { useAirdropTracker } from '@/features/airdrop/composables/useAirdropTracker';
 
 const { mapCode } = storeToRefs(useMapSettingsStore());
-const { clickThrough: overlayClickThrough } = storeToRefs(useOverlayStore());
-const { lockHotkey, zoomInHotkey, zoomOutHotkey, floorUpHotkey, floorDownHotkey, airdropHotkey } =
-  storeToRefs(useHotkeysStore());
+const { showControls } = useOverlayLock();
+// Only the lock combo is still client-owned; the rest arrive as backend
+// `command` events (see below) so they fire regardless of focus.
+const { lockHotkey } = storeToRefs(useHotkeysStore());
 
 const airdropStore = useAirdropStore();
 useAirdropTracker();
 
-const { isTauri } = useTauriOverlay();
 const status = useTransportStatus();
 const confirmClose = useCloseConfirm();
 
@@ -33,11 +35,30 @@ const mapError = ref<string | null>(null);
 // defineExpose. `?.` keeps every shortcut handler safe to call before the
 // component mounts (e.g. immediately after a `:key` swap on map change).
 const mapRef = ref<InstanceType<typeof MapView> | null>(null);
-useGlobalShortcut(isTauri, zoomInHotkey, () => mapRef.value?.zoomIn());
-useGlobalShortcut(isTauri, zoomOutHotkey, () => mapRef.value?.zoomOut());
-useGlobalShortcut(isTauri, floorUpHotkey, () => mapRef.value?.nextFloor());
-useGlobalShortcut(isTauri, floorDownHotkey, () => mapRef.value?.prevFloor());
-useGlobalShortcut(isTauri, airdropHotkey, () => airdropStore.press());
+
+// Hotkeys are owned by the backend now: it registers OS-global shortcuts (which
+// fire even while the game is focused) and broadcasts a `command` event. Every
+// client — overlay webview, browser, LAN phone — dispatches it here, so the
+// action runs regardless of which client (if any) has focus.
+useServerEvent('command', (msg) => {
+  switch (msg.action) {
+    case 'zoom-in':
+      mapRef.value?.zoomIn();
+      break;
+    case 'zoom-out':
+      mapRef.value?.zoomOut();
+      break;
+    case 'floor-up':
+      mapRef.value?.floorUp();
+      break;
+    case 'floor-down':
+      mapRef.value?.floorDown();
+      break;
+    case 'airdrop':
+      airdropStore.press();
+      break;
+  }
+});
 </script>
 
 <template>
@@ -49,22 +70,19 @@ useGlobalShortcut(isTauri, airdropHotkey, () => airdropStore.press());
     @map-error="mapError = $event"
   />
 
-  <OverlayHeader
-    :map-display-name="mapDisplayName"
-    :status="status"
-    :is-tauri="isTauri"
-    :overlay-click-through="overlayClickThrough"
-    @close="confirmClose"
-  />
+  <OverlayHeader :status="status" :tauri-chrome="showOverlayChrome" @close="confirmClose" />
 
   <OverlayErrors :map-error="mapError" @dismiss-map="mapError = null" @retry="mapRef?.reload()" />
 
   <AirdropStatusBanner />
 
-  <OverlayLockIndicator
-    v-if="isTauri"
-    :lock-hotkey="lockHotkey"
-    :overlay-click-through="overlayClickThrough"
-    @lock="overlayClickThrough = true"
+  <TarkovTimeChip
+    :map-display-name="mapDisplayName"
+    :status="showOverlayChrome ? undefined : status"
+    :compact-map-name="!showOverlayChrome"
   />
+
+  <OverlayBorder v-if="showOverlayChrome && showControls" />
+
+  <OverlayLockIndicator v-if="showOverlayChrome" :lock-hotkey="lockHotkey" />
 </template>

@@ -88,19 +88,21 @@ describe('useServerTransport — Tauri path', () => {
     mockIsTauri = true;
   });
 
-  it('subscribes to "position" and "map-change" and flips status to open', async () => {
-    const off1 = vi.fn();
-    const off2 = vi.fn();
-    listenMock.mockResolvedValueOnce(off1).mockResolvedValueOnce(off2);
+  it('subscribes to "position", "map-change" and "command" and flips status to open', async () => {
+    listenMock
+      .mockResolvedValueOnce(vi.fn())
+      .mockResolvedValueOnce(vi.fn())
+      .mockResolvedValueOnce(vi.fn());
 
     const { result } = mountTransport('/events');
     expect(result.status.value).toBe('connecting');
 
     await flushMounted();
 
-    expect(listenMock).toHaveBeenCalledTimes(2);
+    expect(listenMock).toHaveBeenCalledTimes(3);
     expect(listenMock.mock.calls[0]![0]).toBe('position');
     expect(listenMock.mock.calls[1]![0]).toBe('map-change');
+    expect(listenMock.mock.calls[2]![0]).toBe('command');
     expect(result.status.value).toBe('open');
     expect(useServerStreamMock).not.toHaveBeenCalled();
   });
@@ -158,10 +160,33 @@ describe('useServerTransport — Tauri path', () => {
     expect(dispatchServerEventMock).not.toHaveBeenCalled();
   });
 
+  it('validates command payloads and dispatches them', async () => {
+    listenMock.mockResolvedValueOnce(vi.fn()); // position
+    listenMock.mockResolvedValueOnce(vi.fn()); // map-change
+    let commandHandler: ((event: { payload: unknown }) => void) | null = null;
+    listenMock.mockImplementationOnce(async (_name: string, handler) => {
+      commandHandler = handler;
+      return vi.fn();
+    });
+
+    mountTransport('/events');
+    await flushMounted();
+
+    expect(commandHandler).not.toBeNull();
+
+    commandHandler!({ payload: { action: 'zoom-in' } });
+    expect(dispatchServerEventMock).toHaveBeenCalledWith({ type: 'command', action: 'zoom-in' });
+
+    dispatchServerEventMock.mockClear();
+    commandHandler!({ payload: { action: 'not-an-action' } }); // bad enum value
+    expect(dispatchServerEventMock).not.toHaveBeenCalled();
+  });
+
   it('calls every unlisten and flips status to closed on unmount', async () => {
     const off1 = vi.fn();
     const off2 = vi.fn();
-    listenMock.mockResolvedValueOnce(off1).mockResolvedValueOnce(off2);
+    const off3 = vi.fn();
+    listenMock.mockResolvedValueOnce(off1).mockResolvedValueOnce(off2).mockResolvedValueOnce(off3);
 
     const { result, app } = mountTransport('/events');
     await flushMounted();
@@ -171,6 +196,7 @@ describe('useServerTransport — Tauri path', () => {
 
     expect(off1).toHaveBeenCalledTimes(1);
     expect(off2).toHaveBeenCalledTimes(1);
+    expect(off3).toHaveBeenCalledTimes(1);
     expect(result.status.value).toBe('closed');
   });
 });

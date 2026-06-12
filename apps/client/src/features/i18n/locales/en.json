@@ -16,17 +16,27 @@
     "md": "M",
     "lg": "L"
   },
+  "edgeIndicators": "Edge arrows",
+  "edgeIndicatorsHint": "When zoomed in, show small arrows on the map edge pointing at off-screen extracts.",
   "player": "Player",
   "playerFollow": "Auto-follow",
-  "playerFollowHint": "Recenter and zoom the map on every new position update.",
+  "playerFollowHint": "Recenter the map on every new position, keeping your current zoom.",
   "playerFollowOptions": {
     "off": "Off",
+    "on": "On",
     "sm": "S",
     "md": "M",
     "lg": "L"
   },
   "settings": "Settings",
-  "systemSection": "System",
+  "position": "Position",
+  "settingsGroups": {
+    "player": "Player",
+    "loot": "Loot",
+    "quests": "Quests"
+  },
+  "close": "Close",
+  "floorWheelHint": "Floor — Alt + scroll to change",
   "floor": "Floor",
   "factions": {
     "pmc": "PMC",
@@ -34,13 +44,15 @@
     "shared": "Shared"
   },
   "paths": {
-    "heading": "Tarkov paths",
+    "heading": "Game integration",
     "gameDir": "Game folder",
     "screenshotsDir": "Screenshots folder",
     "save": "Save",
     "saved": "Saved",
     "loading": "Connecting to the helper…",
     "mobileHint": "Open this page on the machine running Tarkov to configure paths.",
+    "deleteScreenshots": "Delete screenshots after reading",
+    "deleteScreenshotsHint": "Sends each Tarkov screenshot to the Recycle Bin once its position has been read. Keeps the folder from filling up. Off by default.",
     "source": {
       "env": "from .env",
       "manual": "manual",
@@ -56,16 +68,31 @@
       "otherTitle": "Couldn't load Tarkov paths"
     }
   },
+  "updater": {
+    "available": "Update v{version} available",
+    "install": "Update",
+    "installing": "Updating…",
+    "error": "Update failed. Grab the new exe manually: GitHub → Releases."
+  },
   "overlay": {
     "heading": "Overlay",
     "alwaysOnTop": "Always on top",
+    "minimizeToTray": "Minimize to tray",
+    "minimizeToTrayHint": "Closing the window hides it to the system tray and keeps it running. Restore or quit from the tray icon.",
     "clickThrough": "Click-through",
     "clickThroughWarning": "Once enabled, you can't click the window. Restart the app to re-enable interaction.",
     "opacity": "Opacity",
     "mapOpacity": "Map opacity",
     "mapOpacityHint": "Available when overall opacity is below 100%.",
     "zoom": "Zoom",
-    "quickMenuTitle": "Transparency"
+    "quickMenuTitle": "Transparency",
+    "move": "Drag to move"
+  },
+  "display": {
+    "heading": "Display",
+    "fullscreen": "Fullscreen",
+    "fullscreenNA": "N/A",
+    "iosHint": "On iPhone, open this page in Safari, tap Share then “Add to Home Screen” for a full-screen, app-like view."
   },
   "pairing": {
     "heading": "Phone access",
@@ -81,6 +108,7 @@
   },
   "hotkeys": {
     "heading": "Hotkeys",
+    "rebindHint": "These fire globally from the PC. Rebind them in the overlay app on the PC — a phone has no keyboard to record a combo.",
     "lock": "Toggle lock",
     "lockHint": "Global shortcuts fire even when the game window is focused. Every binding needs at least one Ctrl / Alt / Shift.",
     "zoomIn": "Zoom in",
@@ -88,10 +116,14 @@
     "floorUp": "Next floor",
     "floorDown": "Previous floor",
     "airdrop": "Mark airdrop",
+    "floorWheel": "Floor by wheel",
+    "scroll": "Scroll",
+    "fixed": "Fixed shortcut — not rebindable",
     "record": "Change",
     "recording": "Recording…",
     "recordingPrompt": "Press the new combination (Esc to cancel)",
     "invalid": "Need at least one modifier (Ctrl/Alt/Shift).",
+    "altgr": "Right Alt (AltGr) can't be used — it's unreliable across layouts. Use Ctrl, Alt or Shift.",
     "conflict": "This combination is taken by another app. Try another."
   },
   "closeConfirm": {
@@ -99,6 +131,10 @@
     "message": "The window will be closed.",
     "accept": "Close",
     "reject": "Cancel"
+  },
+  "trayHint": {
+    "title": "Still running",
+    "body": "tarkov-checker is now in the system tray. Open it from there, or right-click the tray icon to quit."
   },
   "airdrop": {
     "armedFirst": "Drop tracker armed while facing the airdrop and press PrintScreen",
@@ -113,10 +149,14 @@
     "radiusHint": "How big the predicted-landing circle is on the map. Two-shot triangulation isn't perfectly precise — the circle just makes the uncertainty honest. Adjust to taste."
   },
   "tray": {
-    "toggleLock": "Toggle lock",
+    "lock": "Lock (click-through)",
     "showWindow": "Show window",
+    "alwaysOnTop": "Always on top",
+    "playerFollow": "Player follow",
+    "pairPhone": "Pair phone",
+    "copyUrl": "Copy LAN URL",
     "quit": "Quit",
-    "tooltip": "tarkov-checker"
+    "tooltip": "tarkov-checker — running"
   },
   "extractNames": {
     "bigmap": {

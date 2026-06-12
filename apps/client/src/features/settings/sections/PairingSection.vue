@@ -15,7 +15,7 @@ const { t } = useI18n();
 </script>
 
 <template>
-  <Fieldset :legend="t('pairing.heading')">
+  <div>
     <p class="text-xs opacity-70 mb-3 leading-snug">{{ t('pairing.sectionHint') }}</p>
     <Button
       :label="t('pairing.open')"
@@ -24,5 +24,5 @@ const { t } = useI18n();
       class="w-full"
       @click="pairingModalOpen = true"
     />
-  </Fieldset>
+  </div>
 </template>

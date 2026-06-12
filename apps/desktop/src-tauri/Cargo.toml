@@ -1,6 +1,6 @@
 [package]
 name = "tarkov-checker-desktop"
-version = "0.0.0"
+version = "0.1.0"
 description = "Desktop wrapper for tarkov-checker"
 authors = ["tarkov-checker"]
 edition = "2021"
@@ -15,13 +15,40 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 name = "tarkov-checker-desktop"
 path = "src/main.rs"
 
+[[bin]]
+name = "tarkov-checker-headless"
+path = "src/bin/headless.rs"
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-global-shortcut = "2"
+# Standalone global-hotkey registration for the headless backend (run_headless),
+# where there is no Tauri/plugin event loop. In the windowed app the plugin
+# above owns registration; the two never coexist in one process (the plugin
+# installs a process-global GlobalHotKeyEvent handler — see the hotkey rework
+# notes). Same accelerator-string parser the client emits.
+global-hotkey = "0.7"
+# Win32 message pump for the headless hotkey thread: the global-hotkey crate
+# needs a GetMessage/PeekMessage loop on the thread that owns its hidden
+# message window, otherwise WM_HOTKEY is never delivered. Version pinned to
+# match the one global-hotkey already pulls (no extra lockfile entry).
+windows-sys = { version = "0.59", features = ["Win32_UI_WindowsAndMessaging", "Win32_Foundation"] }
 tauri-plugin-window-state = "2"
+# System-clipboard access for the tray "Copy LAN URL" item. Used from Rust
+# (ClipboardExt in commands::copy_lan_url), so the write happens natively and
+# needs no DOM user-gesture — unlike navigator.clipboard, which a tray-menu
+# click can't satisfy.
+tauri-plugin-clipboard-manager = "2"
+# Native Windows toast for the one-time "still running in the tray" hint on the
+# first close-to-tray. We use this directly (not tauri-plugin-notification)
+# because the plugin only stamps the toast's AppUserModelID for installed apps
+# — our portable .exe runs from target/release, so the plugin leaves it as
+# PowerShell's identity. We register our own AUMID + icon (src/notify.rs) and
+# emit with it. Already in the tree transitively; pinning it as a direct dep.
+tauri-winrt-notification = "0.7"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 # Server runtime: filesystem watchers, config storage, registry probes.
@@ -69,11 +96,19 @@ mime_guess = "2"
 # inline. SVG scales without rasterisation and the encoded payload is
 # small (~256 bytes).
 qrcode = { version = "0.14", default-features = false, features = ["svg"] }
+# Sends parsed screenshots to the OS recycle bin (recoverable) when the
+# opt-in "delete after parse" setting is on — see server/screenshots.rs.
+# Recycle bin (not permanent unlink) so an accidental enable is undoable.
+trash = "5"
 # Detects the host's primary LAN IP (first non-loopback IPv4). Used by
 # pairing_qr to build the URL the QR encodes. Multi-NIC hosts can pick
 # the wrong interface (Hyper-V switch, WSL2 vNIC) — the pairing modal
 # surfaces the picked value so the user notices.
 local-ip-address = "0.6"
+# HTTP client for the portable self-updater (GitHub releases/latest +
+# asset download). native-tls = schannel on Windows — avoids rustls/ring,
+# whose build scripts are flaky on this host (see "Windows build quirks").
+reqwest = { version = "0.12", default-features = false, features = ["native-tls", "json"] }
 
 [dev-dependencies]
 # `oneshot` extension on Router for unit-testing handlers in-process —

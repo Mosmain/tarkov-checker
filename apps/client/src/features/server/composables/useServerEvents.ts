@@ -1,4 +1,4 @@
-import type { ServerMessage, ServerMessageType } from '@shared/ws-messages';
+import type { ServerMessage, ServerMessageType } from '@shared/sse-messages';
 
 type EventMap = {
   [K in ServerMessageType]: Extract<ServerMessage, { type: K }>;

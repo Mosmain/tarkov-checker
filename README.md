@@ -19,7 +19,7 @@ A live in-raid map companion for Escape from Tarkov. The overlay watches your Ta
 
 **Desktop overlay** (primary): a single 6 MB portable `.exe` that opens as a frameless transparent always-on-top window over your game. No installer, no admin rights, no background service. All game monitoring happens in-process — your position is extracted from Tarkov's PrintScreen overlay screenshots, and raid transitions are detected by parsing the active session logs.
 
-**LAN / phone PWA** (optional): a lightweight Node/Fastify server on your PC serves the same map interface to any browser on your local network — perfect for a second monitor or a phone on the same Wi-Fi.
+**LAN / phone PWA** (optional): the overlay's in-process Rust helper (axum, on `0.0.0.0:47474`) serves the same map interface to any browser on your local network — perfect for a second monitor or a phone on the same Wi-Fi. The release build serves the embedded SPA directly; in dev, Vite on :5173 proxies to it.
 
 ## Quick Start
 
@@ -30,7 +30,7 @@ A live in-raid map companion for Escape from Tarkov. The overlay watches your Ta
 3. Double-click to launch. On first run, the overlay auto-detects your Tarkov installation via the Windows registry. If that fails, manually set the paths in **Settings → Tarkov paths**.
 4. In Tarkov, press **PrintScreen** during a raid. The screenshot drops into your Tarkov screenshots folder, and the overlay reads its filename to update your position on the map.
 
-**Data storage**: settings and cache live in `%APPDATA%/tarkov-checker/`. Closing the window fully exits the app — nothing lingers in Task Manager.
+**Data storage**: settings and cache live in `%APPDATA%/tarkov-checker/`. By default, closing the window exits the app. Optionally, enable "Minimize to tray" in Settings to hide the window to the system tray instead of closing (the tray icon's "Show" restores it, "Quit" exits).
 
 ### Developers
 
@@ -70,7 +70,7 @@ If auto-detect fails, fill in **Game folder** in Settings and click **Save**. Wa
 
 ## Feature Details
 
-**Live player position**: The overlay monitors your Tarkov screenshots folder. Each PrintScreen you take in-raid embeds your world position (x, z coordinates) and viewing direction (quaternion) in the filename. The overlay parses this, places a directional arrow on the correct map at the correct rotation, and optionally auto-recenters and zooms to follow you (configurable: Off / Small / Medium / Large).
+**Live player position**: The overlay monitors your Tarkov screenshots folder. Each PrintScreen you take in-raid embeds your world position (x, z coordinates) and viewing direction (quaternion) in the filename. The overlay parses this, places a directional arrow on the correct map at the correct rotation, and optionally auto-recenters to follow you (toggle on/off in the Player section of Settings).
 
 **Auto-map switching**: The overlay tails your active Tarkov session log and detects scene-preset and Transit-location lines. When you load into a raid, it automatically flips the displayed map to match. This includes aliases for maps renamed in patch 1.0.5.0 (Factory, Reserve, Interchange). Toggle in Settings; enabled by default.
 
@@ -78,17 +78,19 @@ If auto-detect fails, fill in **Game folder** in Settings and click **Save**. Wa
 
 **Extracts overlay**: displays every known extract on every map with faction filtering (PMC / Scav / Shared) and label customization (always visible or on hover). Uses the same faction-color scheme across all UI elements.
 
-**Multi-floor maps**: Most maps have floor switchers (Customs, Factory, Shoreline, Reserve, Interchange, Streets, The Lab, Ground Zero). Woods and Lighthouse are single-level. Navigate with UI buttons or hotkeys to toggle between levels.
+**Multi-floor maps**: Most maps have floor switchers (Customs, Factory, Shoreline, Reserve, Interchange, Streets, The Lab, Ground Zero). Woods and Lighthouse are single-level. Switch floors via the stepper in the left-side layer rail, or hold **Alt** and scroll your mouse wheel over the map. Dedicated hotkeys (Floor-up/Floor-down) also work.
 
 **Window controls** (desktop overlay only):
 
 - **Drag** the transport-status pill in the top-right to move the overlay
-- **Click-through lock** (Ctrl+Alt+L) — toggle whether mouse clicks pass through to the game underneath
+- **Layer rail** (left edge of map) — quick toggles to show/hide player position, extracts, airdrop markers. Each layer has a gear icon to open its settings.
+- **Settings button** (gear in top-right cluster) — app/system preferences: overlay opacity, hotkeys, language, Tarkov paths, pairing. Layer settings are accessed via the rail.
+- **Click-through lock** (Ctrl+Alt+L) — toggle whether mouse clicks pass through to the game underneath. When locked, the interactive controls hide but glanceable readouts remain: Tarkov time, map name, connection status, floor indicator (top-left), and the unlock hotkey hint (bottom-right).
 - **Always-on-top** — keep the overlay above Tarkov even when the game window is focused
 - **Opacity slider** — adjust overall window transparency (30–100%). Map area and other UI elements fade uniformly.
-- **Map opacity slider** — independently adjust map transparency while keeping UI controls solid (0–100%, Tauri only)
+- **Map opacity slider** — independently adjust map transparency while keeping UI controls solid (0–100%)
 - **Zoom** — scale the entire UI
-- **Close** button with confirmation to prevent accidental exits
+- **Close** button with confirmation (unless "Minimize to tray" is enabled, then it hides to the tray)
 
 ## Supported Maps
 
@@ -98,7 +100,7 @@ Customs, Factory (Day/Night), Woods, Shoreline, Reserve, Interchange, Lighthouse
 
 The project consists of:
 
-- **Tauri 2 desktop wrapper** (`apps/desktop`) — native window management, file watchers, screenshot parser, log tailer, in-process HTTP server (Rust + axum) on `127.0.0.1:47474`, IPC bridge to the web UI
+- **Tauri 2 desktop wrapper** (`apps/desktop`) — native window management, file watchers, screenshot parser, log tailer, in-process HTTP server (Rust + axum) on `0.0.0.0:47474`, IPC bridge to the web UI
 - **Vue 3 + Leaflet map** (`apps/client`) — interactive map rendering, extract markers, player position arrow, UI controls; talks to the helper via Tauri IPC inside the overlay and via HTTP + SSE when opened in a regular browser
 - **Shared modules** (`packages/shared`) — map calibration data, position/event schemas, log parser, type definitions
 
@@ -106,7 +108,7 @@ Screenshots and logs are processed locally with no external API calls during gam
 
 ## Architecture Details
 
-See [CLAUDE.md](CLAUDE.md) for in-depth engineering documentation: dev workflow, Tauri overlay configuration, multi-version logs parsing, Windows build quirks, CI/release procedures, and the in-process Rust HTTP server (`/api/config`, `/events`).
+See [CLAUDE.md](CLAUDE.md) for in-depth engineering documentation: dev workflow, Tauri overlay configuration, multi-version logs parsing, Windows build quirks, CI/release procedures, and the in-process Rust HTTP server (`/api/config`, `/api/hotkeys`, `/events`).
 
 ## Credits
 
@@ -142,7 +144,7 @@ See [LICENSE](./LICENSE).
 
 **Десктоп-оверлей** (основной): один портативный `.exe` размером 6 МБ, открывающийся безрамочным прозрачным окном поверх игры. Без установщика, без админских прав, без фоновых сервисов. Все отслеживание игры происходит в одном процессе — ваша позиция извлекается из PrintScreen-скриншотов с оверлеем Tarkov, а переходы между рейдами определяются парсингом логов активной сессии.
 
-**LAN / PWA на телефоне** (опционально): легкий Node/Fastify-сервер на ПК отдаёт ту же карту в браузер любого устройства в локальной сети — идеально для второго монитора или телефона в одной Wi-Fi сети.
+**LAN / PWA на телефоне** (опционально): встроенный в оверлей Rust-хелпер (axum, на `0.0.0.0:47474`) отдаёт ту же карту в браузер любого устройства в локальной сети — идеально для второго монитора или телефона в одной Wi-Fi сети. Release-сборка отдаёт встроенный SPA напрямую; в режиме разработки Vite на :5173 проксирует к нему.
 
 ## Быстрый старт
 
@@ -153,7 +155,7 @@ See [LICENSE](./LICENSE).
 3. Запусти двойным кликом. При первом запуске оверлей автоматически обнаружит твою установку Tarkov через реестр Windows. Если не получится, вручную укажи пути в **Settings → Tarkov paths**.
 4. В Tarkov нажми **PrintScreen** во время рейда. Скриншот упадёт в папку скриншотов Tarkov, а оверлей прочитает имя файла и обновит твою позицию на карте.
 
-**Хранение данных**: настройки и кэш живут в `%APPDATA%/tarkov-checker/`. Закрытие окна полностью завершает приложение — ничего не остаётся в Диспетчере задач.
+**Хранение данных**: настройки и кэш живут в `%APPDATA%/tarkov-checker/`. По умолчанию закрытие окна завершает приложение. Опционально включи "Minimize to tray" в Settings, чтобы скрыть окно в системный трей вместо закрытия (пункт "Show" в меню трея его восстанавливает, "Quit" завершает приложение).
 
 ### Для разработчиков
 
@@ -193,7 +195,7 @@ pnpm --filter @tarkov-checker/desktop tauri:dev
 
 ## Подробное описание функций
 
-**Отслеживание позиции игрока**: оверлей мониторит папку скриншотов Tarkov. Каждый PrintScreen во время рейда содержит в имени файла твои мировые координаты (x, z) и направление взгляда (кватернион). Оверлей парсит это, ставит стрелку на правильную карту под правильным углом и опционально автоцентрирует и приближает вид, чтобы следить за тобой (настраивается: Выключено / Малый / Средний / Большой).
+**Отслеживание позиции игрока**: оверлей мониторит папку скриншотов Tarkov. Каждый PrintScreen во время рейда содержит в имени файла твои мировые координаты (x, z) и направление взгляда (кватернион). Оверлей парсит это, ставит стрелку на правильную карту под правильным углом и опционально автоцентрирует вид, чтобы следить за тобой (включается/выключается в разделе Player в Settings).
 
 **Автосмена карт**: оверлей отслеживает активный лог сессии Tarkov и ловит строки scene-preset и Transit-location. Когда ты загружаешься в рейд, отображаемая карта автоматически переключается. Это включает поддержку переименованных в патче 1.0.5.0 карт (Factory, Reserve, Interchange). Включается в Settings; по умолчанию включено.
 
@@ -201,17 +203,19 @@ pnpm --filter @tarkov-checker/desktop tauri:dev
 
 **Оверлей выходов**: отображает все известные выходы на каждой карте с фильтром по фракциям (PMC / Scav / Shared) и настройкой видимости подписей (всегда или при наведении). Использует одну цветовую схему фракций по всему интерфейсу.
 
-**Многоэтажные карты**: на большинстве карт есть переключатели этажей (Customs, Factory, Shoreline, Reserve, Interchange, Streets, The Lab, Ground Zero). Woods и Lighthouse одноуровневые. Навигируй кнопками UI или хоткеями между уровнями.
+**Многоэтажные карты**: на большинстве карт есть переключатели этажей (Customs, Factory, Shoreline, Reserve, Interchange, Streets, The Lab, Ground Zero). Woods и Lighthouse одноуровневые. Переключай этажи через степпер на левом rail-е карты, или зажми **Alt** и крутни колёсико мыши над картой. Работают и отдельные хоткеи (Floor-up/Floor-down).
 
 **Управление окном** (только десктоп-оверлей):
 
 - **Перетаскивание**: транспортный статус в правом верхнем углу — перетащи, чтобы переместить оверлей
-- **Блокировка клика** (Ctrl+Alt+L) — переключай, проходят ли клики мышки сквозь окно в игру
+- **Layer rail** (левый край карты) — быстрые переключатели для показа/скрытия позиции игрока, выходов, маркеров дропа. У каждого слоя есть иконка шестерёнки для его настроек.
+- **Кнопка Settings** (шестерёнка в правом верхнем кластере) — параметры приложения и системы: прозрачность оверлея, хоткеи, язык, пути Tarkov, pairing. Настройки слоёв открываются через rail.
+- **Блокировка клика** (Ctrl+Alt+L) — переключай, проходят ли клики мышки сквозь окно в игру. Когда заблокирован, интерактивные элементы скрываются, но видная информация остаётся: время Tarkov, имя карты, статус соединения, индикатор этажа (левый верхний угол) и подсказка по хоткею разблокировки (правый нижний угол).
 - **Поверх всех окон** — держи оверлей над Tarkov, даже когда окно игры в фокусе
 - **Ползунок прозрачности** — изменяй общую видимость окна (30–100%). Карта и весь интерфейс исчезают равномерно.
-- **Ползунок прозрачности карты** — независимо изменяй видимость карты, сохраняя UI элементы непрозрачными (0–100%, только Tauri)
+- **Ползунок прозрачности карты** — независимо изменяй видимость карты, сохраняя UI элементы непрозрачными (0–100%)
 - **Масштаб** — меняй размер всего интерфейса
-- **Кнопка закрытия** с подтверждением, чтобы не закрыть случайно
+- **Кнопка закрытия** с подтверждением (если не включена опция "Minimize to tray", тогда скрывает в трей)
 
 ## Поддерживаемые карты
 
@@ -221,7 +225,7 @@ Customs, Factory (День/Ночь), Woods, Shoreline, Reserve, Interchange, Li
 
 Проект состоит из:
 
-- **Tauri 2 десктоп-обёртка** (`apps/desktop`) — управление окнами, слежение за файлами, парсинг скриншотов, отслеживание логов, in-process HTTP-сервер (Rust + axum) на `127.0.0.1:47474`, IPC-мост к веб-интерфейсу
+- **Tauri 2 десктоп-обёртка** (`apps/desktop`) — управление окнами, слежение за файлами, парсинг скриншотов, отслеживание логов, in-process HTTP-сервер (Rust + axum) на `0.0.0.0:47474`, IPC-мост к веб-интерфейсу
 - **Vue 3 + Leaflet карта** (`apps/client`) — интерактивный рендеринг карты, маркеры выходов, стрелка позиции игрока, управление UI; внутри оверлея общается с хелпером через Tauri IPC, в обычном браузере — через HTTP + SSE
 - **Общие модули** (`packages/shared`) — калибровка карт, схемы позиций/событий, парсер логов, определения типов
 
@@ -229,7 +233,7 @@ Customs, Factory (День/Ночь), Woods, Shoreline, Reserve, Interchange, Li
 
 ## Архитектурные детали
 
-Смотри [CLAUDE.md](CLAUDE.md) для подробной инженерной документации: dev workflow, конфигурация Tauri-оверлея, парсинг многоверсионных логов, подводные камни Windows-сборки, процедуры CI/релиза, и in-process Rust HTTP-сервер (`/api/config`, `/events`).
+Смотри [CLAUDE.md](CLAUDE.md) для подробной инженерной документации: dev workflow, конфигурация Tauri-оверлея, парсинг многоверсионных логов, подводные камни Windows-сборки, процедуры CI/релиза, и in-process Rust HTTP-сервер (`/api/config`, `/api/hotkeys`, `/events`).
 
 ## Благодарности
 

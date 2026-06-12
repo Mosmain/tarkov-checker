@@ -3,8 +3,9 @@
  * runs both inside the Tauri overlay and as a plain browser page:
  *
  * - In Tauri: invokes a named IPC command via `@tauri-apps/api/core`.
- * - In a plain browser: makes a same-origin HTTP call (Vite proxies /api to
- *   Fastify in dev; Fastify serves both the SPA and /api in prod).
+ * - In a plain browser: makes a same-origin HTTP call to the in-process Rust
+ *   helper (Vite proxies /api to it on :47474 in dev; in release the helper
+ *   serves both the embedded SPA and /api itself).
  *
  * The raw response is fed through `parse` (typically a zod schema's `.parse`)
  * so callers get a validated, typed result either way.
@@ -64,5 +65,7 @@ async function httpRequest<T>(http: HttpCall, parse: (data: unknown) => T): Prom
     const detail = typeof body === 'object' && body !== null && 'error' in body ? body.error : body;
     throw new Error(`${method} ${http.path} failed: HTTP ${r.status} — ${JSON.stringify(detail)}`);
   }
+  // 204 No Content (e.g. /api/hotkeys/suspend) has no body to parse.
+  if (r.status === 204) return parse(undefined);
   return parse(await r.json());
 }

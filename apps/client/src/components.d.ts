@@ -11,21 +11,27 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    Accordion: typeof import('primevue/accordion')['default']
+    AccordionContent: typeof import('primevue/accordioncontent')['default']
+    AccordionHeader: typeof import('primevue/accordionheader')['default']
+    AccordionPanel: typeof import('primevue/accordionpanel')['default']
     Button: typeof import('primevue/button')['default']
     Checkbox: typeof import('primevue/checkbox')['default']
     ConfirmDialog: typeof import('primevue/confirmdialog')['default']
     Dialog: typeof import('primevue/dialog')['default']
     Drawer: typeof import('primevue/drawer')['default']
-    Fieldset: typeof import('primevue/fieldset')['default']
     IconField: typeof import('primevue/iconfield')['default']
     InputIcon: typeof import('primevue/inputicon')['default']
     InputText: typeof import('primevue/inputtext')['default']
+    Listbox: typeof import('primevue/listbox')['default']
     Message: typeof import('primevue/message')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
-    Select: typeof import('primevue/select')['default']
     SelectButton: typeof import('primevue/selectbutton')['default']
     Slider: typeof import('primevue/slider')['default']
     ToggleSwitch: typeof import('primevue/toggleswitch')['default']
+  }
+  export interface GlobalDirectives {
+    Tooltip: typeof import('primevue/tooltip')['default']
   }
 }

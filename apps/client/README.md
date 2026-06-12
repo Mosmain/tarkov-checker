@@ -1,6 +1,6 @@
 # @tarkov-checker/client
 
-Vue + Leaflet map. Runs both inside the Tauri overlay (`apps/desktop`) and as a plain browser page on phones over LAN (the same prod build Fastify serves at `:3000/`). Same code path, different transport (Tauri events vs SSE / `EventSource`).
+Vue + Leaflet map. Runs both inside the Tauri overlay (`apps/desktop`) and as a plain browser page on phones over LAN (the same prod build the in-process Rust helper in `apps/desktop` serves at `:47474/`; dev uses Vite on `:5173`, which proxies `/api` + `/events` to the helper). Same code path, different transport (Tauri events vs SSE / `EventSource`).
 
 Specifics about Tauri internals, Windows build quirks, and dev workflow live in [the repo CLAUDE.md](../../CLAUDE.md). This README is for contributors working **inside the client**.
 
@@ -21,15 +21,15 @@ Specifics about Tauri internals, Windows build quirks, and dev workflow live in 
 app/        Composition root — router config.
 pages/      File-based routes. Add a *.vue here → it becomes a route. typed-router.d.ts is regenerated on dev/build.
 features/   One folder per business feature, each fully owns its slice:
-  map/         Leaflet map framework (useLeafletMap, useFloorSwitcher), layers registry + built-in layers (extracts/player/airdrop), MapView component, static extracts dataset (data/extracts/<code>.json — one file per canonical map)
+  map/         Leaflet map framework (useLeafletMap, useLayerVisibility), layers registry + built-in layers (extracts/player/airdrop), MapView + LayerRail components, static extracts dataset (data/extracts/<code>.json — one file per canonical map)
   airdrop/     Airdrop triangulation state machine, screenshot tracker, settings section
   overlay/     Tauri overlay window controls, opacity/zoom/mapOpacity sync, tray icon, overlay-specific components
-  hotkeys/     Global shortcuts, HotkeyRecorder, accelerator parser
-  server/      SSE/HTTP transport, typed IPC contract, server event bus, /api/config client
+  hotkeys/     Backend-owned combos synced via thin store (fetch/PUT), HotkeyRecorder, accelerator parser; only the overlay lock stays client-registered
+  server/      SSE/HTTP transport, typed IPC contract, server event bus, /api/config + /api/hotkeys clients
   i18n/        createI18n instance, store (apiLang persisted), locales/<code>.json files
   settings/    Settings registry, SettingsPanel.vue, section sub-components
 shared/     Cross-feature utilities (persisted-store, config) — no business logic
-App.vue     Tiny: <RouterView/> + ConfirmDialog + MapQuickMenu + side effects (transport, tray, lock hotkey)
+App.vue     Tiny: <RouterView/> + ConfirmDialog + MapQuickMenu + side effects (transport, tray, lock hotkey, hotkeys sync — backend load + recorder suspend/resume bridge)
 main.ts     createApp → pinia + router + i18n + PrimeVue
 theme.ts    PrimeVue Aura preset override (primary = purple)
 styles.css  Tailwind imports, font-faces, dark mode token tweaks
@@ -86,15 +86,16 @@ For nested or dynamic routes (`/raids/[id]`), see [Vue Router file-based docs](h
 2. Inside the feature: `./X` and `../X` imports.
 3. Other features depend on yours via `@/features/<name>/<thing>`.
 4. If the feature has persisted user settings — create `store.ts` using [`persistedRef`](./src/shared/persisted-store.ts) from `@/shared/persisted-store`. Each setting gets its own key like `tc.<name>.<field>`.
-5. If the feature has its own settings UI:
+5. If the feature has its own SYSTEM/app settings UI (the gear drawer). Map-layer
+   settings live on the layer registration instead — see step 6.
    - Create a section component `XxxSection.vue` under [`features/settings/sections/`](./src/features/settings/sections/).
    - Create `src/features/<name>/settings.ts` that calls `registerSettingsSection()`:
      ```ts
      import { registerSettingsSection } from '@/features/settings/registry';
      registerSettingsSection({
        id: '<name>',
-       group: 'main', // or 'system'
        order: 30, // multiples of 10
+       titleKey: 'xxx.heading', // i18n key for the section title
        visible: 'always', // or 'tauri', 'desktop-or-tauri'
        component: XxxSection,
      });
@@ -102,7 +103,8 @@ For nested or dynamic routes (`/raids/[id]`), see [Vue Router file-based docs](h
    - That's it — `main.ts` auto-discovers the file via `import.meta.glob('@/features/*/settings.ts', { eager: true })`.
 6. If the feature adds a map layer (new extract/player marker/etc):
    - Create `src/features/map/layers/<name>/` with `useXxxLayer.ts` and `index.ts`.
-   - Call `registerMapLayer({ id, mount: useXxxLayer })` in `index.ts`.
+   - Call `registerMapLayer({ id, mount: useXxxLayer, category, order, titleKey, settingsComponent })` in `index.ts` — the rail category, order, display name, and optional inline settings component all live on the layer registration (no separate `settings.ts` for layers).
+   - Inside your composable, read `ctx.visible` (wired to the on-map LayerRail toggle via `useLayerVisibility(id)`) and `watch` it to add/remove your Leaflet root when toggled.
    - `main.ts` auto-discovers via `import.meta.glob('@/features/map/layers/*/index.ts', { eager: true })`.
 
 ### Add a new locale
@@ -182,15 +184,15 @@ pnpm lint       # eslint --max-warnings=0
 ## Where things connect
 
 - **Tauri detection** — centralized in [`shared/tauri.ts`](./src/shared/tauri.ts) as `isTauri` const. Checked at module load time, safe for non-DOM contexts. Used by transport layer, router, overlay composables, and settings visibility logic.
-- **Server-pushed messages** — schema in [`@shared/ws-messages`](../../packages/shared/src/ws-messages.ts). Position + map-change events; Node server pushes over SSE, Rust port emits as Tauri events. Client uses the same Zod schema either way.
+- **Server-pushed messages** — schema in [`@shared/sse-messages`](../../packages/shared/src/sse-messages.ts). Position, map-change, command (backend-owned hotkey press), and hotkeys (config re-sync after a rebind) events; the in-process Rust helper pushes over SSE to browsers, and emits as Tauri events to the overlay webview. Client uses the same Zod schema either way.
 - **Tarkov map calibration** (CRS, bounds, rotation) — [`@shared/maps`](../../packages/shared/src/maps.ts). Modifying calibration affects both desktop and browser.
 - **Map localization** — `useMapI18n()` composable in [`features/map/composables/useMapI18n.ts`](./src/features/map/composables/useMapI18n.ts) provides `localizedMapName(code)` with `te → t → displayName` fallback chain. Used in MapView + MapSection to stay in sync.
 - **HTTP / IPC** — single dispatch in [`features/server/api/transport.ts`](./src/features/server/api/transport.ts).
-- **Settings registry** — `registerSettingsSection()` in [`features/settings/registry.ts`](./src/features/settings/registry.ts). Each feature calls this at module load via `features/<name>/settings.ts`. Auto-discovered by `main.ts`.
-- **Map layers registry** — `registerMapLayer()` in [`features/map/layers/registry.ts`](./src/features/map/layers/registry.ts). Each layer calls this via `features/map/layers/<name>/index.ts`. Auto-discovered by `main.ts`; mounted by `MapView.vue` in setup().
+- **Settings registry** — `registerSettingsSection()` in [`features/settings/registry.ts`](./src/features/settings/registry.ts) — **system/app settings only** (gear-drawer accordion). Each feature calls it at module load via `features/<name>/settings.ts`. Map-LAYER settings live on the map-layer registration instead (below).
+- **Map layers registry** — `registerMapLayer()` in [`features/map/layers/registry.ts`](./src/features/map/layers/registry.ts) — the single source of truth for layers, carrying each layer's rail `category`/`order`/`titleKey`/`settingsComponent`. Each layer calls it via `features/map/layers/<name>/index.ts`; auto-discovered by `main.ts`, mounted by `MapView.vue`, rendered by the on-map `LayerRail`. Per-layer show/hide is `useLayerVisibility`; edge-indicator layers read the rail rect from `useRailObstacle`.
 
 ## See also
 
-- [`CLAUDE.md`](../../CLAUDE.md) — repo-wide context: Tauri internals, Windows build quirks (HVCI/Defender), path resolution dual implementation (Node + Rust), why ASCII-only repo path matters.
+- [`CLAUDE.md`](../../CLAUDE.md) — repo-wide context: Tauri internals, Windows build quirks (HVCI/Defender), Rust path resolution, why ASCII-only repo path matters.
 - [`apps/desktop/README.md`](../desktop/README.md) — Tauri overlay specifics.
-- [`packages/shared/`](../../packages/shared/) — Zod schemas + map calibration tables shared between client, Node server, and Rust port.
+- [`packages/shared/`](../../packages/shared/) — Zod schemas + map calibration tables shared between the client and the Rust helper.

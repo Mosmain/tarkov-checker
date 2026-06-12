@@ -1,0 +1,38 @@
+<script setup lang="ts">
+import { useDisplayEnv } from '../composables/useDisplayEnv';
+import { useFullscreenToggle } from '../composables/useFullscreenToggle';
+
+const { t } = useI18n();
+const { isIos, isStandalone } = useDisplayEnv();
+const { isFullscreen, isSupported: fsSupported, toggle: toggleFullscreen } = useFullscreenToggle();
+
+// Hide the fullscreen row once installed as a PWA (already chrome-free).
+const showFullscreenRow = computed(() => !isStandalone.value);
+const fullscreenToggleable = computed(() => fsSupported.value && !isIos);
+
+// ToggleSwitch bound to live fullscreen state — set just toggles, the getter
+// reflects the real state once `fullscreenchange` fires (no desync flash).
+const fullscreenModel = computed({
+  get: () => isFullscreen.value,
+  set: () => {
+    void toggleFullscreen().catch(() => undefined);
+  },
+});
+</script>
+
+<template>
+  <div v-if="showFullscreenRow" class="space-y-3">
+    <div class="flex items-center justify-between gap-3">
+      <label class="text-sm" for="display-fullscreen">{{ t('display.fullscreen') }}</label>
+      <ToggleSwitch
+        v-if="fullscreenToggleable"
+        v-model="fullscreenModel"
+        input-id="display-fullscreen"
+      />
+      <span v-else class="text-xs opacity-50">{{ t('display.fullscreenNA') }}</span>
+    </div>
+    <p v-if="!fullscreenToggleable && isIos" class="text-[10px] leading-relaxed opacity-70">
+      {{ t('display.iosHint') }}
+    </p>
+  </div>
+</template>

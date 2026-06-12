@@ -21,11 +21,13 @@ const {
   canSavePaths,
   savePaths,
   statusIconClass,
+  deleteScreenshots,
+  setDeleteScreenshots,
 } = useServerPaths(canEditPaths);
 </script>
 
 <template>
-  <Fieldset :legend="t('paths.heading')">
+  <div class="space-y-3">
     <Message
       v-if="pathsError"
       :severity="pathsError.kind === 'no-helper' ? 'warn' : 'error'"
@@ -64,6 +66,7 @@ const {
             :readonly="!canEditPaths"
             size="small"
             fluid
+            @keyup.enter="canSavePaths && savePaths()"
           />
         </IconField>
       </div>
@@ -82,6 +85,7 @@ const {
             :readonly="!canEditPaths"
             size="small"
             fluid
+            @keyup.enter="canSavePaths && savePaths()"
           />
         </IconField>
       </div>
@@ -102,6 +106,25 @@ const {
       <p v-else class="text-[10px] leading-relaxed opacity-70">
         {{ t('paths.mobileHint') }}
       </p>
+
+      <div class="border-t border-surface-700 pt-3">
+        <div class="flex items-center justify-between gap-3">
+          <label for="delete-screenshots-toggle" class="text-xs">
+            {{ t('paths.deleteScreenshots') }}
+          </label>
+          <!-- Editable everywhere incl. phones (unlike the paths): a switch
+               needs no keyboard and a stray flip is a recoverable, single PUT. -->
+          <ToggleSwitch
+            class="shrink-0"
+            input-id="delete-screenshots-toggle"
+            :model-value="deleteScreenshots"
+            @update:model-value="setDeleteScreenshots"
+          />
+        </div>
+        <p class="mt-1.5 text-[10px] leading-relaxed opacity-70">
+          {{ t('paths.deleteScreenshotsHint') }}
+        </p>
+      </div>
     </div>
-  </Fieldset>
+  </div>
 </template>

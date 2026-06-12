@@ -80,6 +80,12 @@ body,
   height: 100%;
   margin: 0;
   background: transparent;
+  /* Fixed full-screen app shell — never page-scroll. On iOS Safari a scrollable
+     body lets the bottom toolbar retract, which swells `dvh` and breaks the
+     vertically-centred rail/flyout. Locking scroll keeps the toolbar (and the
+     `100%`/`svh` height) stable; `100%` resolves to the small viewport. */
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 /* Tauri overlay mode: round the painted area for a softer overlay shape.
@@ -103,19 +109,47 @@ html.overlay-window #app {
   opacity: var(--overlay-opacity, 1);
 }
 
-/* Unlocked overlay: trace the rounded window edge so the user can find the
-   resize/drag boundary even after they've dialled the map opacity to 0 and
-   the corners are otherwise invisible. ::after sits inside body's clip, so
-   the border lines up with the rounded-rectangle boundary itself. Locked
-   state hides it — the lock indicator already conveys "no interaction". */
-html.overlay-window.overlay-unlocked body::after {
-  content: '';
+/* Unlocked overlay: an animated dashed boundary traces the rounded window edge
+   so the player can find the drag/resize boundary even at 0 map opacity. It's
+   an SVG stroke (OverlayBorder.vue), not a CSS border, so the marching dashes
+   follow the rounded corners; teleported to <body> so the opacity slider (which
+   dims #app) leaves it at full strength. Mounted only while unlocked. */
+.overlay-border {
   position: fixed;
   inset: 0;
-  border: 2px solid rgb(from var(--p-primary-400) r g b / 0.9);
-  border-radius: 12px;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
   z-index: 9999;
+}
+.overlay-border rect {
+  x: 1.5px;
+  y: 1.5px;
+  width: calc(100% - 3px);
+  height: calc(100% - 3px);
+  rx: 11px;
+  ry: 11px;
+  fill: none;
+  /* Fallback for older engines without relative-color syntax (cf. .leaflet-container). */
+  stroke: var(--p-primary-400);
+  stroke: rgb(from var(--p-primary-400) r g b / 0.9);
+  stroke-width: 2px;
+  /* The rect carries pathLength="100", so dash + offset are in normalized units
+     where the whole perimeter = 100. A 0.5+0.5 period divides 100 exactly (100
+     dashes) → the loop closes seamlessly at the start corner regardless of the
+     (resizable) window size, and one period of offset animates seamlessly. */
+  stroke-dasharray: 0.5 0.5;
+  animation: overlay-ants 0.8s linear infinite;
+}
+@keyframes overlay-ants {
+  to {
+    stroke-dashoffset: -1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .overlay-border rect {
+    animation: none;
+  }
 }
 
 .leaflet-container {
@@ -144,6 +178,46 @@ html.overlay-window.overlay-unlocked body::after {
 .leaflet-extracts-pane .extract-icon-divicon .extract-icon-slice {
   position: absolute;
   inset: 0;
+}
+
+/* Off-screen extract arrows (#18). Plain overlay over the Leaflet container
+ * (not a pane), so the arrows stay pixel-fixed to the viewport edge while the
+ * map pane is dragged. Above the map, below Leaflet controls; never clickable. */
+.edge-indicators {
+  position: absolute;
+  inset: 0;
+  z-index: 600;
+  overflow: hidden;
+  pointer-events: none;
+}
+.edge-indicator {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  margin-left: -11px;
+  margin-top: -11px;
+  transform-origin: center;
+  filter: drop-shadow(0 0 3px rgb(0 0 0 / 0.85));
+}
+
+/* Safe-area offsets for floating controls (#24) — clear the notch / Dynamic
+ * Island / home indicator / rounded corners on phones (index.html sets
+ * viewport-fit=cover so the page draws under them). The insets are 0 on
+ * desktop, so these collapse to the base 0.75rem / 0.5rem there. */
+.sa-top {
+  top: calc(0.75rem + env(safe-area-inset-top));
+}
+.sa-bottom {
+  bottom: calc(0.75rem + env(safe-area-inset-bottom));
+}
+.sa-left {
+  left: calc(0.75rem + env(safe-area-inset-left));
+}
+.sa-right {
+  right: calc(0.75rem + env(safe-area-inset-right));
+}
+.sa-pt {
+  padding-top: calc(0.5rem + env(safe-area-inset-top));
 }
 
 /* Tooltip container — Leaflet adds .leaflet-tooltip; we hide its built-in

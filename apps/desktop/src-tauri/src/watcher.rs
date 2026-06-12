@@ -2,7 +2,8 @@
 //! we can swap them atomically when resolved paths change.
 
 use std::path::PathBuf;
-use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 
 use tauri::AppHandle;
 use tokio::sync::broadcast;
@@ -37,15 +38,30 @@ pub struct WatcherSlot {
     screenshots: Mutex<Option<ScreenshotWatcher>>,
     logs: Mutex<Option<LogsWatcher>>,
     event_tx: broadcast::Sender<ServerEvent>,
+    /// "Delete screenshot after parse" toggle. Shared (Arc) so a running
+    /// screenshot watcher thread reads the live value — flipping it via
+    /// `set_delete_screenshots` takes effect without restarting the watcher.
+    delete_screenshots: Arc<AtomicBool>,
 }
 
 impl Default for WatcherSlot {
     fn default() -> Self {
+        Self::with_sender(events::channel())
+    }
+}
+
+impl WatcherSlot {
+    /// Build a slot around an existing broadcast sender. Used by `run()` /
+    /// `run_headless()`, which create the channel up front so the hotkey
+    /// press handler can push `Command` events into the same stream the
+    /// watchers feed.
+    pub fn with_sender(event_tx: broadcast::Sender<ServerEvent>) -> Self {
         Self {
             apply_lock: AsyncMutex::new(()),
             screenshots: Mutex::new(None),
             logs: Mutex::new(None),
-            event_tx: events::channel(),
+            event_tx,
+            delete_screenshots: Arc::new(AtomicBool::new(false)),
         }
     }
 }
@@ -67,6 +83,12 @@ impl WatcherSlot {
     pub fn event_sender(&self) -> broadcast::Sender<ServerEvent> {
         self.event_tx.clone()
     }
+
+    /// Update the shared delete-screenshots flag. A running watcher reads it
+    /// live, so no restart is needed when only this toggle changes.
+    pub fn set_delete_screenshots(&self, enabled: bool) {
+        self.delete_screenshots.store(enabled, Ordering::Relaxed);
+    }
 }
 
 /// Apply the resolved paths: start each watcher if its path is usable,
@@ -76,7 +98,7 @@ impl WatcherSlot {
 /// Acquires `apply_lock` for the full duration so that concurrent calls
 /// (e.g. two rapid `update_config` IPC commands) are serialised rather
 /// than interleaved — preventing duplicate watcher instances.
-pub async fn apply_resolved(app: &AppHandle, slot: &WatcherSlot, resolved: &ResolvedPaths) {
+pub async fn apply_resolved(app: Option<&AppHandle>, slot: &WatcherSlot, resolved: &ResolvedPaths) {
     let _guard = slot.apply_lock.lock().await;
 
     let screenshots_dir = match (
@@ -87,7 +109,12 @@ pub async fn apply_resolved(app: &AppHandle, slot: &WatcherSlot, resolved: &Reso
         _ => None,
     };
     match screenshots_dir {
-        Some(dir) => match screenshots::start(dir, app.clone(), slot.event_tx.clone()) {
+        Some(dir) => match screenshots::start(
+            dir,
+            app.cloned(),
+            slot.event_tx.clone(),
+            slot.delete_screenshots.clone(),
+        ) {
             Ok(w) => slot.replace_screenshots(Some(w)),
             Err(err) => {
                 eprintln!("[watcher] screenshots start failed: {err:#}");
@@ -102,7 +129,7 @@ pub async fn apply_resolved(app: &AppHandle, slot: &WatcherSlot, resolved: &Reso
         _ => None,
     };
     match logs_dir {
-        Some(dir) => match logs::start(dir, app.clone(), slot.event_tx.clone()) {
+        Some(dir) => match logs::start(dir, app.cloned(), slot.event_tx.clone()) {
             Ok(w) => slot.replace_logs(Some(w)),
             Err(err) => {
                 eprintln!("[watcher] logs start failed: {err:#}");

@@ -4,19 +4,19 @@ import PairingSection from '@/features/settings/sections/PairingSection.vue';
 
 registerSettingsSection({
   id: 'overlay',
-  group: 'main',
-  order: 50,
+  order: 10,
   visible: 'tauri',
+  titleKey: 'overlay.heading',
   component: OverlaySection,
 });
 
-// Pairing lives in system: it's a host-level action ("hand out QR to my
-// phone"), not a per-overlay preference. Tauri-only — pairing_qr is an
-// IPC command, and pairing yourself from a phone makes no sense.
+// Pairing is a host-level action ("hand out QR to my phone"), not a per-overlay
+// preference. Tauri-only — pairing_qr is an IPC command, and pairing yourself
+// from a phone makes no sense.
 registerSettingsSection({
   id: 'pairing',
-  group: 'system',
-  order: 30,
+  order: 50,
   visible: 'tauri',
+  titleKey: 'pairing.heading',
   component: PairingSection,
 });

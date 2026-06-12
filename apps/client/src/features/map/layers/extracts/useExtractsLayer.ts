@@ -1,8 +1,11 @@
 import L, { type Marker, type LayerGroup } from 'leaflet';
+import { FACTION_COLORS } from '@shared/maps';
 import { makeIcon } from './icon';
 import { buildTooltipHtml, sortedEntries, type ExtractEntry } from './tooltip';
+import { createEdgeIndicators, type EdgeArrow } from './useEdgeIndicators';
 import { extractsForMap } from '@/features/map/data/extracts';
 import { useMapSettingsStore } from '@/features/map/store';
+import { useRailObstacle } from '@/features/map/composables/useRailObstacle';
 import type { MapLayerContext } from '../registry';
 
 export type LabelMode = 'hover' | 'always';
@@ -33,12 +36,14 @@ interface RawExtract {
 }
 
 export function useExtractsLayer(ctx: MapLayerContext): void {
-  const { map, mapCode } = ctx;
+  const { map, mapCode, visible } = ctx;
   const { t, locale } = useI18n();
-  const { extractFactions, extractLabelMode, extractLabelSize } =
+  const { extractFactions, extractLabelMode, extractLabelSize, edgeIndicators } =
     storeToRefs(useMapSettingsStore());
+  const railRect = useRailObstacle();
 
   let extractsLayer: LayerGroup | null = null;
+  let edge: ReturnType<typeof createEdgeIndicators> | null = null;
   const entries: MarkerEntry[] = [];
   const state = {
     visibleFactions: new Set<string>(extractFactions.value),
@@ -80,6 +85,34 @@ export function useExtractsLayer(ctx: MapLayerContext): void {
         extractsLayer.removeLayer(entry.marker);
       }
     }
+    edge?.update();
+  }
+
+  // Off-screen extract arrows (opt-in). One arrow per visible merged extract,
+  // coloured by its first visible faction; the overlay itself decides which
+  // are off-screen on each map move.
+  function arrowData(): EdgeArrow[] {
+    const out: EdgeArrow[] = [];
+    for (const entry of entries) {
+      const first = effectiveEntries(entry)[0];
+      if (!first) continue;
+      out.push({
+        lat: entry.extract.position.z,
+        lng: entry.extract.position.x,
+        color: FACTION_COLORS[first.faction],
+      });
+    }
+    return out;
+  }
+
+  function syncEdge(): void {
+    if (edgeIndicators.value && visible.value && map.value) {
+      if (edge) edge.update();
+      else edge = createEdgeIndicators(map.value, arrowData, () => railRect.value);
+    } else if (edge) {
+      edge.destroy();
+      edge = null;
+    }
   }
 
   function reopenAllPermanentTooltips(): void {
@@ -95,6 +128,14 @@ export function useExtractsLayer(ctx: MapLayerContext): void {
     const i18nKey = `extractNames.${mapCode}.${ex.key}`;
     const v = t(i18nKey);
     return v === i18nKey ? ex.key : v;
+  }
+
+  function applyVisible(): void {
+    if (!map.value || !extractsLayer) return;
+    const has = map.value.hasLayer(extractsLayer);
+    if (visible.value && !has) extractsLayer.addTo(map.value);
+    if (!visible.value && has) map.value.removeLayer(extractsLayer);
+    syncEdge();
   }
 
   function loadExtracts(): void {
@@ -149,6 +190,8 @@ export function useExtractsLayer(ctx: MapLayerContext): void {
       entries.push({ marker, extract: ex });
     }
     refreshMarkers();
+    syncEdge();
+    applyVisible();
   }
 
   // Single source of truth for "the map exists now": loads markers + attaches
@@ -162,10 +205,15 @@ export function useExtractsLayer(ctx: MapLayerContext): void {
       if (m) {
         m.on('click', reopenAllPermanentTooltips);
         loadExtracts();
+      } else if (edge) {
+        edge.destroy();
+        edge = null;
       }
     },
     { immediate: true },
   );
+
+  watch(edgeIndicators, syncEdge);
 
   watch(locale, () => {
     loadExtracts();
@@ -175,6 +223,12 @@ export function useExtractsLayer(ctx: MapLayerContext): void {
     state.visibleFactions = new Set(factions);
     refreshMarkers();
   });
+
+  watch(visible, applyVisible);
+
+  // The LayerRail publishes its rect (and null when it hides on lock); repaint
+  // the edge arrows whenever it changes so they re-flow around the rail.
+  watch(railRect, () => edge?.update());
 
   watch(extractLabelMode, (mode) => {
     if (state.labelMode === mode) return;
@@ -201,6 +255,8 @@ export function useExtractsLayer(ctx: MapLayerContext): void {
   );
 
   onBeforeUnmount(() => {
+    edge?.destroy();
+    edge = null;
     if (extractsLayer && map.value) {
       map.value.removeLayer(extractsLayer);
     }

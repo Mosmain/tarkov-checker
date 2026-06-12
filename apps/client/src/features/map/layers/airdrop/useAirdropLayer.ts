@@ -18,7 +18,7 @@ import type { MapLayerContext } from '../registry';
  * extract icons but below the player marker.
  */
 export function useAirdropLayer(ctx: MapLayerContext): void {
-  const { map } = ctx;
+  const { map, visible } = ctx;
   const store = useAirdropStore();
   let dropAreaCircle: L.Circle | null = null;
 
@@ -46,7 +46,8 @@ export function useAirdropLayer(ctx: MapLayerContext): void {
 
   // The circle stays through `confirmingClear` — the user is about to wipe
   // it, they should see exactly what they're about to lose.
-  const showDrop = (): boolean => store.phase === 'result' || store.phase === 'confirmingClear';
+  const showDrop = (): boolean =>
+    visible.value && (store.phase === 'result' || store.phase === 'confirmingClear');
 
   watch(
     () => store.phase,
@@ -70,6 +71,11 @@ export function useAirdropLayer(ctx: MapLayerContext): void {
   // map-code switch while a result is showing).
   watch(map, (m) => {
     if (!m) return;
+    if (showDrop()) placeDrop();
+  });
+
+  watch(visible, () => {
+    clearAll();
     if (showDrop()) placeDrop();
   });
 
