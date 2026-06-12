@@ -108,22 +108,22 @@ const {
       </p>
 
       <div class="border-t border-surface-700 pt-3">
-        <div class="flex items-start justify-between gap-3">
-          <div class="min-w-0">
-            <label for="delete-screenshots-toggle" class="block text-xs">
-              {{ t('paths.deleteScreenshots') }}
-            </label>
-            <p class="mt-1 text-[10px] leading-relaxed opacity-70">
-              {{ t('paths.deleteScreenshotsHint') }}
-            </p>
-          </div>
+        <div class="flex items-center justify-between gap-3">
+          <label for="delete-screenshots-toggle" class="text-xs">
+            {{ t('paths.deleteScreenshots') }}
+          </label>
+          <!-- Editable everywhere incl. phones (unlike the paths): a switch
+               needs no keyboard and a stray flip is a recoverable, single PUT. -->
           <ToggleSwitch
+            class="shrink-0"
             input-id="delete-screenshots-toggle"
             :model-value="deleteScreenshots"
-            :disabled="!canEditPaths"
             @update:model-value="setDeleteScreenshots"
           />
         </div>
+        <p class="mt-1.5 text-[10px] leading-relaxed opacity-70">
+          {{ t('paths.deleteScreenshotsHint') }}
+        </p>
       </div>
     </div>
   </div>

@@ -44,7 +44,7 @@
     "shared": "Shared"
   },
   "paths": {
-    "heading": "Tarkov paths",
+    "heading": "Game integration",
     "gameDir": "Game folder",
     "screenshotsDir": "Screenshots folder",
     "save": "Save",

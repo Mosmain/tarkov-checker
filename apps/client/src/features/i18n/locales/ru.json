@@ -44,7 +44,7 @@
     "shared": "Общие"
   },
   "paths": {
-    "heading": "Пути Tarkov",
+    "heading": "Интеграция с игрой",
     "gameDir": "Папка с игрой",
     "screenshotsDir": "Папка скриншотов",
     "save": "Сохранить",
