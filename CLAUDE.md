@@ -202,18 +202,18 @@ key back in the running app.
   wires it into Leaflet. All layers use a registry pattern: `layers/registry.ts`
   exports `registerMapLayer()` and `useMapLayers()`. Currently:
 
-      layers/extracts/
-        useExtractsLayer.ts     # Leaflet/Vue glue, data load, marker sync
-        icon.ts                 # slice geometry + makeIcon (composite via CSS clip-path)
-        tooltip.ts              # buildTooltipHtml + escapeHtml + sortedEntries
-        useEdgeIndicators.ts    # off-screen extract arrows; wraps left edge around the rail
-        index.ts                # registerMapLayer call
-      layers/player/
-        usePlayerLayer.ts       # player position marker + recentering on follow
-        index.ts                # registerMapLayer call
-      layers/airdrop/
-        useAirdropLayer.ts      # purple uncertainty circle around the predicted drop
-        index.ts                # registerMapLayer call
+        layers/extracts/
+          useExtractsLayer.ts     # Leaflet/Vue glue, data load, marker sync
+          icon.ts                 # slice geometry + makeIcon (composite via CSS clip-path)
+          tooltip.ts              # buildTooltipHtml + escapeHtml + sortedEntries
+          useEdgeIndicators.ts    # off-screen extract arrows; wraps left edge around the rail
+          index.ts                # registerMapLayer call
+        layers/player/
+          usePlayerLayer.ts       # player position marker + recentering on follow
+          index.ts                # registerMapLayer call
+        layers/airdrop/
+          useAirdropLayer.ts      # purple uncertainty circle around the predicted drop
+          index.ts                # registerMapLayer call
 
   Each `index.ts` calls `registerMapLayer({ id, mount, category, order, titleKey,
 settingsComponent? })` at module load (the rail metadata lives here — there is
