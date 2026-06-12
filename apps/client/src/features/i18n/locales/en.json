@@ -53,12 +53,6 @@
     "mobileHint": "Open this page on the machine running Tarkov to configure paths.",
     "deleteScreenshots": "Delete screenshots after reading",
     "deleteScreenshotsHint": "Sends each Tarkov screenshot to the Recycle Bin once its position has been read. Keeps the folder from filling up. Off by default.",
-    "source": {
-      "env": "from .env",
-      "manual": "manual",
-      "detected": "auto-detected",
-      "missing": "not found"
-    },
     "missingTooltip": "Folder doesn't exist on disk yet.",
     "placeholderGameDir": "D:\\EFT",
     "placeholderScreenshotsDir": "Documents\\Escape from Tarkov\\Screenshots",

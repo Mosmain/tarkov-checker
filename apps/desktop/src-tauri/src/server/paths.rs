@@ -164,27 +164,34 @@ pub fn detect_documents_dir() -> Option<String> {
     Some(expand_env_vars(&raw))
 }
 
-/// BSG launcher writes the install location to one of these keys; try in
-/// order. winreg auto-redirects WOW6432Node access.
+/// Reads `InstallLocation` from the BSG launcher's standard uninstall entry
+/// (32-bit view / native / per-user hives). A value whose directory exists
+/// wins over a stale one.
 pub fn detect_tarkov_game_dir() -> Option<String> {
     use winreg::enums::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE};
     use winreg::RegKey;
+    const UNINSTALL_EFT: &str =
+        r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EscapeFromTarkov";
+    const UNINSTALL_EFT_WOW: &str =
+        r"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\EscapeFromTarkov";
     let candidates: &[(winreg::HKEY, &str)] = &[
-        (
-            HKEY_LOCAL_MACHINE,
-            r"SOFTWARE\WOW6432Node\Battlestate Games\EFT",
-        ),
-        (HKEY_LOCAL_MACHINE, r"SOFTWARE\Battlestate Games\EFT"),
-        (HKEY_CURRENT_USER, r"Software\Battlestate Games\EFT"),
+        (HKEY_LOCAL_MACHINE, UNINSTALL_EFT_WOW),
+        (HKEY_LOCAL_MACHINE, UNINSTALL_EFT),
+        (HKEY_CURRENT_USER, UNINSTALL_EFT),
     ];
+    let mut first_found: Option<String> = None;
     for (hive, path) in candidates {
         if let Ok(key) = RegKey::predef(*hive).open_subkey(path) {
             if let Ok(raw) = key.get_value::<String, _>("InstallLocation") {
-                return Some(expand_env_vars(&raw));
+                let expanded = expand_env_vars(&raw);
+                if Path::new(&expanded).is_dir() {
+                    return Some(expanded);
+                }
+                first_found.get_or_insert(expanded);
             }
         }
     }
-    None
+    first_found
 }
 
 fn expand_env_vars(value: &str) -> String {
@@ -286,5 +293,16 @@ mod tests {
     #[test]
     fn paths_normalize_unc_forward_slash_returns_none() {
         assert_eq!(normalize(Some("//server/share")), None);
+    }
+
+    /// Machine-dependent diagnostic, excluded from CI. Run manually on a box
+    /// with EFT installed: `cargo test detect_tarkov_live -- --ignored --nocapture`.
+    #[test]
+    #[ignore = "probes the real registry — run manually on a machine with EFT"]
+    fn detect_tarkov_live_probe() {
+        let detected = detect_tarkov_game_dir();
+        println!("detected game dir: {detected:?}");
+        println!("detected documents dir: {:?}", detect_documents_dir());
+        assert!(detected.is_some(), "no registry key yielded a game dir");
     }
 }
