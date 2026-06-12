@@ -33,7 +33,7 @@ jobs:
         working-directory: apps/desktop/src-tauri
         run: cargo fmt --all -- --check
 
-      - run: pnpm overlay:build
+      - run: pnpm build:overlay
 
       - name: Rust clippy
         working-directory: apps/desktop/src-tauri
