@@ -2,6 +2,7 @@
 import { z } from 'zod';
 import { useSettingsSections } from './registry';
 import { persistedRef } from '@/shared/persisted-store';
+import AboutFooter from '@/features/updater/components/AboutFooter.vue';
 
 const { t } = useI18n();
 const systemSections = useSettingsSections();
@@ -67,5 +68,8 @@ const openSections = persistedRef(
         </AccordionContent>
       </AccordionPanel>
     </Accordion>
+    <!-- Not a section on purpose: version + update controls are periphery,
+         not a peer of Hotkeys/Overlay (see the about-footer design review). -->
+    <AboutFooter />
   </Drawer>
 </template>

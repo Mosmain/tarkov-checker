@@ -72,7 +72,12 @@
     "available": "Update v{version} available",
     "install": "Update",
     "installing": "Updating…",
-    "error": "Update failed. Grab the new exe manually: GitHub → Releases."
+    "error": "Update failed. Grab the new exe manually: GitHub → Releases.",
+    "checkButton": "Check for updates",
+    "upToDate": "Up to date",
+    "checkFailed": "Check failed",
+    "updateTo": "Update to v{version}",
+    "autoCheckLabel": "Check for updates on startup"
   },
   "overlay": {
     "heading": "Overlay",
