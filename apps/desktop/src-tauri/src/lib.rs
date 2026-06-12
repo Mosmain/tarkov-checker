@@ -203,7 +203,7 @@ pub fn run_headless() {
             hotkey_store,
             hotkeys,
         });
-        eprintln!("[headless] tarkov-checker backend up — http://0.0.0.0:47474 (Ctrl+C to stop)");
+        eprintln!("[headless] raidmate backend up — http://0.0.0.0:47474 (Ctrl+C to stop)");
         std::future::pending::<()>().await;
     });
 }

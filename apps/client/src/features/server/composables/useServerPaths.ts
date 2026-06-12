@@ -6,7 +6,7 @@ export type PathSlot = 'gameDir' | 'screenshotsDir' | 'logsDir';
 /**
  * Typed UI-state for path-API failures. `no-helper` is the common case
  * when the SPA runs in a browser (hosted or LAN-phone) and the user has
- * not started `tarkov-checker.exe` yet — the panel renders a friendly
+ * not started `raidmate.exe` yet — the panel renders a friendly
  * "start the helper" message instead of the raw fetch error.
  */
 export type PathsError = { kind: 'no-helper' } | { kind: 'other'; detail: string };

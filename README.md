@@ -1,4 +1,4 @@
-# tarkov-checker
+# RaidMate
 
 A live in-raid map companion for Escape from Tarkov. The overlay watches your Tarkov screenshots and logs in real time, tracking your position and marking extracts on an interactive Leaflet map with community SVG layers.
 
@@ -25,27 +25,27 @@ A live in-raid map companion for Escape from Tarkov. The overlay watches your Ta
 
 ### End Users
 
-1. Download `tarkov-checker-desktop.exe` from the [latest Release](../../releases/latest).
+1. Download `raidmate.exe` from the [latest Release](../../releases/latest).
 2. Drop it anywhere — Desktop, USB stick, Downloads folder. It's completely portable.
 3. Double-click to launch. On first run, the overlay auto-detects your Tarkov installation via the Windows registry. If that fails, manually set the paths in **Settings → Tarkov paths**.
 4. In Tarkov, press **PrintScreen** during a raid. The screenshot drops into your Tarkov screenshots folder, and the overlay reads its filename to update your position on the map.
 
-**Data storage**: settings and cache live in `%APPDATA%/tarkov-checker/`. By default, closing the window exits the app. Optionally, enable "Minimize to tray" in Settings to hide the window to the system tray instead of closing (the tray icon's "Show" restores it, "Quit" exits).
+**Data storage**: settings and cache live in `%APPDATA%/raidmate/`. By default, closing the window exits the app. Optionally, enable "Minimize to tray" in Settings to hide the window to the system tray instead of closing (the tray icon's "Show" restores it, "Quit" exits).
 
 ### Developers
 
 Clone with submodules, install dependencies, then choose your dev mode:
 
 ```bash
-git clone --recurse-submodules https://github.com/Mosmain/tarkov-checker.git
-cd tarkov-checker
+git clone --recurse-submodules https://github.com/Mosmain/raidmate.git
+cd raidmate
 pnpm install
 ```
 
 **Dev** (one command — Tauri spawns Vite on :5173 and the helper on :47474):
 
 ```bash
-pnpm --filter @tarkov-checker/desktop tauri:dev
+pnpm --filter @raidmate/desktop tauri:dev
 ```
 
 A browser on the same PC or a phone on the same Wi-Fi can hit
@@ -63,7 +63,7 @@ The overlay needs two directories:
 Resolution priority (highest to lowest):
 
 1. **Environment variables** — `TARKOV_GAME_DIR`, `TARKOV_SCREENSHOT_DIR` (optional; useful for non-standard setups)
-2. **Manual override** — Settings → Tarkov paths, persisted to `%APPDATA%/tarkov-checker/config.json`
+2. **Manual override** — Settings → Tarkov paths, persisted to `%APPDATA%/raidmate/config.json`
 3. **Windows registry auto-detect** — the BSG launcher writes the install path to the registry, and Windows tracks the real Documents location even when redirected to OneDrive
 
 If auto-detect fails, fill in **Game folder** in Settings and click **Save**. Watchers restart immediately — no app restart needed.
@@ -123,7 +123,7 @@ See [LICENSE](./LICENSE).
 
 ---
 
-# tarkov-checker (русская версия)
+# RaidMate (русская версия)
 
 Спутник-карта для рейдов в Escape from Tarkov. Оверлей следит за скриншотами и логами вашей игры, отслеживая вашу позицию в реальном времени и отмечая выходы на интерактивной Leaflet-карте с SVG-слоями от сообщества.
 
@@ -150,27 +150,27 @@ See [LICENSE](./LICENSE).
 
 ### Для игроков
 
-1. Скачай `tarkov-checker-desktop.exe` из [последнего релиза](../../releases/latest).
+1. Скачай `raidmate.exe` из [последнего релиза](../../releases/latest).
 2. Положи куда угодно — на Рабочий стол, флешку, папку Downloads. Полностью портативное приложение.
 3. Запусти двойным кликом. При первом запуске оверлей автоматически обнаружит твою установку Tarkov через реестр Windows. Если не получится, вручную укажи пути в **Settings → Tarkov paths**.
 4. В Tarkov нажми **PrintScreen** во время рейда. Скриншот упадёт в папку скриншотов Tarkov, а оверлей прочитает имя файла и обновит твою позицию на карте.
 
-**Хранение данных**: настройки и кэш живут в `%APPDATA%/tarkov-checker/`. По умолчанию закрытие окна завершает приложение. Опционально включи "Minimize to tray" в Settings, чтобы скрыть окно в системный трей вместо закрытия (пункт "Show" в меню трея его восстанавливает, "Quit" завершает приложение).
+**Хранение данных**: настройки и кэш живут в `%APPDATA%/raidmate/`. По умолчанию закрытие окна завершает приложение. Опционально включи "Minimize to tray" в Settings, чтобы скрыть окно в системный трей вместо закрытия (пункт "Show" в меню трея его восстанавливает, "Quit" завершает приложение).
 
 ### Для разработчиков
 
 Клонируй с сабмодулями, установи зависимости, затем выбери режим разработки:
 
 ```bash
-git clone --recurse-submodules https://github.com/Mosmain/tarkov-checker.git
-cd tarkov-checker
+git clone --recurse-submodules https://github.com/Mosmain/raidmate.git
+cd raidmate
 pnpm install
 ```
 
 **Разработка десктоп-оверлея** (одна команда — Tauri поднимает Vite на :5173):
 
 ```bash
-pnpm --filter @tarkov-checker/desktop tauri:dev
+pnpm --filter @raidmate/desktop tauri:dev
 ```
 
 Браузер на том же ПК или телефон в той же Wi-Fi могут открывать
@@ -188,7 +188,7 @@ pnpm --filter @tarkov-checker/desktop tauri:dev
 Приоритет определения (от высшего к низшему):
 
 1. **Переменные окружения** — `TARKOV_GAME_DIR`, `TARKOV_SCREENSHOT_DIR` (опционально; полезно для нестандартных установок)
-2. **Ручное переопределение** — Settings → Tarkov paths, сохраняется в `%APPDATA%/tarkov-checker/config.json`
+2. **Ручное переопределение** — Settings → Tarkov paths, сохраняется в `%APPDATA%/raidmate/config.json`
 3. **Автодетект из реестра Windows** — лаунчер BSG пишет путь установки в реестр, и Windows отслеживает реальное расположение Документов даже когда они перенаправлены в OneDrive
 
 Если автодетект не сработал, заполни **Game folder** в Settings и нажми **Save**. Слежение перезапустится сразу — перезапуска приложения не требуется.

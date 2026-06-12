@@ -7,5 +7,5 @@ fn main() {
     if std::env::args().any(|a| a == "--updated") {
         std::thread::sleep(std::time::Duration::from_millis(1500));
     }
-    tarkov_checker_desktop_lib::run()
+    raidmate_lib::run()
 }

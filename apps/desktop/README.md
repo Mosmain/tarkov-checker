@@ -1,6 +1,6 @@
-# @tarkov-checker/desktop
+# @raidmate/desktop
 
-Tauri 2 wrapper around `@tarkov-checker/client`. In dev the window points
+Tauri 2 wrapper around `@raidmate/client`. In dev the window points
 at the Vite server `beforeDevCommand` spawns on `http://localhost:5173`.
 Release build bundles `apps/client/dist` into the .exe (and the helper
 serves the same files for phone access on `:47474`).
@@ -14,18 +14,18 @@ serves the same files for phone access on `:47474`).
 
 ```pwsh
 # One command — Tauri spawns Vite, then opens the window
-pnpm --filter @tarkov-checker/desktop tauri:dev
+pnpm --filter @raidmate/desktop tauri:dev
 ```
 
 `beforeDevCommand` in `tauri.conf.json` is
-`pnpm --filter @tarkov-checker/client dev`, so Tauri starts the Vite
+`pnpm --filter @raidmate/client dev`, so Tauri starts the Vite
 dev server (`:5173`) itself and shuts it down on exit — no separate
 terminal needed.
 
 ## Production build
 
 ```pwsh
-pnpm --filter @tarkov-checker/desktop tauri:build
+pnpm --filter @raidmate/desktop tauri:build
 ```
 
 `beforeBuildCommand` builds the client first; Tauri then bundles

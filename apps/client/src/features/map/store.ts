@@ -17,28 +17,28 @@ export type ExtractLabelSize = z.infer<typeof labelSizeSchema>;
 const DEFAULT_FACTIONS: readonly ExtractFactionFilter[] = ['pmc', 'scav', 'shared'];
 
 export const useMapSettingsStore = defineStore('map-settings', () => {
-  const mapCode = persistedRef('tc.map.code', mapCodeSchema, 'bigmap' as TarkovMapCode);
-  const extractFactions = persistedRef('tc.map.extractFactions', z.array(extractFactionSchema), [
+  const mapCode = persistedRef('rm.map.code', mapCodeSchema, 'bigmap' as TarkovMapCode);
+  const extractFactions = persistedRef('rm.map.extractFactions', z.array(extractFactionSchema), [
     ...DEFAULT_FACTIONS,
   ]);
   const extractLabelMode = persistedRef(
-    'tc.map.extractLabelMode',
+    'rm.map.extractLabelMode',
     labelModeSchema,
     'always' as ExtractLabelMode,
   );
   const extractLabelSize = persistedRef(
-    'tc.map.extractLabelSize',
+    'rm.map.extractLabelSize',
     labelSizeSchema,
     'md' as ExtractLabelSize,
   );
   // Off-screen extract arrows on the viewport edge. Opt-in, off by default.
-  const edgeIndicators = persistedRef('tc.map.edgeIndicators', z.boolean(), false);
+  const edgeIndicators = persistedRef('rm.map.edgeIndicators', z.boolean(), false);
   const playerFollow = persistedRef(
-    'tc.map.playerFollow',
+    'rm.map.playerFollow',
     playerFollowSchema,
     'off' as PlayerFollow,
   );
-  const autoMapSwitch = persistedRef('tc.map.autoMapSwitch', autoMapSwitchSchema, true);
+  const autoMapSwitch = persistedRef('rm.map.autoMapSwitch', autoMapSwitchSchema, true);
 
   return {
     mapCode,

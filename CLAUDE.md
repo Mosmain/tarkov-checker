@@ -36,10 +36,10 @@
 One command:
 
 ```
-pnpm --filter @tarkov-checker/desktop tauri:dev
+pnpm --filter @raidmate/desktop tauri:dev
 ```
 
-`beforeDevCommand` spawns `pnpm --filter @tarkov-checker/client dev`
+`beforeDevCommand` spawns `pnpm --filter @raidmate/client dev`
 (Vite on **:5173**). Tauri waits for it, opens the webview at the same
 URL, and shuts Vite down when it exits. The Rust helper (in-process
 HTTP server) binds `0.0.0.0:47474` for `/api/*` and `/events`; Vite's
@@ -51,7 +51,9 @@ Vite. Phones in the same Wi-Fi use `http://<lan-ip>:5173/`. The
 embedded-SPA path lights up only in **release** builds, where there
 is no Vite.
 
-The repo must live on an **ASCII path** (currently `C:\git-repos\tarkov-checker`)
+The repo must live on an **ASCII path** (currently `C:\git-repos\raidmate`;
+if the folder still carries the pre-rebrand name `tarkov-checker`,
+renaming it is a manual step done outside any running session/editor)
 — `cargo metadata` segfaults on a Cyrillic CWD, which is what made the
 OneDrive Documents path (`C:\Users\<user>\OneDrive\Документы\...`)
 unusable historically. Earlier the workaround was an NTFS junction
@@ -293,7 +295,7 @@ map uses — no separate transport, no separate dataset.
 
 `apps/desktop/src-tauri/src/server/paths.rs` reads the registry via
 `winreg`, looks at env vars, applies manual overrides from
-`%APPDATA%/tarkov-checker/config.json`, and returns the resolved triple
+`%APPDATA%/raidmate/config.json`, and returns the resolved triple
 (`gameDir`, `logsDir`, `screenshotsDir`) with `source` + `exists` flags.
 
 Priority: env (`TARKOV_GAME_DIR`, `TARKOV_SCREENSHOT_DIR`) > manual
@@ -361,7 +363,7 @@ Persisted state lives in **per-feature** Pinia stores, not one big store:
     `features/map/composables/useAutoMapSwitch.ts`, mounted once at
     `App.vue` root.
 - **Per-layer visibility**: `composables/useLayerVisibility.ts` exports a
-  function that returns a shared `persistedRef('tc.layer.<id>.visible', z.boolean(), true)`
+  function that returns a shared `persistedRef('rm.layer.<id>.visible', z.boolean(), true)`
   per layer id (module-level singleton). The LayerRail toggle and the layer
   composable read/write the same ref. Consumed by `MapLayerContext.visible`
   in `layers/registry.ts`.
@@ -385,7 +387,7 @@ Persisted state lives in **per-feature** Pinia stores, not one big store:
   `phase` and `outcome` are derived runtime state, not persisted.
 
 Each store uses `persistedRef` from `@/shared/persisted-store` with its
-own key (`tc.<feature>.<field>`) — corrupt persisted data falls back to
+own key (`rm.<feature>.<field>`) — corrupt persisted data falls back to
 defaults silently.
 
 **Session-only state.** `clickThrough` intentionally does NOT use `persistedRef`.
@@ -424,7 +426,7 @@ id, order, titleKey, visible?, component })`; `useSettingsSections()` returns th
   40 paths (desktop-or-tauri), 50 pairing (tauri). Consumed by the gear **drawer**
   (`SettingsPanel.vue`): a **non-modal** PrimeVue `Drawer` (right on desktop,
   bottom-sheet on `<640px`) rendering a single flat **Accordion**; open-panel state
-  persists in `tc.settings.open`.
+  persists in `rm.settings.open`.
 
 Faction colours come from `FACTION_COLORS` in `packages/shared/src/maps.ts`
 so icons and tooltip stripes never drift across components.
@@ -470,7 +472,7 @@ and the `apple-mobile-web-app-*` / `mobile-web-app-capable` meta in `index.html`
 `display: standalone`, icon = the existing `favicon.svg` (`sizes: "any"`).
 `start_url`/`scope` are `/`, correct for the phone (`:5173`/`:47474`) and the Tauri
 release (base `/`). The hosted **GitHub Pages** build serves under base
-`/tarkov-checker/`, so its `start_url`/`scope` would mismatch — the static manifest
+`/raidmate/`, so its `start_url`/`scope` would mismatch — the static manifest
 isn't templated by Vite. Pages PWA install is a secondary path; template the
 manifest if it ever matters. iOS `apple-touch-icon` ideally wants a PNG — pointing
 it at the SVG works on Android, but iPhone may fall back to a page screenshot for
@@ -481,7 +483,7 @@ and the `apple-mobile-web-app-*` / `mobile-web-app-capable` meta in `index.html`
 `display: standalone`, icon = the existing `favicon.svg` (`sizes: "any"`).
 `start_url`/`scope` are `/`, correct for the phone (`:5173`/`:47474`) and the Tauri
 release (base `/`). The hosted **GitHub Pages** build serves under base
-`/tarkov-checker/`, so its `start_url`/`scope` would mismatch — the static manifest
+`/raidmate/`, so its `start_url`/`scope` would mismatch — the static manifest
 isn't templated by Vite. Pages PWA install is a secondary path; template the
 manifest if it ever matters. iOS `apple-touch-icon` ideally wants a PNG — pointing
 it at the SVG works on Android, but iPhone may fall back to a page screenshot for
@@ -612,7 +614,7 @@ machine (via HTTP). One source of state, two transports.
 | `server/screenshots.rs` | `notify-debouncer-full` watcher (250 ms `awaitWriteFinish` equivalent); parses filename → position; opt-in recycle-bin delete after parse (see below) |
 | `server/logs.rs`        | poll-tails latest `log_*/application_NNN.log`; emits `map-change` on `rcid:` / `Location:` hits                                                       |
 | `server/paths.rs`       | env → manual override → `winreg` auto-detect; returns `ResolvedPaths`                                                                                 |
-| `server/config.rs`      | reads/writes `%APPDATA%/tarkov-checker/config.json`; rejects UNC paths                                                                                |
+| `server/config.rs`      | reads/writes `%APPDATA%/raidmate/config.json`; rejects UNC paths                                                                                |
 | `server/events.rs`      | `ServerEvent` enum + `tokio::sync::broadcast` channel for HTTP-side fan-out                                                                           |
 | `watcher.rs`            | `WatcherSlot` state holder + `apply_resolved` that atomically swaps watcher handles                                                                   |
 | `lan.rs`                | LAN IP detection for the QR pairing flow (multi-NIC heuristic — see `detect_lan_ip`)                                                                  |
@@ -686,11 +688,11 @@ focus-required `useBrowserShortcut` and per-client `useGlobalShortcut`
 wiring for these is gone; only the overlay **lock** combo stays
 client-registered (see "Desktop overlay").
 
-- Combos persist in `%APPDATA%/tarkov-checker/hotkeys.json` via
+- Combos persist in `%APPDATA%/raidmate/hotkeys.json` via
   `server/hotkeys.rs` (`HotkeyStore`, sibling to `config.json`). Defaults
-  match the client's historical `tc.hotkeys.*` so an un-customised install
-  is unchanged; the client migrates customised localStorage values up once
-  (`tc.hotkeys.migrated`).
+  match the client's `DEFAULTS` so an un-customised install agrees on both
+  ends. (The one-time localStorage→backend migration from the pre-rebrand
+  `tc.hotkeys.*` keys was removed in the RaidMate rebrand — clean break.)
 - Registration lives in `src/hotkeys.rs` behind one `HotkeyController`
   trait, with two impls that are **never** used together (the windowed app
   and headless backend are mutually exclusive — both bind :47474):
@@ -768,7 +770,7 @@ one new alias entry + one new test case in `parse-log.spec.ts`.
 
 `bundle.active: false` in `tauri.conf.json` — overlay:build skips MSI
 and NSIS, just produces the bare `.exe` at
-`apps/desktop/src-tauri/target/release/tarkov-checker-desktop.exe`.
+`apps/desktop/src-tauri/target/release/raidmate.exe`.
 Flip to `true` (with `bundle.targets: ["msi","nsis"]` or `"all"`) when
 a release flow needs installers.
 
@@ -812,7 +814,7 @@ DeviceGuard').SecurityServicesRunning` → should be empty/`0`. VBS
 4. **The repo must live on an ASCII path.** `cargo metadata` segfaults
    on a Cyrillic CWD (which is what made the OneDrive Documents path —
    `C:\Users\<u>\OneDrive\Документы\...` — unusable). Current location
-   is `C:\git-repos\tarkov-checker`. If you ever clone fresh into a
+   is `C:\git-repos\raidmate`. If you ever clone fresh into a
    Cyrillic path, either move it or `mklink /J` an ASCII alias and run
    pnpm from there. The legacy junction `C:\tarkov-checker` is no
    longer required and can be removed with `rmdir C:\tarkov-checker`.
@@ -839,7 +841,7 @@ DeviceGuard').SecurityServicesRunning` → should be empty/`0`. VBS
    Resource step depends on it). The icon set (`32x32.png`, `128x128.png`,
    `128x128@2x.png`, `icon.ico`, `icon.icns`, the `Square*Logo`/`StoreLogo`
    set) is generated from `apps/client/public/favicon.svg` via
-   `pnpm --filter @tarkov-checker/desktop exec tauri icon <path>/favicon.svg`
+   `pnpm --filter @raidmate/desktop exec tauri icon <path>/favicon.svg`
    — the same mark the browser build uses. Re-run that after editing the SVG;
    the generator also emits `ios/` + `android/` dirs which we delete (this is a
    Windows-only desktop app). `icons/128x128.png` is also `include_bytes!`'d
@@ -853,11 +855,11 @@ DeviceGuard').SecurityServicesRunning` → should be empty/`0`. VBS
    toast shows "PowerShell" + its icon). Fix: we don't use the plugin.
    `src/notify.rs` registers `HKCU\Software\Classes\AppUserModelId\<identifier>`
    with a `DisplayName` + `IconUri` (the favicon PNG, written to
-   `%APPDATA%/tarkov-checker/notification-icon.png`) at startup, then emits the
+   `%APPDATA%/raidmate/notification-icon.png`) at startup, then emits the
    toast via `tauri-winrt-notification::Toast::new(<identifier>)`. No installer
    / Start-Menu shortcut needed. Only used today for the one-time "still
    running in the tray" hint (`commands::notify_tray_hint`, fired by the
-   client's `useCloseConfirm` gated on `tc.overlay.trayHintShown`).
+   client's `useCloseConfirm` gated on `rm.overlay.trayHintShown`).
 
 ## CI & releases
 
@@ -882,7 +884,7 @@ git push origin v0.1.0
 
 Pushing the tag triggers a fresh CI run from the tagged commit
 (~3-5 min warm cache, ~8-12 cold). On success `softprops/action-gh-release@v2`
-publishes a GitHub Release named `v0.1.0` with `tarkov-checker-desktop.exe`
+publishes a GitHub Release named `v0.1.0` with `raidmate.exe`
 attached and marked as **Latest**. End users grab it from the Releases
 tab; the .exe lives there indefinitely.
 

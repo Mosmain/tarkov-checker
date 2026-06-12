@@ -79,7 +79,7 @@ struct PingResponse {
 
 async fn ping() -> Json<PingResponse> {
     Json(PingResponse {
-        name: "tarkov-checker",
+        name: "raidmate",
         version: env!("CARGO_PKG_VERSION"),
         status: "ok",
     })
@@ -382,7 +382,7 @@ mod tests {
 
     fn tmp_json(tag: &str) -> std::path::PathBuf {
         std::env::temp_dir().join(format!(
-            "tarkov-checker-test-{tag}-{}-{}.json",
+            "raidmate-test-{tag}-{}-{}.json",
             std::process::id(),
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
@@ -444,7 +444,7 @@ mod tests {
             .unwrap();
         assert_eq!(response.status(), StatusCode::OK);
         let body = body_text(response).await;
-        assert!(body.contains("\"name\":\"tarkov-checker\""), "body: {body}");
+        assert!(body.contains("\"name\":\"raidmate\""), "body: {body}");
         assert!(body.contains("\"status\":\"ok\""), "body: {body}");
     }
 

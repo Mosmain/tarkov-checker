@@ -13,9 +13,9 @@ use anyhow::{anyhow, Context};
 use serde::{Deserialize, Serialize};
 
 /// Repo the overlay updates from.
-const REPO: &str = "Mosmain/tarkov-checker";
+const REPO: &str = "Mosmain/raidmate";
 /// Release asset to download — CI uploads exactly this name.
-const ASSET_NAME: &str = "tarkov-checker-desktop.exe";
+const ASSET_NAME: &str = "raidmate.exe";
 
 pub fn current_version() -> &'static str {
     env!("CARGO_PKG_VERSION")
@@ -83,7 +83,7 @@ pub fn is_newer(remote: &str, current: &str) -> bool {
 fn client() -> reqwest::Result<reqwest::Client> {
     reqwest::Client::builder()
         // api.github.com rejects requests without a User-Agent.
-        .user_agent(concat!("tarkov-checker/", env!("CARGO_PKG_VERSION")))
+        .user_agent(concat!("raidmate/", env!("CARGO_PKG_VERSION")))
         .timeout(Duration::from_secs(60))
         .build()
 }

@@ -3,7 +3,7 @@ import { isTauri } from '@/shared/tauri';
 import { useUpdaterStore } from '@/features/updater/store';
 import { useAppVersion } from '@/features/updater/composables/useAppVersion';
 
-const RELEASES_URL = 'https://github.com/Mosmain/tarkov-checker/releases';
+const RELEASES_URL = 'https://github.com/Mosmain/raidmate/releases';
 
 const { t } = useI18n();
 const version = useAppVersion();

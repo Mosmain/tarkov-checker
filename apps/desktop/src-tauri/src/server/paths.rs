@@ -233,10 +233,10 @@ mod tests {
         // it is not set (unusual CI image), we treat the var as unknown and
         // the test documents it explicitly.
         let expected = match std::env::var("APPDATA") {
-            Ok(val) => format!(r"{val}\tarkov-checker"),
-            Err(_) => r"%APPDATA%\tarkov-checker".to_string(),
+            Ok(val) => format!(r"{val}\raidmate"),
+            Err(_) => r"%APPDATA%\raidmate".to_string(),
         };
-        let result = expand_env_vars(r"%APPDATA%\tarkov-checker");
+        let result = expand_env_vars(r"%APPDATA%\raidmate");
         assert_eq!(result, expected);
     }
 
