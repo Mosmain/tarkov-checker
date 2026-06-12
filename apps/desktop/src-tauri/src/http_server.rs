@@ -325,6 +325,19 @@ pub fn spawn(deps: Deps) {
                 return;
             }
         };
+        // Children must not inherit the listener (WebView2 helpers, the
+        // self-update respawn): an inherited handle keeps the port bound
+        // after this process exits and the successor's bind dies with 10048.
+        #[cfg(windows)]
+        unsafe {
+            use std::os::windows::io::AsRawSocket;
+            use windows_sys::Win32::Foundation::{SetHandleInformation, HANDLE_FLAG_INHERIT};
+            SetHandleInformation(
+                listener.as_raw_socket() as usize as _,
+                HANDLE_FLAG_INHERIT,
+                0,
+            );
+        }
         eprintln!("[http-server] listening on http://{addr}");
         let app = router(state).layer(Extension(app_handle));
         if let Err(err) = axum::serve(listener, app).await {
