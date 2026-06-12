@@ -37,6 +37,18 @@ global-hotkey = "0.7"
 # match the one global-hotkey already pulls (no extra lockfile entry).
 windows-sys = { version = "0.59", features = ["Win32_UI_WindowsAndMessaging", "Win32_Foundation"] }
 tauri-plugin-window-state = "2"
+# System-clipboard access for the tray "Copy LAN URL" item. Used from Rust
+# (ClipboardExt in commands::copy_lan_url), so the write happens natively and
+# needs no DOM user-gesture — unlike navigator.clipboard, which a tray-menu
+# click can't satisfy.
+tauri-plugin-clipboard-manager = "2"
+# Native Windows toast for the one-time "still running in the tray" hint on the
+# first close-to-tray. We use this directly (not tauri-plugin-notification)
+# because the plugin only stamps the toast's AppUserModelID for installed apps
+# — our portable .exe runs from target/release, so the plugin leaves it as
+# PowerShell's identity. We register our own AUMID + icon (src/notify.rs) and
+# emit with it. Already in the tree transitively; pinning it as a direct dep.
+tauri-winrt-notification = "0.7"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 # Server runtime: filesystem watchers, config storage, registry probes.
@@ -84,6 +96,10 @@ mime_guess = "2"
 # inline. SVG scales without rasterisation and the encoded payload is
 # small (~256 bytes).
 qrcode = { version = "0.14", default-features = false, features = ["svg"] }
+# Sends parsed screenshots to the OS recycle bin (recoverable) when the
+# opt-in "delete after parse" setting is on — see server/screenshots.rs.
+# Recycle bin (not permanent unlink) so an accidental enable is undoable.
+trash = "5"
 # Detects the host's primary LAN IP (first non-loopback IPv4). Used by
 # pairing_qr to build the URL the QR encodes. Multi-NIC hosts can pick
 # the wrong interface (Hyper-V switch, WSL2 vNIC) — the pairing modal

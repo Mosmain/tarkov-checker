@@ -21,6 +21,8 @@ const {
   canSavePaths,
   savePaths,
   statusIconClass,
+  deleteScreenshots,
+  setDeleteScreenshots,
 } = useServerPaths(canEditPaths);
 </script>
 
@@ -104,6 +106,25 @@ const {
       <p v-else class="text-[10px] leading-relaxed opacity-70">
         {{ t('paths.mobileHint') }}
       </p>
+
+      <div class="border-t border-surface-700 pt-3">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <label for="delete-screenshots-toggle" class="block text-xs">
+              {{ t('paths.deleteScreenshots') }}
+            </label>
+            <p class="mt-1 text-[10px] leading-relaxed opacity-70">
+              {{ t('paths.deleteScreenshotsHint') }}
+            </p>
+          </div>
+          <ToggleSwitch
+            input-id="delete-screenshots-toggle"
+            :model-value="deleteScreenshots"
+            :disabled="!canEditPaths"
+            @update:model-value="setDeleteScreenshots"
+          />
+        </div>
+      </div>
     </div>
   </div>
 </template>

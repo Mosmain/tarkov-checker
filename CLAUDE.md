@@ -309,7 +309,25 @@ Two surfaces read/write this state:
   path without a restart.
 - **HTTP**: `GET /api/config` / `PUT /api/config` on the in-process
   axum server (see "In-process HTTP server" below). Same behaviour as
-  the IPC commands, same `ResolvedPaths` shape.
+  the IPC commands, same `ConfigResponse` shape.
+
+The config get/update no longer returns bare `ResolvedPaths` — it returns
+`ConfigResponse` (`paths.rs`), which `#[serde(flatten)]`s `ResolvedPaths` and
+appends `deleteScreenshots: bool`. Wire shape is
+`{ gameDir, logsDir, screenshotsDir, deleteScreenshots }`, mirrored by
+`serverConfigResponseSchema` in `@shared/config-api`. `deleteScreenshots` is an
+opt-in (default false) flag persisted in `config.json` alongside the path
+overrides: when on, the screenshot watcher sends each parsed Tarkov screenshot
+to the **OS recycle bin** (`trash` crate) right after broadcasting its
+position — the image is never used beyond its filename, so nothing is lost, and
+the folder stops filling up over long sessions. Only files whose name parses as
+a Tarkov position screenshot are touched (`should_trash` in `screenshots.rs`);
+unrelated files the user dropped in the folder are never deleted. The flag
+reaches the watcher via a shared `Arc<AtomicBool>` on `WatcherSlot`
+(`set_delete_screenshots`), so toggling it takes effect live; both PUT paths
+(`update_config` IPC + `put_config_http`) set it before `apply_resolved`. UI is
+a `ToggleSwitch` in the Paths settings section (saves immediately, no Save
+button), so it's configured on the machine that owns the screenshots folder.
 
 The HTTP server binds on `0.0.0.0:47474` — all interfaces, fixed port. Same-Wi-Fi
 machine browsers reach it via localhost/127.0.0.1 loopback; LAN phones reach it
@@ -587,7 +605,7 @@ machine (via HTTP). One source of state, two transports.
 | Module                  | Role                                                                                               |
 | ----------------------- | -------------------------------------------------------------------------------------------------- |
 | `http_server.rs`        | axum routes, CorsLayer, SSE handler, listens on `0.0.0.0:47474`                                    |
-| `server/screenshots.rs` | `notify-debouncer-full` watcher (250 ms `awaitWriteFinish` equivalent); parses filename → position |
+| `server/screenshots.rs` | `notify-debouncer-full` watcher (250 ms `awaitWriteFinish` equivalent); parses filename → position; opt-in recycle-bin delete after parse (see below) |
 | `server/logs.rs`        | poll-tails latest `log_*/application_NNN.log`; emits `map-change` on `rcid:` / `Location:` hits    |
 | `server/paths.rs`       | env → manual override → `winreg` auto-detect; returns `ResolvedPaths`                              |
 | `server/config.rs`      | reads/writes `%APPDATA%/tarkov-checker/config.json`; rejects UNC paths                             |
@@ -608,8 +626,9 @@ for the architectural reasoning.
 - `GET /api/config` — current `ResolvedPaths`. Origin-allowlisted via
   `CorsLayer` (Vite dev `:5173`, hosted GitHub Pages); same
   JSON shape as the Tauri `get_config` IPC command.
-- `PUT /api/config` — apply `ConfigPatch`, re-run `apply_resolved`,
-  return the new `ResolvedPaths`. UNC → 400 with `{error: "..."}`.
+- `PUT /api/config` — apply `ConfigPatch` (path overrides +
+  `deleteScreenshots`), re-run `apply_resolved`, return the new
+  `ConfigResponse`. UNC → 400 with `{error: "..."}`.
 - `GET /api/hotkeys` — backend-owned combos (`HotkeyConfig`).
 - `PUT /api/hotkeys` — apply `HotkeyPatch`, (re)register OS hotkeys,
   return the EFFECTIVE config (a combo that can't be claimed reverts).
@@ -813,9 +832,28 @@ DeviceGuard').SecurityServicesRunning` → should be empty/`0`. VBS
 
 7. **Icons must exist for `tauri-build` on Windows.** At minimum
    `apps/desktop/src-tauri/icons/icon.ico` must be present (the Windows
-   Resource step depends on it). Placeholder PNGs at 32×32, 128×128,
-   128×128@2x are also referenced in `tauri.conf.json` and ship today
-   as solid purple squares — replace before any release.
+   Resource step depends on it). The icon set (`32x32.png`, `128x128.png`,
+   `128x128@2x.png`, `icon.ico`, `icon.icns`, the `Square*Logo`/`StoreLogo`
+   set) is generated from `apps/client/public/favicon.svg` via
+   `pnpm --filter @tarkov-checker/desktop exec tauri icon <path>/favicon.svg`
+   — the same mark the browser build uses. Re-run that after editing the SVG;
+   the generator also emits `ios/` + `android/` dirs which we delete (this is a
+   Windows-only desktop app). `icons/128x128.png` is also `include_bytes!`'d
+   into the binary by `src/notify.rs` for the toast icon — see item 8.
+
+8. **Toast notifications must register their own AppUserModelID.**
+   `tauri-plugin-notification` only stamps the toast's AUMID when the exe runs
+   from outside `target/{debug,release}` — but the portable .exe ships straight
+   out of `target/release` and dev runs from `target/debug`, so the plugin
+   always skips it and `notify-rust` falls back to PowerShell's identity (the
+   toast shows "PowerShell" + its icon). Fix: we don't use the plugin.
+   `src/notify.rs` registers `HKCU\Software\Classes\AppUserModelId\<identifier>`
+   with a `DisplayName` + `IconUri` (the favicon PNG, written to
+   `%APPDATA%/tarkov-checker/notification-icon.png`) at startup, then emits the
+   toast via `tauri-winrt-notification::Toast::new(<identifier>)`. No installer
+   / Start-Menu shortcut needed. Only used today for the one-time "still
+   running in the tray" hint (`commands::notify_tray_hint`, fired by the
+   client's `useCloseConfirm` gated on `tc.overlay.trayHintShown`).
 
 ## CI & releases
 

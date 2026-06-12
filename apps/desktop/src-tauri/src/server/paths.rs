@@ -51,6 +51,19 @@ pub struct ResolvedPaths {
     pub screenshots_dir: ResolvedPath,
 }
 
+/// What `GET`/`PUT /api/config` (and the Tauri equivalents) return: the
+/// resolved path table plus the behaviour flags that live alongside paths in
+/// `config.json`. Flattened so the wire shape is
+/// `{ gameDir, logsDir, screenshotsDir, deleteScreenshots }` — matching
+/// `serverConfigResponseSchema` in `@shared/config-api`.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ConfigResponse {
+    #[serde(flatten)]
+    pub paths: ResolvedPaths,
+    pub delete_screenshots: bool,
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct ManualOverrides {
     pub game_dir: Option<String>,

@@ -2,6 +2,7 @@ mod commands;
 mod hotkeys;
 mod http_server;
 mod lan;
+mod notify;
 mod server;
 mod watcher;
 
@@ -74,6 +75,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(shortcut_plugin)
         .plugin(tauri_plugin_window_state::Builder::default().build())
+        .plugin(tauri_plugin_clipboard_manager::init())
         .invoke_handler(tauri::generate_handler![
             commands::get_config,
             commands::update_config,
@@ -82,9 +84,15 @@ pub fn run() {
             commands::suspend_hotkeys,
             commands::resume_hotkeys,
             commands::pairing_qr,
+            commands::copy_lan_url,
+            commands::notify_tray_hint,
         ])
         .setup(move |app| {
             let app_handle = app.handle().clone();
+
+            // Register our AppUserModelID (name + favicon) so the tray-hint
+            // toast is attributed to this app instead of PowerShell.
+            notify::register_aumid(&app_handle, &data_dir);
 
             // Block-on the async load — we want the config ready before
             // the webview starts running its onMounted hooks. Tiny JSON;
@@ -96,8 +104,13 @@ pub fn run() {
             // Reuse the up-front broadcast sender so hotkey `Command` events
             // and watcher events share one stream.
             let slot = Arc::new(WatcherSlot::with_sender(event_tx.clone()));
+            slot.set_delete_screenshots(tauri::async_runtime::block_on(store.delete_screenshots()));
             let resolved = paths::resolve(&tauri::async_runtime::block_on(store.overrides()));
-            tauri::async_runtime::block_on(watcher::apply_resolved(Some(&app_handle), &slot, &resolved));
+            tauri::async_runtime::block_on(watcher::apply_resolved(
+                Some(&app_handle),
+                &slot,
+                &resolved,
+            ));
 
             // Hotkey controller shares the same id→action map the plugin
             // handler reads, so a PUT re-registration keeps them in lockstep.
@@ -166,6 +179,7 @@ pub fn run_headless() {
         // One broadcast stream shared by the watchers and the hotkey thread.
         let event_tx = events::channel();
         let slot = Arc::new(WatcherSlot::with_sender(event_tx.clone()));
+        slot.set_delete_screenshots(store.delete_screenshots().await);
         let resolved = paths::resolve(&store.overrides().await);
         watcher::apply_resolved(None, &slot, &resolved).await;
 
@@ -192,9 +206,15 @@ pub fn run_headless() {
 fn clamp_window_to_monitor(window: &tauri::WebviewWindow) {
     const MIN_OVERLAP: i32 = 48;
 
-    let Ok(pos) = window.outer_position() else { return };
-    let Ok(size) = window.outer_size() else { return };
-    let Ok(monitors) = window.available_monitors() else { return };
+    let Ok(pos) = window.outer_position() else {
+        return;
+    };
+    let Ok(size) = window.outer_size() else {
+        return;
+    };
+    let Ok(monitors) = window.available_monitors() else {
+        return;
+    };
 
     if monitors.is_empty() {
         return;

@@ -2,7 +2,8 @@
 //! we can swap them atomically when resolved paths change.
 
 use std::path::PathBuf;
-use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 
 use tauri::AppHandle;
 use tokio::sync::broadcast;
@@ -37,6 +38,10 @@ pub struct WatcherSlot {
     screenshots: Mutex<Option<ScreenshotWatcher>>,
     logs: Mutex<Option<LogsWatcher>>,
     event_tx: broadcast::Sender<ServerEvent>,
+    /// "Delete screenshot after parse" toggle. Shared (Arc) so a running
+    /// screenshot watcher thread reads the live value — flipping it via
+    /// `set_delete_screenshots` takes effect without restarting the watcher.
+    delete_screenshots: Arc<AtomicBool>,
 }
 
 impl Default for WatcherSlot {
@@ -56,6 +61,7 @@ impl WatcherSlot {
             screenshots: Mutex::new(None),
             logs: Mutex::new(None),
             event_tx,
+            delete_screenshots: Arc::new(AtomicBool::new(false)),
         }
     }
 }
@@ -77,6 +83,12 @@ impl WatcherSlot {
     pub fn event_sender(&self) -> broadcast::Sender<ServerEvent> {
         self.event_tx.clone()
     }
+
+    /// Update the shared delete-screenshots flag. A running watcher reads it
+    /// live, so no restart is needed when only this toggle changes.
+    pub fn set_delete_screenshots(&self, enabled: bool) {
+        self.delete_screenshots.store(enabled, Ordering::Relaxed);
+    }
 }
 
 /// Apply the resolved paths: start each watcher if its path is usable,
@@ -97,7 +109,12 @@ pub async fn apply_resolved(app: Option<&AppHandle>, slot: &WatcherSlot, resolve
         _ => None,
     };
     match screenshots_dir {
-        Some(dir) => match screenshots::start(dir, app.cloned(), slot.event_tx.clone()) {
+        Some(dir) => match screenshots::start(
+            dir,
+            app.cloned(),
+            slot.event_tx.clone(),
+            slot.delete_screenshots.clone(),
+        ) {
             Ok(w) => slot.replace_screenshots(Some(w)),
             Err(err) => {
                 eprintln!("[watcher] screenshots start failed: {err:#}");

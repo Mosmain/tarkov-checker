@@ -24,6 +24,8 @@ export interface UseServerPaths {
   canSavePaths: ComputedRef<boolean>;
   savePaths: () => Promise<void>;
   statusIconClass: (slot: PathSlot) => string;
+  deleteScreenshots: Ref<boolean>;
+  setDeleteScreenshots: (v: boolean) => Promise<void>;
 }
 
 /**
@@ -73,6 +75,7 @@ export function useServerPaths(canEditPaths: Ref<boolean>): UseServerPaths {
   const pathsSaving = ref(false);
   const pathsError = ref<PathsError | null>(null);
   const pathsJustSaved = ref(false);
+  const deleteScreenshots = ref(false);
 
   const gameDirLocked = computed(() => serverConfig.value?.gameDir.source === 'env');
   const screenshotsDirLocked = computed(() => serverConfig.value?.screenshotsDir.source === 'env');
@@ -91,6 +94,7 @@ export function useServerPaths(canEditPaths: Ref<boolean>): UseServerPaths {
     serverConfig.value = cfg;
     gameDirInput.value = cfg.gameDir.value ?? '';
     screenshotsDirInput.value = cfg.screenshotsDir.value ?? '';
+    deleteScreenshots.value = cfg.deleteScreenshots;
   }
 
   async function loadPaths(): Promise<void> {
@@ -136,6 +140,26 @@ export function useServerPaths(canEditPaths: Ref<boolean>): UseServerPaths {
     }
   }
 
+  /**
+   * Immediate-save toggle (no "Save" button — it's a switch). Optimistically
+   * flips the ref, PUTs just the flag, and reverts on failure. The backend
+   * enforces the actual deletion in the screenshot watcher.
+   */
+  async function setDeleteScreenshots(v: boolean): Promise<void> {
+    const prev = deleteScreenshots.value;
+    if (prev === v) return;
+    deleteScreenshots.value = v;
+    pathsError.value = null;
+    try {
+      const cfg = await putServerConfig({ deleteScreenshots: v });
+      cachedConfig = cfg;
+      applyConfig(cfg);
+    } catch (err) {
+      deleteScreenshots.value = prev;
+      pathsError.value = toPathsError(err);
+    }
+  }
+
   function statusIconClass(slot: PathSlot): string {
     const item = serverConfig.value?.[slot];
     if (!item) return 'pi pi-circle text-surface-500';
@@ -161,5 +185,7 @@ export function useServerPaths(canEditPaths: Ref<boolean>): UseServerPaths {
     canSavePaths,
     savePaths,
     statusIconClass,
+    deleteScreenshots,
+    setDeleteScreenshots,
   };
 }

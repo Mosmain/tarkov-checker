@@ -5,6 +5,8 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 
+#[cfg(not(debug_assertions))]
+use axum::http::Uri;
 use axum::{
     extract::State,
     http::{header, HeaderValue, Method, StatusCode},
@@ -15,8 +17,6 @@ use axum::{
     routing::{get, post},
     Extension, Router,
 };
-#[cfg(not(debug_assertions))]
-use axum::http::Uri;
 use futures_util::stream::{Stream, StreamExt};
 use serde::Serialize;
 use tauri::AppHandle;
@@ -28,7 +28,7 @@ use crate::hotkeys::HotkeyController;
 use crate::server::config::{ConfigPatch, ConfigStore};
 use crate::server::events::ServerEvent;
 use crate::server::hotkeys::{HotkeyConfig, HotkeyPatch, HotkeyStore};
-use crate::server::paths::{self, ResolvedPaths};
+use crate::server::paths::{self, ConfigResponse};
 use crate::watcher::{self, WatcherSlot};
 
 pub const LISTEN_PORT: u16 = 47474;
@@ -97,9 +97,12 @@ struct ConfigError {
 /// plus the `source` and `exists` flags per slot. Same JSON the Tauri
 /// `get_config` IPC command returns, so a browser frontend reads the
 /// same shape as the webview.
-async fn get_config_http(State(state): State<AppState>) -> Json<ResolvedPaths> {
+async fn get_config_http(State(state): State<AppState>) -> Json<ConfigResponse> {
     let overrides = state.config_store.overrides().await;
-    Json(paths::resolve(&overrides))
+    Json(ConfigResponse {
+        paths: paths::resolve(&overrides),
+        delete_screenshots: state.config_store.delete_screenshots().await,
+    })
 }
 
 /// `GET /events` — Server-Sent Events stream of `ServerEvent`s. One JSON
@@ -148,7 +151,7 @@ async fn put_config_http(
     State(state): State<AppState>,
     Extension(app): Extension<Option<AppHandle>>,
     Json(patch): Json<ConfigPatch>,
-) -> Result<Json<ResolvedPaths>, (StatusCode, Json<ConfigError>)> {
+) -> Result<Json<ConfigResponse>, (StatusCode, Json<ConfigError>)> {
     state.config_store.apply(patch).await.map_err(|e| {
         (
             StatusCode::BAD_REQUEST,
@@ -157,9 +160,17 @@ async fn put_config_http(
             }),
         )
     })?;
+    let delete_screenshots = state.config_store.delete_screenshots().await;
+    // Update the slot before re-applying so the restarted watcher sees it.
+    state
+        .watcher_slot
+        .set_delete_screenshots(delete_screenshots);
     let resolved = paths::resolve(&state.config_store.overrides().await);
     watcher::apply_resolved(app.as_ref(), &state.watcher_slot, &resolved).await;
-    Ok(Json(resolved))
+    Ok(Json(ConfigResponse {
+        paths: resolved,
+        delete_screenshots,
+    }))
 }
 
 /// `GET /api/hotkeys` — the backend-owned combos. Same JSON the Tauri
@@ -176,9 +187,11 @@ async fn put_hotkeys_http(
     State(state): State<AppState>,
     Json(patch): Json<HotkeyPatch>,
 ) -> Result<Json<HotkeyConfig>, (StatusCode, Json<ConfigError>)> {
-    let merged = state.hotkey_store.apply(patch).await.map_err(|error| {
-        (StatusCode::BAD_REQUEST, Json(ConfigError { error }))
-    })?;
+    let merged = state
+        .hotkey_store
+        .apply(patch)
+        .await
+        .map_err(|error| (StatusCode::BAD_REQUEST, Json(ConfigError { error })))?;
 
     // Registration blocks (round-trips to the main / pump thread); keep it off
     // the async worker.
@@ -195,7 +208,9 @@ async fn put_hotkeys_http(
         }
     }
     // Notify the other clients (browser/phone over SSE) so their view re-syncs.
-    let _ = state.event_tx.send(ServerEvent::Hotkeys { config: effective.clone() });
+    let _ = state.event_tx.send(ServerEvent::Hotkeys {
+        config: effective.clone(),
+    });
     Ok(Json(effective))
 }
 
@@ -542,6 +557,9 @@ mod tests {
                     .header(header::ORIGIN, "http://localhost:5173")
                     .header("access-control-request-method", "PUT")
                     .header("access-control-request-headers", "content-type")
+                    // Chrome sends this on public→private preflights; the
+                    // allow header below is only emitted in response to it.
+                    .header("access-control-request-private-network", "true")
                     .body(Body::empty())
                     .unwrap(),
             )

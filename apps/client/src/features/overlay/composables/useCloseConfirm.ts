@@ -12,7 +12,7 @@ export function useCloseConfirm(): () => void {
   const confirm = useConfirm();
   const { t } = useI18n();
   const { isTauri } = useTauriOverlay();
-  const { minimizeToTray } = storeToRefs(useOverlayStore());
+  const { minimizeToTray, trayHintShown } = storeToRefs(useOverlayStore());
 
   return function onCloseRequested(): void {
     if (!isTauri) return;
@@ -21,6 +21,22 @@ export function useCloseConfirm(): () => void {
       void (async () => {
         const { getCurrentWindow } = await import('@tauri-apps/api/window');
         await getCurrentWindow().hide();
+        // First time only: the window is now hidden, so an in-app toast can't
+        // be seen — fire a native OS notification telling the user it's still
+        // running in the tray, then remember we've said it.
+        if (!trayHintShown.value) {
+          trayHintShown.value = true;
+          try {
+            const { invoke } = await import('@tauri-apps/api/core');
+            await invoke('notify_tray_hint', {
+              title: t('trayHint.title'),
+              body: t('trayHint.body'),
+            });
+          } catch (err) {
+            // eslint-disable-next-line no-console
+            console.error('[tray] hint notification failed:', err);
+          }
+        }
       })();
       return;
     }

@@ -51,6 +51,8 @@
     "saved": "Saved",
     "loading": "Connecting to the helper…",
     "mobileHint": "Open this page on the machine running Tarkov to configure paths.",
+    "deleteScreenshots": "Delete screenshots after reading",
+    "deleteScreenshotsHint": "Sends each Tarkov screenshot to the Recycle Bin once its position has been read. Keeps the folder from filling up. Off by default.",
     "source": {
       "env": "from .env",
       "manual": "manual",
@@ -124,6 +126,10 @@
     "accept": "Close",
     "reject": "Cancel"
   },
+  "trayHint": {
+    "title": "Still running",
+    "body": "tarkov-checker is now in the system tray. Open it from there, or right-click the tray icon to quit."
+  },
   "airdrop": {
     "armedFirst": "Drop tracker armed while facing the airdrop and press PrintScreen",
     "armedSecond": "Step sideways 5m, then press PrintScreen again",
@@ -137,10 +143,14 @@
     "radiusHint": "How big the predicted-landing circle is on the map. Two-shot triangulation isn't perfectly precise — the circle just makes the uncertainty honest. Adjust to taste."
   },
   "tray": {
-    "toggleLock": "Toggle lock",
+    "lock": "Lock (click-through)",
     "showWindow": "Show window",
+    "alwaysOnTop": "Always on top",
+    "playerFollow": "Player follow",
+    "pairPhone": "Pair phone",
+    "copyUrl": "Copy LAN URL",
     "quit": "Quit",
-    "tooltip": "tarkov-checker"
+    "tooltip": "tarkov-checker — running"
   },
   "extractNames": {
     "bigmap": {

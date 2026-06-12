@@ -19,6 +19,10 @@ pub struct StoredConfig {
     pub game_dir: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub screenshots_dir: Option<String>,
+    /// Delete each Tarkov screenshot after the watcher parses its position
+    /// from the filename. Opt-in (default false) — see `screenshots.rs`.
+    #[serde(default)]
+    pub delete_screenshots: bool,
 }
 
 /// PUT body. Each field is optional; only the keys present are updated.
@@ -30,6 +34,8 @@ pub struct ConfigPatch {
     pub game_dir: Option<Option<String>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub screenshots_dir: Option<Option<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub delete_screenshots: Option<bool>,
 }
 
 pub struct ConfigStore {
@@ -60,6 +66,11 @@ impl ConfigStore {
         }
     }
 
+    /// Current value of the "delete screenshots after parse" toggle.
+    pub async fn delete_screenshots(&self) -> bool {
+        self.state.lock().await.delete_screenshots
+    }
+
     pub async fn apply(&self, patch: ConfigPatch) -> Result<()> {
         // Validate all fields before acquiring the lock so a rejected UNC path
         // never partially mutates state (e.g. game_dir updated but
@@ -80,6 +91,9 @@ impl ConfigStore {
             }
             if let Some(v) = screenshots_dir {
                 s.screenshots_dir = v;
+            }
+            if let Some(v) = patch.delete_screenshots {
+                s.delete_screenshots = v;
             }
         }
         self.persist().await

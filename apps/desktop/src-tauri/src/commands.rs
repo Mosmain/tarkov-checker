@@ -5,36 +5,46 @@ use std::sync::Arc;
 use serde::Serialize;
 use tauri::{AppHandle, State};
 
+use crate::hotkeys::HotkeyController;
 #[cfg(not(debug_assertions))]
 use crate::http_server::LISTEN_PORT;
-use crate::hotkeys::HotkeyController;
 use crate::lan::detect_lan_ip;
 use crate::server::config::{ConfigPatch, ConfigStore};
 use crate::server::events::ServerEvent;
 use crate::server::hotkeys::{HotkeyConfig, HotkeyPatch, HotkeyStore};
-use crate::server::paths::{self, ResolvedPaths};
+use crate::server::paths::{self, ConfigResponse};
 use crate::watcher::WatcherSlot;
 
 /// Returns the same shape as the old `GET /api/config`.
 #[tauri::command]
-pub async fn get_config(store: State<'_, Arc<ConfigStore>>) -> Result<ResolvedPaths, String> {
+pub async fn get_config(store: State<'_, Arc<ConfigStore>>) -> Result<ConfigResponse, String> {
     let overrides = store.overrides().await;
-    Ok(paths::resolve(&overrides))
+    Ok(ConfigResponse {
+        paths: paths::resolve(&overrides),
+        delete_screenshots: store.delete_screenshots().await,
+    })
 }
 
 /// `PUT /api/config` analogue. Persists the patch then re-resolves +
-/// re-applies the watcher to honour the new path.
+/// re-applies the watcher to honour the new path / delete-screenshots flag.
 #[tauri::command]
 pub async fn update_config(
     app: AppHandle,
     patch: ConfigPatch,
     store: State<'_, Arc<ConfigStore>>,
     slot: State<'_, Arc<WatcherSlot>>,
-) -> Result<ResolvedPaths, String> {
+) -> Result<ConfigResponse, String> {
     store.apply(patch).await.map_err(|e| e.to_string())?;
+    let delete_screenshots = store.delete_screenshots().await;
+    // Push the new flag to the slot BEFORE re-applying, so the restarted
+    // screenshot watcher clones the up-to-date value.
+    slot.set_delete_screenshots(delete_screenshots);
     let resolved = paths::resolve(&store.overrides().await);
     crate::watcher::apply_resolved(Some(&app), slot.inner(), &resolved).await;
-    Ok(resolved)
+    Ok(ConfigResponse {
+        paths: resolved,
+        delete_screenshots,
+    })
 }
 
 /// `GET /api/hotkeys` analogue — the backend-owned combos.
@@ -60,13 +70,16 @@ pub async fn update_hotkeys(
         .await
         .unwrap_or_else(|_| merged.clone());
     if effective != merged {
-        store.set(effective.clone()).await.map_err(|e| e.to_string())?;
+        store
+            .set(effective.clone())
+            .await
+            .map_err(|e| e.to_string())?;
     }
     // Tell the other clients (browser/phone over SSE) the config changed —
     // `event_sender()` is the same broadcast channel the /events stream serves.
-    let _ = slot
-        .event_sender()
-        .send(ServerEvent::Hotkeys { config: effective.clone() });
+    let _ = slot.event_sender().send(ServerEvent::Hotkeys {
+        config: effective.clone(),
+    });
     Ok(effective)
 }
 
@@ -104,6 +117,19 @@ pub struct PairingQr {
     pub svg: String,
 }
 
+/// Builds the helper's LAN URL (`http://<lan-ip>:<port>/`). Dev serves the
+/// SPA from Vite on :5173; release serves it from the embedded helper on
+/// :47474. Errors with "no LAN IP found" when the host has no non-loopback
+/// IPv4. Shared by `pairing_qr` and `copy_lan_url`.
+fn lan_url() -> Result<String, String> {
+    let ip = detect_lan_ip().ok_or_else(|| "no LAN IP found".to_string())?;
+    #[cfg(debug_assertions)]
+    let port: u16 = 5173;
+    #[cfg(not(debug_assertions))]
+    let port = LISTEN_PORT;
+    Ok(format!("http://{ip}:{port}/"))
+}
+
 /// Builds the LAN URL of the helper plus an inline SVG QR for it.
 /// Called by `PairingModal.vue` on every open so the URL is fresh each
 /// time (LAN IP can change if the user switched Wi-Fi).
@@ -114,17 +140,36 @@ pub struct PairingQr {
 ///   URLs, but surfaced rather than panicked just in case)
 #[tauri::command]
 pub async fn pairing_qr() -> Result<PairingQr, String> {
-    let ip = detect_lan_ip().ok_or_else(|| "no LAN IP found".to_string())?;
-    // Dev: Vite serves the SPA on :5173. Release: helper serves it on :47474.
-    #[cfg(debug_assertions)]
-    let port: u16 = 5173;
-    #[cfg(not(debug_assertions))]
-    let port = LISTEN_PORT;
-    let url = format!("http://{ip}:{port}/");
+    let url = lan_url()?;
     let code = qrcode::QrCode::new(url.as_bytes()).map_err(|e| e.to_string())?;
     let svg = code
         .render::<qrcode::render::svg::Color>()
         .min_dimensions(256, 256)
         .build();
     Ok(PairingQr { url, svg })
+}
+
+/// Copies the helper's LAN URL to the system clipboard and returns it.
+/// Driven by the tray "Copy LAN URL" item: a native clipboard write that
+/// works without a DOM user-gesture (tray-menu clicks don't grant one, so
+/// `navigator.clipboard` from the webview would be rejected).
+#[tauri::command]
+pub async fn copy_lan_url(app: AppHandle) -> Result<String, String> {
+    use tauri_plugin_clipboard_manager::ClipboardExt;
+    let url = lan_url()?;
+    app.clipboard()
+        .write_text(url.clone())
+        .map_err(|e| e.to_string())?;
+    Ok(url)
+}
+
+/// Shows a native OS notification. Driven once by `useCloseConfirm` on the
+/// first close-to-tray to tell the user the app keeps running in the tray
+/// rather than quitting. Sent from Rust because the window is already hidden
+/// by then, so an in-app toast would no longer be visible. Strings are passed
+/// in pre-localised by the webview. The toast is attributed to this app's
+/// registered AUMID (name + favicon) — see `notify::register_aumid`.
+#[tauri::command]
+pub async fn notify_tray_hint(app: AppHandle, title: String, body: String) -> Result<(), String> {
+    crate::notify::show_toast(&app, &title, &body)
 }
