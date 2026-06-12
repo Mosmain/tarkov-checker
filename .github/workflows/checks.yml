@@ -57,7 +57,7 @@ jobs:
       # eslint-config-prettier disables format rules in ESLint, so
       # Prettier itself isn't verified by `pnpm lint`. Run it first —
       # a formatting drift fails fast before the heavier eslint pass.
-      - run: pnpm format:check
+      - run: pnpm format
 
       - run: pnpm lint
 

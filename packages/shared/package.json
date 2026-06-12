@@ -27,6 +27,7 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src --max-warnings=0",
+    "lint:fix": "eslint src --max-warnings=0 --fix",
     "gen-rust-regex": "node scripts/gen-rust-regex.mjs"
   },
   "dependencies": {
