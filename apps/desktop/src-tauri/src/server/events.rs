@@ -58,17 +58,13 @@ pub enum ServerEvent {
     /// SSE stream; the Tauri side also `app.emit("command", …)` so the
     /// overlay webview reacts. Browser/phone clients dispatch the action;
     /// no client needs the originating combo, only the action.
-    Command {
-        action: HotkeyAction,
-    },
+    Command { action: HotkeyAction },
     /// The backend-owned hotkey config changed (a rebind on any client).
     /// Broadcast over SSE so every other client's view stays in sync; the
     /// originating client already has the effective config from its PUT/IPC
     /// response. Carries the full effective config (camelCase keys via
     /// `HotkeyConfig`'s own serde rename).
-    Hotkeys {
-        config: HotkeyConfig,
-    },
+    Hotkeys { config: HotkeyConfig },
 }
 
 /// Payload for the Tauri `command` webview event. The channel name already

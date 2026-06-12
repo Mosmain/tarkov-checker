@@ -21,11 +21,11 @@ const VIRTUAL_INTERFACE_HINTS: &[&str] = &[
     "wsl",
     "docker",
     "vmware",
-    "vbox",      // VirtualBox
+    "vbox", // VirtualBox
     "virtualbox",
     "loopback",
-    "tap-",      // OpenVPN TAP adapters
-    "tun",       // OpenVPN TUN
+    "tap-", // OpenVPN TAP adapters
+    "tun",  // OpenVPN TUN
 ];
 
 /// Best-guess primary LAN IP of the host. Returns `None` if there is

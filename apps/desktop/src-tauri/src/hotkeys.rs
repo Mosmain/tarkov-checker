@@ -65,13 +65,36 @@ fn config_entries(cfg: &HotkeyConfig) -> [(HotkeyAction, &str); 5] {
 }
 
 /// (action, old, new) triples for diffing `current` against `desired`.
-fn config_diff(current: &HotkeyConfig, desired: &HotkeyConfig) -> [(HotkeyAction, String, String); 5] {
+fn config_diff(
+    current: &HotkeyConfig,
+    desired: &HotkeyConfig,
+) -> [(HotkeyAction, String, String); 5] {
     [
-        (HotkeyAction::ZoomIn, current.zoom_in.clone(), desired.zoom_in.clone()),
-        (HotkeyAction::ZoomOut, current.zoom_out.clone(), desired.zoom_out.clone()),
-        (HotkeyAction::FloorUp, current.floor_up.clone(), desired.floor_up.clone()),
-        (HotkeyAction::FloorDown, current.floor_down.clone(), desired.floor_down.clone()),
-        (HotkeyAction::Airdrop, current.airdrop.clone(), desired.airdrop.clone()),
+        (
+            HotkeyAction::ZoomIn,
+            current.zoom_in.clone(),
+            desired.zoom_in.clone(),
+        ),
+        (
+            HotkeyAction::ZoomOut,
+            current.zoom_out.clone(),
+            desired.zoom_out.clone(),
+        ),
+        (
+            HotkeyAction::FloorUp,
+            current.floor_up.clone(),
+            desired.floor_up.clone(),
+        ),
+        (
+            HotkeyAction::FloorDown,
+            current.floor_down.clone(),
+            desired.floor_down.clone(),
+        ),
+        (
+            HotkeyAction::Airdrop,
+            current.airdrop.clone(),
+            desired.airdrop.clone(),
+        ),
     ]
 }
 
@@ -244,7 +267,9 @@ impl StandaloneHotkeys {
         {
             return fallback; // pump thread gone
         }
-        reply_rx.recv_timeout(Duration::from_secs(2)).unwrap_or(fallback)
+        reply_rx
+            .recv_timeout(Duration::from_secs(2))
+            .unwrap_or(fallback)
     }
 }
 
@@ -345,7 +370,10 @@ fn pump_thread(
     let mut suspended = false;
     let mut registered: HashMap<u32, HotkeyAction> = HashMap::new();
     register_all(&manager, &current, &mut registered);
-    eprintln!("[hotkeys] headless global hotkeys registered ({} combos)", registered.len());
+    eprintln!(
+        "[hotkeys] headless global hotkeys registered ({} combos)",
+        registered.len()
+    );
 
     let mut msg: MSG = unsafe { std::mem::zeroed() };
     loop {
