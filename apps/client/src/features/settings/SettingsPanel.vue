@@ -68,8 +68,6 @@ const openSections = persistedRef(
         </AccordionContent>
       </AccordionPanel>
     </Accordion>
-    <!-- Not a section on purpose: version + update controls are periphery,
-         not a peer of Hotkeys/Overlay (see the about-footer design review). -->
     <AboutFooter />
   </Drawer>
 </template>

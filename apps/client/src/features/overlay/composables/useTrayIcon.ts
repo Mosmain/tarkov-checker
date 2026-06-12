@@ -15,13 +15,10 @@ const TRAY_ID = 'tarkov-checker-tray';
  *
  * The tray is the only control surface reachable while the game is fullscreen
  * (the overlay can be hidden or click-through-locked behind it), so the menu
- * holds ONLY window/session-level rescues and lifecycle: unlock, restore,
- * always-on-top, the LAN-share shortcuts, quit. Map-layer settings (player
- * follow, labels, ...) deliberately stay out — they belong to the LayerRail,
- * which is reachable whenever you'd actually want to flip them. Left-click restores the
- * window (Windows convention); right-click opens the menu. Since ✕ now parks
- * the overlay in the tray (see overlay store `minimizeToTray`), "Quit" here is
- * the canonical way to actually exit.
+ * holds window/session-level rescues and lifecycle only; map-layer settings
+ * live on the LayerRail. Left-click restores the window (Windows convention);
+ * right-click opens the menu. Since ✕ parks the overlay in the tray (see
+ * overlay store `minimizeToTray`), "Quit" here is the canonical way to exit.
  */
 export function useTrayIcon(isTauri: boolean, overlayClickThrough: Ref<boolean>): void {
   if (!isTauri) return;
@@ -134,10 +131,8 @@ export function useTrayIcon(isTauri: boolean, overlayClickThrough: Ref<boolean>)
         })(),
     });
 
-    // Conditional: only when an update is already known. Deliberately does
-    // NOT install from the tray — install = respawn = session killed, too
-    // destructive for an impulsive menu click. It restores the window with
-    // the banner visible; the install decision happens window-in-focus.
+    // Shows the window + banner instead of installing: install respawns the
+    // app — too destructive for a stray tray click.
     const updateItem = labels.update
       ? await MenuItem.new({
           id: 'update-available',

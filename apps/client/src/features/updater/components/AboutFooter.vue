@@ -11,10 +11,8 @@ const version = useAppVersion();
 const updater = useUpdaterStore();
 const { autoCheck, info, checking, installing, lastCheck } = storeToRefs(updater);
 
-// "Up to date" settles for a moment, then the button returns to its idle
-// label; errors stay until the next click (per the design review). Driven by
-// the click completing — NOT by watching lastCheck, whose value doesn't
-// change on a repeat "still up to date" outcome.
+// Driven by the click completing — not by watching lastCheck, whose value
+// doesn't change on a repeat "still up to date" outcome.
 const showLatest = ref(false);
 let latestTimer: ReturnType<typeof setTimeout> | undefined;
 function flashUpToDate(): void {
