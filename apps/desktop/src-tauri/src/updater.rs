@@ -21,6 +21,11 @@ pub fn current_version() -> &'static str {
     env!("CARGO_PKG_VERSION")
 }
 
+/// Human-facing releases page (the settings footer links here).
+pub fn releases_url() -> String {
+    format!("https://github.com/{REPO}/releases")
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateInfo {

@@ -89,6 +89,7 @@ pub fn run() {
             commands::notify_tray_hint,
             commands::check_update,
             commands::install_update,
+            commands::open_releases_page,
         ])
         .setup(move |app| {
             let app_handle = app.handle().clone();

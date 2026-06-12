@@ -72,7 +72,12 @@
     "available": "Доступно обновление v{version}",
     "install": "Обновить",
     "installing": "Обновляем…",
-    "error": "Не получилось обновиться. Скачай новый exe вручную: GitHub → Releases."
+    "error": "Не получилось обновиться. Скачай новый exe вручную: GitHub → Releases.",
+    "checkButton": "Проверить обновления",
+    "upToDate": "Актуальная версия",
+    "checkFailed": "Не удалось проверить",
+    "updateTo": "Обновить до v{version}",
+    "autoCheckLabel": "Проверять обновления при запуске"
   },
   "overlay": {
     "heading": "Оверлей",

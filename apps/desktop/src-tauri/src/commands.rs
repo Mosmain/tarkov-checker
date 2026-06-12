@@ -182,6 +182,18 @@ pub async fn check_update() -> Result<Option<crate::updater::UpdateInfo>, String
     crate::updater::check().await.map_err(|e| format!("{e:#}"))
 }
 
+/// Opens the GitHub releases page in the system default browser. The URL is
+/// fixed server-side (never taken from the webview); `explorer.exe <url>`
+/// hands it to the default browser without needing the opener plugin.
+#[tauri::command]
+pub async fn open_releases_page() -> Result<(), String> {
+    std::process::Command::new("explorer")
+        .arg(crate::updater::releases_url())
+        .spawn()
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 /// Portable self-update: re-checks GitHub (the webview never supplies a URL,
 /// so it can't point the updater anywhere else), downloads the new exe, swaps
 /// it in via the rename dance, relaunches and exits. See `updater.rs`.
