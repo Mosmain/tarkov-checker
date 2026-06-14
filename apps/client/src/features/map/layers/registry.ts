@@ -37,6 +37,9 @@ export interface MapLayer {
   titleKey: string;
   /** Optional per-layer settings, rendered inline in the rail flyout via a gear. */
   settingsComponent?: Component;
+  /** Optional quick controls (frequently-toggled filters), rendered always
+   * expanded under the layer's row while the layer is visible — no gear click. */
+  filterComponent?: Component;
   availability?: LayerAvailability;
 }
 

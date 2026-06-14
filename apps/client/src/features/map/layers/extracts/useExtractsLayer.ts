@@ -1,5 +1,5 @@
 import L, { type Marker, type LayerGroup } from 'leaflet';
-import { FACTION_COLORS } from '@shared/maps';
+import { FACTION_COLORS, type FactionKey } from '@shared/maps';
 import { makeIcon } from './icon';
 import { buildTooltipHtml, sortedEntries, type ExtractEntry } from './tooltip';
 import { createEdgeIndicators, type EdgeArrow } from './useEdgeIndicators';
@@ -31,7 +31,7 @@ const COLOCATION_TOLERANCE = 2;
 
 interface RawExtract {
   key: string;
-  factions: ReadonlyArray<'pmc' | 'scav' | 'shared'>;
+  factions: ReadonlyArray<FactionKey>;
   position: { x: number; y: number; z: number };
 }
 
@@ -157,7 +157,7 @@ export function useExtractsLayer(ctx: MapLayerContext): void {
 
     const markers: ExtractMarker[] = [];
     for (const group of buckets.values()) {
-      const entryList: { faction: 'pmc' | 'scav' | 'shared'; name: string }[] = [];
+      const entryList: { faction: FactionKey; name: string }[] = [];
       let sumX = 0;
       let sumY = 0;
       let sumZ = 0;

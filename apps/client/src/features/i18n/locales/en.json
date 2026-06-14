@@ -41,7 +41,8 @@
   "factions": {
     "pmc": "PMC",
     "scav": "Scav",
-    "shared": "Shared"
+    "shared": "Shared",
+    "transit": "Transits"
   },
   "paths": {
     "heading": "Game integration",
@@ -174,7 +175,6 @@
       "railroad_to_port": "Railroad to Port",
       "trailer_park_workers_shack": "Trailer Park Workers' Shack",
       "railroad_to_tarkov": "Railroad to Tarkov",
-      "ruaf_roadblock_2": "RUAF Roadblock",
       "warehouse_17": "Warehouse 17",
       "factory_shacks": "Factory Shacks",
       "warehouse_4": "Warehouse 4",
@@ -185,21 +185,28 @@
       "scav_checkpoint": "Scav Checkpoint",
       "boiler_room_basement_co_op": "Boiler Room Basement (Co-op)",
       "smugglers_boat": "Smugglers' Boat",
-      "smugglers_bunker_zb_1012": "Smugglers' Bunker (ZB-1012)"
+      "smugglers_bunker_zb_1012": "Smugglers' Bunker (ZB-1012)",
+      "transit_reserve": "Transit to Reserve",
+      "transit_factory": "Transit to Factory",
+      "transit_interchange": "Transit to Interchange",
+      "transit_shoreline": "Transit to Shoreline"
     },
     "factory4_day": {
       "cellars": "Cellars",
       "gate_3": "Gate 3",
-      "gate_3_2": "Gate 3",
       "camera_bunker_door": "Camera Bunker Door",
       "office_window": "Office Window",
       "gate_0": "Gate 0",
       "med_tent_gate": "Med Tent Gate",
       "courtyard_gate": "Courtyard Gate",
-      "smugglers_passage": "Smugglers' Passage"
+      "smugglers_passage": "Smugglers' Passage",
+      "transit_woods": "Transit to Woods",
+      "transit_customs": "Transit to Customs",
+      "transit_lab": "Transit to The Lab"
     },
     "woods": {
-      "friendship_bridge_co_op": "Friendship Bridge (Co-Op)",
+      "scav_bridge": "Scav Bridge",
+      "scav_bridge_co_op": "Scav Bridge (Co-op)",
       "ruaf_gate": "RUAF Gate",
       "zb_016": "ZB-016",
       "zb_014": "ZB-014",
@@ -213,12 +220,14 @@
       "mountain_stash": "Mountain Stash",
       "eastern_rocks": "Eastern Rocks",
       "old_railway_depot": "Old Railway Depot",
-      "un_roadblock_2": "UN Roadblock",
       "ruaf_roadblock": "RUAF Roadblock",
-      "outskirts_2": "Outskirts",
       "northern_un_roadblock": "Northern UN Roadblock",
       "power_line_passage_flare": "Power Line Passage (Flare)",
-      "railway_bridge_to_tarkov": "Railway Bridge to Tarkov"
+      "railway_bridge_to_tarkov": "Railway Bridge to Tarkov",
+      "transit_factory": "Transit to Factory",
+      "transit_reserve": "Transit to Reserve",
+      "transit_lighthouse": "Transit to Lighthouse",
+      "transit_customs": "Transit to Customs"
     },
     "shoreline": {
       "road_to_north_v_ex": "Road to North V-Ex",
@@ -233,7 +242,10 @@
       "smugglers_path_co_op": "Smugglers' Path (Co-op)",
       "pier_boat": "Pier Boat",
       "climber_s_trail": "Climber's Trail",
-      "mountain_bunker": "Mountain Bunker"
+      "mountain_bunker": "Mountain Bunker",
+      "transit_lighthouse": "Transit to Lighthouse",
+      "transit_terminal": "Transit to Terminal",
+      "transit_labyrinth": "Transit to Labyrinth?"
     },
     "rezervbase": {
       "armored_train": "Armored Train",
@@ -246,15 +258,21 @@
       "heating_pipe": "Heating Pipe",
       "depot_hermetic_door": "Depot Hermetic Door",
       "checkpoint_fence": "Checkpoint Fence",
-      "exit_to_woods": "Exit to Woods"
+      "exit_to_woods": "Exit to Woods",
+      "transit_customs": "Transit to Customs",
+      "transit_woods": "Transit to Woods",
+      "transit_lighthouse": "Transit to Lighthouse"
     },
     "interchange": {
       "emercom_checkpoint": "Emercom Checkpoint",
       "railway_exfil": "Railway Exfil",
       "power_station_v_ex": "Power Station V-Ex",
       "scav_camp_co_op": "Scav Camp (Co-Op)",
-      "hole_in_the_fence": "Hole in the Fence",
-      "saferoom_exfil": "Saferoom Exfil"
+      "saferoom_exfil": "Saferoom Exfil",
+      "smugglers_tunnel": "Smugglers' Tunnel",
+      "path_to_river": "Path to River",
+      "transit_customs": "Transit to Customs",
+      "transit_streets": "Transit to Streets of Tarkov"
     },
     "lighthouse": {
       "armored_train": "Armored Train",
@@ -268,7 +286,10 @@
       "hideout_under_the_landing_stage": "Hideout Under the Landing Stage",
       "scav_hideout_at_the_grotto": "Scav Hideout at the Grotto",
       "industrial_zone_gates": "Industrial Zone Gates",
-      "passage_by_the_lake": "Passage by the Lake"
+      "passage_by_the_lake": "Passage by the Lake",
+      "transit_shoreline": "Transit to Shoreline",
+      "transit_reserve": "Transit to Reserve",
+      "transit_woods": "Transit to Woods"
     },
     "tarkovstreets": {
       "entrance_to_catacombs": "Entrance to Catacombs",
@@ -287,7 +308,10 @@
       "klimov_street_flare": "Klimov Street (Flare)",
       "pinewood_basement_co_op": "Pinewood Basement (Co-Op)",
       "expo_checkpoint": "Expo Checkpoint",
-      "smugglers_basement": "Smugglers' Basement"
+      "smugglers_basement": "Smugglers' Basement",
+      "transit_ground_zero": "Transit to Ground Zero",
+      "transit_interchange": "Transit to Interchange",
+      "transit_lab": "Transit to The Lab"
     },
     "laboratory": {
       "medical_block_elevator": "Medical Block Elevator",
@@ -296,7 +320,8 @@
       "ventilation_shaft": "Ventilation Shaft",
       "sewage_conduit": "Sewage Conduit",
       "parking_gate": "Parking Gate",
-      "hangar_gate": "Hangar Gate"
+      "hangar_gate": "Hangar Gate",
+      "transit_streets": "Transit to Streets of Tarkov"
     },
     "sandbox": {
       "police_cordon_v_ex": "Police Cordon V-Ex",
@@ -304,7 +329,8 @@
       "scav_checkpoint_co_op": "Scav Checkpoint (Co-op)",
       "nakatani_basement_stairs": "Nakatani Basement Stairs",
       "mira_ave_flare": "Mira Ave (Flare)",
-      "tartowers_sales_office": "Tartowers Sales Office"
+      "tartowers_sales_office": "Tartowers Sales Office",
+      "transit_streets": "Transit to Streets of Tarkov"
     }
   },
   "mapNames": {

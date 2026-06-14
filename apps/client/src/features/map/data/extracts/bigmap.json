@@ -28,7 +28,7 @@
   },
   {
     "key": "crossroads",
-    "factions": ["shared"],
+    "factions": ["pmc", "scav"],
     "position": {
       "x": -334.804016,
       "y": 2.19002676,
@@ -55,7 +55,7 @@
   },
   {
     "key": "ruaf_roadblock",
-    "factions": ["pmc"],
+    "factions": ["pmc", "scav"],
     "position": {
       "x": -10.250061,
       "y": 1.92000723,
@@ -132,15 +132,6 @@
       "x": -163.4682,
       "y": 3.389978,
       "z": -217.452026
-    }
-  },
-  {
-    "key": "ruaf_roadblock_2",
-    "factions": ["scav"],
-    "position": {
-      "x": -9.436584,
-      "y": 1.6499877,
-      "z": -138.743988
     }
   },
   {
@@ -226,7 +217,7 @@
   },
   {
     "key": "smugglers_boat",
-    "factions": ["pmc"],
+    "factions": ["pmc", "scav"],
     "position": {
       "x": -41.5100021,
       "y": -12.633,
@@ -240,6 +231,42 @@
       "x": 463.18,
       "y": -1.46,
       "z": -112.36
+    }
+  },
+  {
+    "key": "transit_reserve",
+    "factions": ["transit"],
+    "position": {
+      "x": 651.7,
+      "y": 1.99,
+      "z": 124.6
+    }
+  },
+  {
+    "key": "transit_factory",
+    "factions": ["transit"],
+    "position": {
+      "x": 354.31,
+      "y": 2.31,
+      "z": -190.1
+    }
+  },
+  {
+    "key": "transit_interchange",
+    "factions": ["transit"],
+    "position": {
+      "x": -335.24,
+      "y": 2.11,
+      "z": -205.68
+    }
+  },
+  {
+    "key": "transit_shoreline",
+    "factions": ["transit"],
+    "position": {
+      "x": 23.67,
+      "y": -1.3999995,
+      "z": 139.53
     }
   }
 ]

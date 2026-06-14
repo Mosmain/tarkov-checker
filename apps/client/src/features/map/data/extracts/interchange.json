@@ -1,7 +1,7 @@
 [
   {
     "key": "emercom_checkpoint",
-    "factions": ["shared"],
+    "factions": ["pmc", "scav"],
     "position": {
       "x": -321.56,
       "y": 24.18,
@@ -10,7 +10,7 @@
   },
   {
     "key": "railway_exfil",
-    "factions": ["shared"],
+    "factions": ["pmc", "scav"],
     "position": {
       "x": 472.32,
       "y": 20.92,
@@ -21,27 +21,18 @@
     "key": "power_station_v_ex",
     "factions": ["pmc"],
     "position": {
-      "x": -251.92,
-      "y": 21.72,
-      "z": -367.13
+      "x": -295.6,
+      "y": 0,
+      "z": -368.7
     }
   },
   {
     "key": "scav_camp_co_op",
-    "factions": ["shared"],
+    "factions": ["scav"],
     "position": {
-      "x": 278.69,
-      "y": 21.94955,
-      "z": -30.97
-    }
-  },
-  {
-    "key": "hole_in_the_fence",
-    "factions": ["pmc"],
-    "position": {
-      "x": -219.92,
-      "y": 22.79,
-      "z": -37.02
+      "x": -100.05,
+      "y": 0,
+      "z": -67.64
     }
   },
   {
@@ -51,6 +42,42 @@
       "x": -47.73,
       "y": 22.97,
       "z": 44.055
+    }
+  },
+  {
+    "key": "smugglers_tunnel",
+    "factions": ["pmc", "scav"],
+    "position": {
+      "x": -136.54,
+      "y": 0,
+      "z": -176.33
+    }
+  },
+  {
+    "key": "path_to_river",
+    "factions": ["pmc"],
+    "position": {
+      "x": 536.33,
+      "y": 0,
+      "z": 80.51
+    }
+  },
+  {
+    "key": "transit_customs",
+    "factions": ["transit"],
+    "position": {
+      "x": 274.3,
+      "y": 23.2799988,
+      "z": 395.93
+    }
+  },
+  {
+    "key": "transit_streets",
+    "factions": ["transit"],
+    "position": {
+      "x": 263.1,
+      "y": 24.1,
+      "z": -444.4
     }
   }
 ]

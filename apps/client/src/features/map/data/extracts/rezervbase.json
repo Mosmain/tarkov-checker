@@ -1,7 +1,7 @@
 [
   {
     "key": "armored_train",
-    "factions": ["shared"],
+    "factions": ["pmc", "scav"],
     "position": {
       "x": 144.986,
       "y": -3.92,
@@ -19,7 +19,7 @@
   },
   {
     "key": "bunker_hermetic_door",
-    "factions": ["shared"],
+    "factions": ["pmc", "scav"],
     "position": {
       "x": 61.9206619,
       "y": -5.257,
@@ -46,7 +46,7 @@
   },
   {
     "key": "sewer_manhole",
-    "factions": ["shared"],
+    "factions": ["pmc", "scav"],
     "position": {
       "x": 40.18,
       "y": -5.12,
@@ -91,11 +91,38 @@
   },
   {
     "key": "exit_to_woods",
-    "factions": ["pmc"],
+    "factions": ["pmc", "scav"],
     "position": {
       "x": 36.53,
       "y": -5.97000027,
       "z": -221.56
+    }
+  },
+  {
+    "key": "transit_customs",
+    "factions": ["transit"],
+    "position": {
+      "x": -196.729477,
+      "y": -4.544204,
+      "z": -117.808853
+    }
+  },
+  {
+    "key": "transit_woods",
+    "factions": ["transit"],
+    "position": {
+      "x": 216.860535,
+      "y": -6.344204,
+      "z": -201.048859
+    }
+  },
+  {
+    "key": "transit_lighthouse",
+    "factions": ["transit"],
+    "position": {
+      "x": 238.800537,
+      "y": -6.25420427,
+      "z": -128.048859
     }
   }
 ]

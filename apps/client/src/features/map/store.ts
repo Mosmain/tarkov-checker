@@ -3,7 +3,7 @@ import { TARKOV_MAPS, type TarkovMapCode } from '@shared/maps';
 import { persistedRef } from '@/shared/persisted-store';
 import type { PlayerFollow } from './layers/player/usePlayerLayer';
 
-const extractFactionSchema = z.enum(['pmc', 'scav', 'shared']);
+const extractFactionSchema = z.enum(['pmc', 'scav', 'shared', 'transit']);
 const labelModeSchema = z.enum(['hover', 'always']);
 const labelSizeSchema = z.enum(['sm', 'md', 'lg']);
 const playerFollowSchema = z.enum(['off', 'on']);
@@ -14,7 +14,7 @@ export type ExtractFactionFilter = z.infer<typeof extractFactionSchema>;
 export type ExtractLabelMode = z.infer<typeof labelModeSchema>;
 export type ExtractLabelSize = z.infer<typeof labelSizeSchema>;
 
-const DEFAULT_FACTIONS: readonly ExtractFactionFilter[] = ['pmc', 'scav', 'shared'];
+const DEFAULT_FACTIONS: readonly ExtractFactionFilter[] = ['pmc', 'scav', 'shared', 'transit'];
 
 export const useMapSettingsStore = defineStore('map-settings', () => {
   const mapCode = persistedRef('rm.map.code', mapCodeSchema, 'bigmap' as TarkovMapCode);

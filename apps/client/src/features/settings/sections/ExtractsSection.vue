@@ -1,19 +1,12 @@
 <script setup lang="ts">
-import { FACTION_COLORS } from '@shared/maps';
-import { useMapSettingsStore, type ExtractFactionFilter } from '@/features/map/store';
+import { useMapSettingsStore } from '@/features/map/store';
 
-const { extractFactions, extractLabelMode, extractLabelSize, edgeIndicators } =
+// Faction toggles deliberately live OUTSIDE this component — they're the
+// always-visible ExtractFactionFilter.vue in the rail flyout; only the
+// rarely-touched knobs stay behind the gear.
+const { extractLabelMode, extractLabelSize, edgeIndicators } =
   storeToRefs(useMapSettingsStore());
 const { t } = useI18n();
-
-const FACTION_OPTIONS: ReadonlyArray<{
-  value: ExtractFactionFilter;
-  color: string;
-}> = [
-  { value: 'pmc', color: FACTION_COLORS.pmc },
-  { value: 'scav', color: FACTION_COLORS.scav },
-  { value: 'shared', color: FACTION_COLORS.shared },
-];
 
 const labelModeOptions = computed(() => [
   { label: t('labelHover'), value: 'hover' as const },
@@ -29,18 +22,6 @@ const labelSizeOptions = computed(() => [
 
 <template>
   <div class="space-y-3">
-    <div class="flex flex-col gap-1">
-      <label
-        v-for="opt in FACTION_OPTIONS"
-        :key="opt.value"
-        class="flex cursor-pointer items-center gap-3 rounded px-1 py-1 hover:bg-surface-800"
-      >
-        <Checkbox v-model="extractFactions" :value="opt.value" :input-id="'faction-' + opt.value" />
-        <i class="pi pi-circle-fill text-xs" :style="{ color: opt.color }" aria-hidden="true" />
-        <span class="text-sm">{{ t(`factions.${opt.value}`) }}</span>
-      </label>
-    </div>
-
     <div>
       <p class="mb-1.5 text-xs opacity-60">{{ t('labels') }}</p>
       <SelectButton
