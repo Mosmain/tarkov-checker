@@ -10,20 +10,11 @@
   },
   {
     "key": "gate_3",
-    "factions": ["scav"],
+    "factions": ["pmc", "scav"],
     "position": {
       "x": 58.709,
       "y": 1.59233332,
       "z": 60.86811
-    }
-  },
-  {
-    "key": "gate_3_2",
-    "factions": ["pmc"],
-    "position": {
-      "x": 58.43222,
-      "y": 3.17233324,
-      "z": 63.29811
     }
   },
   {
@@ -73,11 +64,38 @@
   },
   {
     "key": "smugglers_passage",
-    "factions": ["pmc"],
+    "factions": ["pmc", "scav"],
     "position": {
       "x": 48.026,
       "y": -1.61300015,
       "z": -28.8580017
+    }
+  },
+  {
+    "key": "transit_woods",
+    "factions": ["transit"],
+    "position": {
+      "x": 23.7,
+      "y": 0.84,
+      "z": 61.61
+    }
+  },
+  {
+    "key": "transit_customs",
+    "factions": ["transit"],
+    "position": {
+      "x": 18.51,
+      "y": -0.423,
+      "z": -48.33
+    }
+  },
+  {
+    "key": "transit_lab",
+    "factions": ["transit"],
+    "position": {
+      "x": -26.539,
+      "y": -4.085,
+      "z": -42.013
     }
   }
 ]

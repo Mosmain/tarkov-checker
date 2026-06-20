@@ -10,7 +10,7 @@
   },
   {
     "key": "emercom_checkpoint",
-    "factions": ["shared"],
+    "factions": ["pmc", "scav"],
     "position": {
       "x": 151.625,
       "y": 24.662056,
@@ -28,7 +28,7 @@
   },
   {
     "key": "nakatani_basement_stairs",
-    "factions": ["shared"],
+    "factions": ["pmc", "scav"],
     "position": {
       "x": -16.1249924,
       "y": 14.7620564,
@@ -41,16 +41,25 @@
     "position": {
       "x": 218.225,
       "y": 17.9920559,
-      "z": -38.5065842
+      "z": -1.5
     }
   },
   {
     "key": "tartowers_sales_office",
-    "factions": ["pmc"],
+    "factions": ["pmc", "scav"],
     "position": {
       "x": 190.804,
       "y": 17.6449986,
       "z": 133.388992
+    }
+  },
+  {
+    "key": "transit_streets",
+    "factions": ["transit"],
+    "position": {
+      "x": 222.829117,
+      "y": 15.993,
+      "z": 65.72
     }
   }
 ]

@@ -219,6 +219,11 @@ function stepFloor(delta: number): void {
                 <i class="pi pi-cog text-sm" />
               </button>
             </div>
+            <!-- Quick filters stay expanded while the layer is on; the gear
+                 keeps only the rarely-touched knobs. -->
+            <div v-if="l.filterComponent && layerVis(l.id).value" class="mt-1.5 pl-1">
+              <component :is="l.filterComponent" />
+            </div>
             <div v-if="l.settingsComponent && expanded === l.id" class="mt-2 pl-1">
               <component :is="l.settingsComponent" />
             </div>

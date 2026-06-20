@@ -427,7 +427,10 @@ export const VISIBLE_MAP_CODES = (Object.keys(TARKOV_MAPS) as TarkovMapCode[]).f
 export const FACTION_COLORS = {
   pmc: '#22c55e',
   scav: '#eab308',
-  shared: '#3b82f6',
+  shared: '#22d3ee',
+  // Map-to-map transit points: not a real faction (PMC-only mechanic), but
+  // riding the faction pipeline gives icons/tooltips/filtering for free.
+  transit: '#f97316',
 } as const satisfies Record<string, string>;
 
 export type FactionKey = keyof typeof FACTION_COLORS;

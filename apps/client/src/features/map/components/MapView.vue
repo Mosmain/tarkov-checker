@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useLeafletMap } from '../composables/useLeafletMap';
+import { useDevCoordsCopy } from '../composables/useDevCoordsCopy';
 import { useMapLayers } from '../layers/registry';
 import { useLayerVisibility } from '../composables/useLayerVisibility';
 import { useMapI18n } from '../composables/useMapI18n';
@@ -33,6 +34,8 @@ const {
   floorDown,
   reload,
 } = useLeafletMap(mapContainer, props.mapCode);
+
+useDevCoordsCopy(map);
 
 for (const layer of useMapLayers().value) {
   layer.mount({

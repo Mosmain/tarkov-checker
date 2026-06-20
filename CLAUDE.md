@@ -150,7 +150,10 @@ and `extractNames.<canonicalMapCode>.<key>` under
 no strings — adding a language is a locale-only change.
 
 `factions` is an array because one physical exit can serve multiple sides
-(PMC + Scav share the same door). At render time the client **merges
+(PMC + Scav share the same door). `transit` is a fourth pseudo-faction for
+map-to-map transit points — not a real side (PMC-only mechanic), but riding
+the faction pipeline gives icons/tooltips/filter/auto-hide for free; the
+destination map lives only in the i18n display name, not in the data. At render time the client **merges
 co-located extracts** that round to the same `(x, z)` bucket — Customs has
 dorms V-Ex (PMC) and old road gate (Scav) ~1m apart, they become a single
 composite marker. See "Map rendering layers" below for how that composite
@@ -190,7 +193,11 @@ key back in the running app.
     (derived from registry `subgroup`: today only `player`, with `loot`/`quests`
     dimmed future icons). Clicking a category icon opens a flyout listing its
     layers: each row has a visibility `ToggleSwitch`, layer name, and a gear button
-    that expands that layer's settings component inline. Floor stepper at the rail's
+    that expands that layer's settings component inline. A layer may also register
+    a `filterComponent` — quick controls rendered always-expanded under its row
+    while the layer is visible, no gear click (extracts: the faction toggles, with
+    factions that have no exits on the current map auto-hidden via
+    `factionsForMap`). Floor stepper at the rail's
     bottom (multi-floor maps only) is a vertical ▲/level/▼. Rail hides when the
     overlay is click-through-locked. When locked on a multi-floor map, a compact
     read-only floor chip appears bottom-left. Flyouts position relative to the rail
@@ -237,24 +244,21 @@ vertical span is pushed out to the rail's right edge (RAIL_GAP px beyond). Measu
 each frame via `.layer-rail` rect so arrows flow dynamically as the rail animates
 in/out on lock transitions.
 
-Extract markers are `L.divIcon` instances (not `L.icon`) — the composite
-PNG split via CSS `clip-path: polygon(...)` is built inline as HTML.
-Single-faction = one `<img>`; 2 or 3 factions = stacked `<img>`s with `/`-
-diagonal clip slices (area-balanced thirds for the 3-faction case). The
-icon reacts to the faction filter dynamically: turning Scav off on a
-PMC+Scav exit re-renders the icon as a clean PMC. Tailwind's preflight
-gives `<img>` `max-width: 100%` which collapses the icon to 0 inside
-Leaflet's positioned wrapper, so `styles.css` keeps an override:
-
-```
-.leaflet-extracts-pane .extract-icon-divicon img {
-  max-width: none !important; max-height: none !important;
-}
-```
+Extract markers are `L.divIcon` instances (not `L.icon`) — the icon is
+**inline SVG generated in `icon.ts`** (one hand-drawn shield+runner shape,
+interior recoloured per faction from `FACTION_COLORS`; no static image
+assets, nothing under `public/icons/`). Inline rather than `<img src>`
+because an external SVG can't be recoloured from outside. Single-faction =
+one `<svg>`; 2 or 3 factions = stacked recoloured copies with `/`-diagonal
+CSS `clip-path` slices (area-balanced thirds for the 3-faction case; ≥4
+co-located kinds show the first three per `FACTION_ORDER`). The icon
+reacts to the faction filter dynamically: turning Scav off on a PMC+Scav
+exit re-renders the icon as a clean PMC.
 
 Tooltip is multi-row (one row per distinct name), each row carries a
-faction-coloured left stripe via `.extract-tooltip-row--{pmc|scav|shared}`
-or `.extract-tooltip-row--multi` when factions share a name. `direction:
+faction-coloured left stripe — the colour is inlined from `FACTION_COLORS`
+in `tooltip.ts` (no per-faction CSS classes); rows where multiple factions
+share a name keep the neutral stripe from the base CSS rule. `direction:
 'top'` keeps the tooltip above the icon; `tooltipAnchor` inside the
 icon's top edge gives a few pixels of overlap for visual cohesion.
 

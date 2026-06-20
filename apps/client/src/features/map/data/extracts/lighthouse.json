@@ -1,7 +1,7 @@
 [
   {
     "key": "armored_train",
-    "factions": ["shared"],
+    "factions": ["pmc", "scav"],
     "position": {
       "x": 6.27001953,
       "y": 14.1133,
@@ -57,9 +57,9 @@
     "key": "southern_road",
     "factions": ["pmc"],
     "position": {
-      "x": -295.8,
+      "x": -281.3,
       "y": 11.86,
-      "z": 420.6
+      "z": 420.8
     }
   },
   {
@@ -100,11 +100,38 @@
   },
   {
     "key": "passage_by_the_lake",
-    "factions": ["pmc"],
+    "factions": ["pmc", "scav"],
     "position": {
       "x": -360,
       "y": 27.19,
       "z": -564.87
+    }
+  },
+  {
+    "key": "transit_shoreline",
+    "factions": ["transit"],
+    "position": {
+      "x": -338.6,
+      "y": 17.5,
+      "z": -168.9
+    }
+  },
+  {
+    "key": "transit_reserve",
+    "factions": ["transit"],
+    "position": {
+      "x": -294.6,
+      "y": 15.2591143,
+      "z": -780.1
+    }
+  },
+  {
+    "key": "transit_woods",
+    "factions": ["transit"],
+    "position": {
+      "x": 106.3,
+      "y": 6.74,
+      "z": -958.1
     }
   }
 ]

@@ -120,9 +120,9 @@
     "key": "klimov_street_flare",
     "factions": ["pmc"],
     "position": {
-      "x": -263.41,
-      "y": 2.9,
-      "z": 43.19
+      "x": -230.41,
+      "y": 0,
+      "z": 47.33
     }
   },
   {
@@ -145,11 +145,38 @@
   },
   {
     "key": "smugglers_basement",
-    "factions": ["pmc"],
+    "factions": ["pmc", "scav"],
     "position": {
       "x": 75.99,
       "y": -0.6029999,
       "z": 50.0100021
+    }
+  },
+  {
+    "key": "transit_ground_zero",
+    "factions": ["transit"],
+    "position": {
+      "x": -260.05,
+      "y": 2.18500137,
+      "z": 103.645729
+    }
+  },
+  {
+    "key": "transit_interchange",
+    "factions": ["transit"],
+    "position": {
+      "x": 286.670776,
+      "y": 3.39350128,
+      "z": 505.539978
+    }
+  },
+  {
+    "key": "transit_lab",
+    "factions": ["transit"],
+    "position": {
+      "x": 206.955,
+      "y": -8.382,
+      "z": 82.194
     }
   }
 ]

@@ -1,4 +1,4 @@
-import type { FactionKey } from '@shared/maps';
+import { FACTION_COLORS, type FactionKey } from '@shared/maps';
 import { FACTION_ORDER } from './icon';
 
 export interface ExtractEntry {
@@ -21,9 +21,11 @@ function escapeHtml(s: string): string {
 /**
  * Tooltip HTML: one row per distinct name, with a faction-coloured stripe on
  * the left. If multiple factions share a name (PMC + Scav use the same exit
- * with one label, e.g. shoreline's "Road to Customs"), the row is neutral.
- * Co-located extracts with different names (Customs' Dorms V-Ex + Old Road
- * Gate) give multiple rows, each tagged by its own faction colour.
+ * with one label, e.g. shoreline's "Road to Customs"), the row keeps the
+ * neutral stripe from the base CSS rule. Co-located extracts with different
+ * names (Customs' Dorms V-Ex + Old Road Gate) give multiple rows, each tagged
+ * by its own faction colour. The colour goes inline from FACTION_COLORS —
+ * the single source for faction colours, no CSS twin to keep in sync.
  */
 export function buildTooltipHtml(entries: ReadonlyArray<ExtractEntry>): string {
   const factionsByName = new Map<string, FactionKey[]>();
@@ -41,11 +43,9 @@ export function buildTooltipHtml(entries: ReadonlyArray<ExtractEntry>): string {
   return order
     .map((name) => {
       const factions = factionsByName.get(name)!;
-      const cls =
-        factions.length === 1
-          ? `extract-tooltip-row--${factions[0]!}`
-          : 'extract-tooltip-row--multi';
-      return `<div class="extract-tooltip-row ${cls}">${escapeHtml(name)}</div>`;
+      const stripe =
+        factions.length === 1 ? ` style="border-left-color: ${FACTION_COLORS[factions[0]!]}"` : '';
+      return `<div class="extract-tooltip-row"${stripe}>${escapeHtml(name)}</div>`;
     })
     .join('');
 }
