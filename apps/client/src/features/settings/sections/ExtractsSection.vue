@@ -4,8 +4,7 @@ import { useMapSettingsStore } from '@/features/map/store';
 // Faction toggles deliberately live OUTSIDE this component — they're the
 // always-visible ExtractFactionFilter.vue in the rail flyout; only the
 // rarely-touched knobs stay behind the gear.
-const { extractLabelMode, extractLabelSize, edgeIndicators } =
-  storeToRefs(useMapSettingsStore());
+const { extractLabelMode, extractLabelSize, edgeIndicators } = storeToRefs(useMapSettingsStore());
 const { t } = useI18n();
 
 const labelModeOptions = computed(() => [
