@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           # apps/client/public/maps is a git submodule (SVG maps).
           # Without this checkout silently ships an empty maps dir and
