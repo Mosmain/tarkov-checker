@@ -1,6 +1,15 @@
 [
   {
-    "key": "friendship_bridge_co_op",
+    "key": "scav_bridge",
+    "factions": ["scav"],
+    "position": {
+      "x": 93.17,
+      "y": 16.57,
+      "z": -843.98
+    }
+  },
+  {
+    "key": "scav_bridge_co_op",
     "factions": ["shared"],
     "position": {
       "x": 93.17,
@@ -12,9 +21,9 @@
     "key": "ruaf_gate",
     "factions": ["pmc"],
     "position": {
-      "x": -141.730011,
-      "y": -2.37,
-      "z": 446.8
+      "x": -135.774353,
+      "y": 0.971269131,
+      "z": 416.2604
     }
   },
   {
@@ -37,7 +46,7 @@
   },
   {
     "key": "un_roadblock",
-    "factions": ["pmc"],
+    "factions": ["pmc", "scav"],
     "position": {
       "x": -536.1243,
       "y": 1.68126917,
@@ -55,7 +64,7 @@
   },
   {
     "key": "outskirts",
-    "factions": ["scav"],
+    "factions": ["pmc", "scav"],
     "position": {
       "x": 347.15567,
       "y": -11.15,
@@ -126,30 +135,12 @@
     }
   },
   {
-    "key": "un_roadblock_2",
-    "factions": ["scav"],
-    "position": {
-      "x": -535.2443,
-      "y": 1.43126917,
-      "z": 287.050385
-    }
-  },
-  {
     "key": "ruaf_roadblock",
     "factions": ["scav"],
     "position": {
       "x": -135.774353,
       "y": 0.971269131,
       "z": 416.2604
-    }
-  },
-  {
-    "key": "outskirts_2",
-    "factions": ["pmc"],
-    "position": {
-      "x": 349.035645,
-      "y": -9.148731,
-      "z": 358.580383
     }
   },
   {
@@ -172,11 +163,47 @@
   },
   {
     "key": "railway_bridge_to_tarkov",
-    "factions": ["pmc"],
+    "factions": ["pmc", "scav"],
     "position": {
       "x": -730.43,
       "y": 8.7,
       "z": 129.32
+    }
+  },
+  {
+    "key": "transit_factory",
+    "factions": ["transit"],
+    "position": {
+      "x": -362.45,
+      "y": 0.821269155,
+      "z": 360.7704
+    }
+  },
+  {
+    "key": "transit_reserve",
+    "factions": ["transit"],
+    "position": {
+      "x": 246.06,
+      "y": -10.22,
+      "z": 369.9
+    }
+  },
+  {
+    "key": "transit_lighthouse",
+    "factions": ["transit"],
+    "position": {
+      "x": 494.34,
+      "y": -16.77,
+      "z": 345.37
+    }
+  },
+  {
+    "key": "transit_customs",
+    "factions": ["transit"],
+    "position": {
+      "x": -153.05,
+      "y": 1.07,
+      "z": 402.13
     }
   }
 ]

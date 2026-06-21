@@ -32,6 +32,13 @@ const statusIconClass = computed(() => {
   }
 });
 
+// Localized, human-readable connection state for the sr-only live region and
+// the hover title (was a hard-coded English "ws: <status>" leak).
+const statusText = computed(() => {
+  const key = ['open', 'connecting', 'closed'].includes(props.status) ? props.status : 'idle';
+  return `${t('a11y.connectionStatus')}: ${t(`a11y.connection.${key}`)}`;
+});
+
 // Shared with sibling chrome (the floating clock slides down when this is
 // active). The bar expands on hover and must STAY expanded while dragging —
 // the OS move loop steals pointer events, so `:hover` drops the instant the
@@ -125,10 +132,10 @@ function openMapMenu(event: MouseEvent): void {
       <div class="flex shrink-0 items-center gap-2" @mousedown.stop>
         <span
           class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-surface-800/85 ring-1 ring-white/10 backdrop-blur"
-          :title="'ws: ' + status"
+          :title="statusText"
         >
           <i :class="['text-[10px]', statusIconClass]" aria-hidden="true" />
-          <span class="sr-only" aria-live="polite">Connection: {{ status }}</span>
+          <span class="sr-only" aria-live="polite">{{ statusText }}</span>
         </span>
         <SettingsPanel />
         <Button
@@ -150,10 +157,10 @@ function openMapMenu(event: MouseEvent): void {
   <div v-else-if="tauriChrome" class="sa-top sa-right absolute z-[1000]">
     <span
       class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-surface-800/70 backdrop-blur pointer-events-none"
-      :title="'ws: ' + status"
+      :title="statusText"
     >
       <i :class="['text-[10px]', statusIconClass]" aria-hidden="true" />
-      <span class="sr-only" aria-live="polite">Connection: {{ status }}</span>
+      <span class="sr-only" aria-live="polite">{{ statusText }}</span>
     </span>
   </div>
 

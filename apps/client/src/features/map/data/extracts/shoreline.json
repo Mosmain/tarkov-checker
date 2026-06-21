@@ -109,11 +109,38 @@
   },
   {
     "key": "mountain_bunker",
-    "factions": ["pmc"],
+    "factions": ["pmc", "scav"],
     "position": {
       "x": -390.956024,
       "y": -2.55000019,
       "z": -385.721
+    }
+  },
+  {
+    "key": "transit_lighthouse",
+    "factions": ["transit"],
+    "position": {
+      "x": 417.2,
+      "y": -56.1,
+      "z": -217.5
+    }
+  },
+  {
+    "key": "transit_terminal",
+    "factions": ["transit"],
+    "position": {
+      "x": -965.82,
+      "y": -57.52,
+      "z": 364.49
+    }
+  },
+  {
+    "key": "transit_labyrinth",
+    "factions": ["transit"],
+    "position": {
+      "x": -197.958,
+      "y": -9.867,
+      "z": -81.085
     }
   }
 ]

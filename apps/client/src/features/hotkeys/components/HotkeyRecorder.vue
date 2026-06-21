@@ -95,7 +95,9 @@ let currentRecorder: { cancel: () => void } | null = null;
         :class="recording ? 'ring-2 ring-primary' : ''"
       >
         <template v-if="recording">
-          <span class="truncate opacity-70">{{ t('hotkeys.recordingPrompt') }}</span>
+          <span class="truncate opacity-70" role="status" aria-live="polite">
+            {{ t('hotkeys.recordingPrompt') }}
+          </span>
         </template>
         <template v-else>
           <span v-for="(part, idx) in displayParts" :key="idx" class="inline-flex items-center">
@@ -117,7 +119,7 @@ let currentRecorder: { cancel: () => void } | null = null;
         @click="startRecording"
       />
     </div>
-    <p v-if="error" class="mt-1.5 text-[10px] leading-relaxed text-amber-400">
+    <p v-if="error" role="alert" class="mt-1.5 text-[10px] leading-relaxed text-amber-400">
       {{ t(error === 'altgr' ? 'hotkeys.altgr' : 'hotkeys.invalid') }}
     </p>
   </div>

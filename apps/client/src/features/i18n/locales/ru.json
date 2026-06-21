@@ -36,12 +36,27 @@
     "quests": "Квесты"
   },
   "close": "Закрыть",
+  "retry": "Повторить",
+  "mapError": "Ошибка загрузки карты: {error}",
+  "a11y": {
+    "connectionStatus": "Состояние соединения",
+    "connection": {
+      "open": "Подключено",
+      "connecting": "Подключение",
+      "closed": "Нет связи",
+      "idle": "Ожидание"
+    },
+    "mapRegion": "{name} — интерактивная карта",
+    "selectMap": "Выбор карты",
+    "opensNewWindow": "откроется в новом окне"
+  },
   "floorWheelHint": "Уровень — Alt + колесо для смены",
   "floor": "Уровень",
   "factions": {
     "pmc": "ЧВК",
     "scav": "Дикие",
-    "shared": "Общие"
+    "shared": "Общие",
+    "transit": "Переходы"
   },
   "paths": {
     "heading": "Интеграция с игрой",
@@ -174,7 +189,6 @@
       "railroad_to_port": "ЖД к порту",
       "trailer_park_workers_shack": "Времянка у трейл. парка",
       "railroad_to_tarkov": "ЖД до Таркова",
-      "ruaf_roadblock_2": "Блокпост ВС РФ",
       "warehouse_17": "Склад 17",
       "factory_shacks": "Заводские времянки",
       "warehouse_4": "Склад 4",
@@ -185,21 +199,28 @@
       "scav_checkpoint": "КПП Диких",
       "boiler_room_basement_co_op": "Подвал котельной (Совм.)",
       "smugglers_boat": "Лодка Контрабандистов",
-      "smugglers_bunker_zb_1012": "Бункер Контрабандистов (ЗБ-1012)"
+      "smugglers_bunker_zb_1012": "Бункер Контрабандистов (ЗБ-1012)",
+      "transit_reserve": "Переход на Резерв",
+      "transit_factory": "Переход на Завод",
+      "transit_interchange": "Переход на Развязку",
+      "transit_shoreline": "Переход на Берег"
     },
     "factory4_day": {
       "cellars": "Подвалы",
       "gate_3": "Ворота 3",
-      "gate_3_2": "Ворота 3",
       "camera_bunker_door": "Бункерная дверь с камерой",
       "office_window": "Офисное окно",
       "gate_0": "Ворота 0",
       "med_tent_gate": "Ворота у медицинской палатки",
       "courtyard_gate": "Ворота во дворе",
-      "smugglers_passage": "Проход Контрабандистов"
+      "smugglers_passage": "Проход Контрабандистов",
+      "transit_woods": "Переход на Лес",
+      "transit_customs": "Переход на Таможню",
+      "transit_lab": "Переход на Лабораторию"
     },
     "woods": {
-      "friendship_bridge_co_op": "Мост дружбы (Совм.)",
+      "scav_bridge": "Дикий мост",
+      "scav_bridge_co_op": "Дикий мост (Совм.)",
       "ruaf_gate": "Ворота ВС РФ",
       "zb_016": "ЗБ-016",
       "zb_014": "ЗБ-014",
@@ -213,12 +234,14 @@
       "mountain_stash": "Горный тайник",
       "eastern_rocks": "Восточные скалы",
       "old_railway_depot": "Старое депо",
-      "un_roadblock_2": "Южный пост ООН",
       "ruaf_roadblock": "Блокпост ВС РФ",
-      "outskirts_2": "Окраины",
       "northern_un_roadblock": "Северный пост ООН",
       "power_line_passage_flare": "Проход у ЛЭП (Сигнал)",
-      "railway_bridge_to_tarkov": "ЖД-мост к Таркову"
+      "railway_bridge_to_tarkov": "ЖД-мост к Таркову",
+      "transit_factory": "Переход на Завод",
+      "transit_reserve": "Переход на Резерв",
+      "transit_lighthouse": "Переход на Маяк",
+      "transit_customs": "Переход на Таможню"
     },
     "shoreline": {
       "road_to_north_v_ex": "А-Выход дорога на север",
@@ -233,7 +256,10 @@
       "smugglers_path_co_op": "Путь контрабандиста (Совм.)",
       "pier_boat": "Лодка на причале",
       "climber_s_trail": "Тропа альпиниста",
-      "mountain_bunker": "Бункер в горе"
+      "mountain_bunker": "Бункер в горе",
+      "transit_lighthouse": "Переход на Маяк",
+      "transit_terminal": "Переход на Терминал",
+      "transit_labyrinth": "Переход на Лабиринт?"
     },
     "rezervbase": {
       "armored_train": "Бронепоезд",
@@ -246,15 +272,21 @@
       "heating_pipe": "Трубопровод отопления",
       "depot_hermetic_door": "Гермодверь к депо",
       "checkpoint_fence": "Забор у КПП",
-      "exit_to_woods": "Выход в сторону Леса"
+      "exit_to_woods": "Выход в сторону Леса",
+      "transit_customs": "Переход на Таможню",
+      "transit_woods": "Переход на Лес",
+      "transit_lighthouse": "Переход на Маяк"
     },
     "interchange": {
       "emercom_checkpoint": "КПП МЧС",
       "railway_exfil": "Выход на железной дороге",
       "power_station_v_ex": "А-Выход у ТЭЦ",
       "scav_camp_co_op": "Лагерь Диких (Совм.)",
-      "hole_in_the_fence": "Дыра в заборе",
-      "saferoom_exfil": "Безопасная комната"
+      "saferoom_exfil": "Безопасная комната",
+      "smugglers_tunnel": "Тропа контрабандистов",
+      "path_to_river": "Тропа к реке",
+      "transit_customs": "Переход на Таможню",
+      "transit_streets": "Переход на Улицы Таркова"
     },
     "lighthouse": {
       "armored_train": "Бронепоезд",
@@ -268,7 +300,10 @@
       "hideout_under_the_landing_stage": "Схрон под дебаркадером",
       "scav_hideout_at_the_grotto": "Укрытие в гроте",
       "industrial_zone_gates": "Ворота промзоны",
-      "passage_by_the_lake": "Проход у озера"
+      "passage_by_the_lake": "Проход у озера",
+      "transit_shoreline": "Переход на Берег",
+      "transit_reserve": "Переход на Резерв",
+      "transit_woods": "Переход на Лес"
     },
     "tarkovstreets": {
       "entrance_to_catacombs": "Вход в катакомбы",
@@ -287,7 +322,10 @@
       "klimov_street_flare": "Улица Климова (Сигнал)",
       "pinewood_basement_co_op": "Подвал в Pinewood (Совм.)",
       "expo_checkpoint": "КПП у выставочного центра",
-      "smugglers_basement": "Подвал Контрабандистов"
+      "smugglers_basement": "Подвал Контрабандистов",
+      "transit_ground_zero": "Переход на Эпицентр",
+      "transit_interchange": "Переход на Развязку",
+      "transit_lab": "Переход на Лабораторию"
     },
     "laboratory": {
       "medical_block_elevator": "Лифт медблока",
@@ -296,7 +334,8 @@
       "ventilation_shaft": "Вентиляционная шахта",
       "sewage_conduit": "Накопительный коллектор",
       "parking_gate": "Парковка",
-      "hangar_gate": "Ангар"
+      "hangar_gate": "Ангар",
+      "transit_streets": "Переход на Улицы Таркова"
     },
     "sandbox": {
       "police_cordon_v_ex": "А-Выход полицейский кордон",
@@ -304,7 +343,8 @@
       "scav_checkpoint_co_op": "Блокпост Диких (Совм.)",
       "nakatani_basement_stairs": "Спуск в подвал в Nakatani",
       "mira_ave_flare": "Проспект Мира (Сигнал)",
-      "tartowers_sales_office": "Офис продаж Tartowers"
+      "tartowers_sales_office": "Офис продаж Tartowers",
+      "transit_streets": "Переход на Улицы Таркова"
     }
   },
   "mapNames": {

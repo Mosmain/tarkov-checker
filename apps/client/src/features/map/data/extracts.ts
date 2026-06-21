@@ -42,3 +42,13 @@ export function extractsForMap(rawCode: string): ReadonlyArray<ExtractData> | nu
   const canonical = canonicalMapCode(rawCode);
   return EXTRACTS_BY_CODE[canonical] ?? null;
 }
+
+/** Factions that actually have at least one exit on the given map — the
+ * faction filter only offers these (no shared exits on Factory, etc.). */
+export function factionsForMap(rawCode: string): ReadonlySet<FactionKey> {
+  const present = new Set<FactionKey>();
+  for (const ex of extractsForMap(rawCode) ?? []) {
+    for (const faction of ex.factions) present.add(faction);
+  }
+  return present;
+}

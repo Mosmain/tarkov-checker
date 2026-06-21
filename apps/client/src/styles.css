@@ -74,6 +74,34 @@
   --p-font-family: 'Bender', system-ui, sans-serif;
 }
 
+/* WCAG 2.4.7 Focus Visible — keyboard focus ring for our custom (non-PrimeVue)
+   interactive elements. PrimeVue components ship their own Aura focus ring;
+   plain <a>/<button> we render (rail buttons, menu rows, banner close, links)
+   had none. `:where()` keeps specificity at 0 so any component-level focus
+   style still wins. `:focus-visible` shows it for keyboard users only. */
+@layer base {
+  :where(a, button, [tabindex]):not([class*='p-']):focus-visible {
+    outline: 2px solid var(--p-primary-400);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+/* WCAG 2.2.2 / 2.3.3 — honour the OS "reduce motion" preference globally:
+   the marching-ants overlay border, the connecting-status pulse, and Vue
+   route/flyout transitions all stop. Near-zero (not 0) keeps transitionend /
+   animationend listeners firing so state that depends on them still settles. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 html,
 body,
 #app {
@@ -160,17 +188,12 @@ html.overlay-window #app {
 
 /* Each extract is a divIcon — Leaflet owns the outer div (sets its own
  * position:absolute + transform:translate3d for map-relative placement);
- * we only style its children. Tailwind preflight gives <img> max-width:
- * 100% which collapses the icon to 0 inside a positioned ancestor, so
- * clear it and pin the size explicitly. */
-.leaflet-extracts-pane .extract-icon-divicon img {
+ * we only style its children. The inline SVGs carry their own width/height
+ * attributes; block layout kills the inline-baseline gap. */
+.leaflet-extracts-pane .extract-icon-divicon svg {
   display: block;
-  width: 26px;
-  height: 26px;
-  max-width: none !important;
-  max-height: none !important;
 }
-/* Multi-faction composite: clipped PNG slices stack on top of each other.
+/* Multi-faction composite: clipped SVG slices stack on top of each other.
  * `position: absolute` works because Leaflet already makes the outer div a
  * positioned ancestor; `inset: 0` stretches each slice across the 26×26
  * box, and the per-slice clip-path (inline, from SLICE_2/SLICE_3) carves
@@ -243,24 +266,15 @@ html.overlay-window #app {
 .leaflet-tooltip.extract-tooltip::before {
   display: none;
 }
+/* The neutral stripe is the multi-faction fallback; single-faction rows
+ * override border-left-color inline from FACTION_COLORS (tooltip.ts) so
+ * faction colours live in exactly one place. */
 .extract-tooltip-row {
   padding: 3px 8px 3px 9px;
   border-left: 3px solid var(--p-surface-500);
 }
 .extract-tooltip-row + .extract-tooltip-row {
   border-top: 1px solid var(--p-surface-700);
-}
-.extract-tooltip-row--pmc {
-  border-left-color: #22c55e;
-}
-.extract-tooltip-row--scav {
-  border-left-color: #eab308;
-}
-.extract-tooltip-row--shared {
-  border-left-color: #3b82f6;
-}
-.extract-tooltip-row--multi {
-  border-left-color: var(--p-surface-500);
 }
 
 .player-icon-wrapper {
