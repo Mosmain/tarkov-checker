@@ -58,6 +58,7 @@ async function openReleases(event: MouseEvent): Promise<void> {
         :href="RELEASES_URL"
         target="_blank"
         rel="noreferrer"
+        :aria-label="`${version ? `v${version}` : ''} — ${t('a11y.opensNewWindow')}`.trim()"
         class="text-surface-300 hover:underline"
         @click="openReleases"
       >

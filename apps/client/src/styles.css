@@ -74,6 +74,34 @@
   --p-font-family: 'Bender', system-ui, sans-serif;
 }
 
+/* WCAG 2.4.7 Focus Visible — keyboard focus ring for our custom (non-PrimeVue)
+   interactive elements. PrimeVue components ship their own Aura focus ring;
+   plain <a>/<button> we render (rail buttons, menu rows, banner close, links)
+   had none. `:where()` keeps specificity at 0 so any component-level focus
+   style still wins. `:focus-visible` shows it for keyboard users only. */
+@layer base {
+  :where(a, button, [tabindex]):not([class*='p-']):focus-visible {
+    outline: 2px solid var(--p-primary-400);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+/* WCAG 2.2.2 / 2.3.3 — honour the OS "reduce motion" preference globally:
+   the marching-ants overlay border, the connecting-status pulse, and Vue
+   route/flyout transitions all stop. Near-zero (not 0) keeps transitionend /
+   animationend listeners firing so state that depends on them still settles. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 html,
 body,
 #app {

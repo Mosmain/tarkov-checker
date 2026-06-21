@@ -26,6 +26,9 @@ export const useI18nStore = defineStore('i18n', () => {
     apiLang,
     (lang) => {
       void import('./index').then(({ setLocale }) => setLocale(lang));
+      // WCAG 3.1.1 Language of Page — keep <html lang> in step with the UI
+      // locale so screen readers and spell-checkers use the right language.
+      if (typeof document !== 'undefined') document.documentElement.lang = lang;
     },
     { immediate: true },
   );

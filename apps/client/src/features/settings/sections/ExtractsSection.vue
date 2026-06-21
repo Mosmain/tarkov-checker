@@ -49,6 +49,7 @@ const labelSizeOptions = computed(() => [
         option-label="label"
         option-value="value"
         :allow-empty="false"
+        :aria-label="t('labels')"
         size="small"
         fluid
       />
@@ -63,6 +64,7 @@ const labelSizeOptions = computed(() => [
         option-label="label"
         option-value="value"
         :allow-empty="false"
+        :aria-label="t('labelSize')"
         size="small"
         fluid
       />

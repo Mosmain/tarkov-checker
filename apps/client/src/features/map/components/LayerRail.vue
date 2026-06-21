@@ -131,9 +131,10 @@ function stepFloor(delta: number): void {
         class="rail-btn"
         :class="{ 'rail-btn--active': isMapOpen }"
         :aria-label="t('map')"
+        :aria-expanded="isMapOpen"
         @click="toggle('map')"
       >
-        <i class="pi pi-map" />
+        <i class="pi pi-map" aria-hidden="true" />
       </button>
       <div class="bg-surface-700 my-0.5 h-px" />
       <button
@@ -145,9 +146,10 @@ function stepFloor(delta: number): void {
         :class="{ 'rail-btn--active': openId === c.key, 'rail-btn--empty': c.layers.length === 0 }"
         :disabled="c.layers.length === 0"
         :aria-label="c.label"
+        :aria-expanded="openId === c.key"
         @click="toggle(c.key)"
       >
-        <i class="pi" :class="c.icon" />
+        <i class="pi" :class="c.icon" aria-hidden="true" />
       </button>
 
       <!-- Floor stepper (multi-floor maps): glanceable current floor + ▲/▼. -->
@@ -160,7 +162,7 @@ function stepFloor(delta: number): void {
           :aria-label="t('floor') + ' +'"
           @click="stepFloor(-1)"
         >
-          <i class="pi pi-chevron-up text-sm" />
+          <i class="pi pi-chevron-up text-sm" aria-hidden="true" />
         </button>
         <div
           v-tooltip.right="{ value: t('floorWheelHint'), disabled: openId !== null }"
@@ -175,7 +177,7 @@ function stepFloor(delta: number): void {
           :aria-label="t('floor') + ' -'"
           @click="stepFloor(1)"
         >
-          <i class="pi pi-chevron-down text-sm" />
+          <i class="pi pi-chevron-down text-sm" aria-hidden="true" />
         </button>
       </template>
 
@@ -205,6 +207,7 @@ function stepFloor(delta: number): void {
             <div class="flex items-center gap-2">
               <ToggleSwitch
                 :model-value="layerVis(l.id).value"
+                :aria-label="t(l.titleKey)"
                 @update:model-value="(v: boolean) => (layerVis(l.id).value = v)"
               />
               <span class="flex-1 truncate text-sm">{{ t(l.titleKey) }}</span>
@@ -213,10 +216,11 @@ function stepFloor(delta: number): void {
                 type="button"
                 class="hover:bg-surface-800 flex h-8 w-8 shrink-0 items-center justify-center rounded opacity-70 hover:opacity-100"
                 :class="{ 'text-primary-400 bg-surface-800 !opacity-100': expanded === l.id }"
-                :aria-label="t('settings')"
+                :aria-label="`${t(l.titleKey)} – ${t('settings')}`"
+                :aria-expanded="expanded === l.id"
                 @click="expanded = expanded === l.id ? null : l.id"
               >
-                <i class="pi pi-cog text-sm" />
+                <i class="pi pi-cog text-sm" aria-hidden="true" />
               </button>
             </div>
             <div v-if="l.settingsComponent && expanded === l.id" class="mt-2 pl-1">
@@ -234,8 +238,8 @@ function stepFloor(delta: number): void {
     v-if="locked && hasFloors"
     class="sa-bottom sa-left border-surface-700 bg-surface-900/85 absolute z-[1100] flex items-center gap-1.5 rounded-md border px-2 py-1 backdrop-blur"
   >
-    <i class="pi pi-clone text-[10px] opacity-50" />
-    <span class="text-xs font-semibold tabular-nums">{{ currentFloorLabel }}</span>
+    <i class="pi pi-clone text-[10px] opacity-50" aria-hidden="true" />
+    <span class="text-xs font-semibold tabular-nums">{{ t('floor') }} {{ currentFloorLabel }}</span>
   </div>
 </template>
 
@@ -265,6 +269,10 @@ function stepFloor(delta: number): void {
 .rail-btn:hover {
   background-color: var(--p-surface-800);
   color: var(--p-surface-0);
+}
+.rail-btn:focus-visible {
+  outline: 2px solid var(--p-primary-400);
+  outline-offset: 2px;
 }
 .rail-btn--active {
   background-color: color-mix(in srgb, var(--p-primary-500) 22%, transparent);

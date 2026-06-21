@@ -18,6 +18,8 @@ onMounted(() => {
   <!-- Hidden while click-through-locked: the banner is interactive chrome. -->
   <div
     v-if="info && !bannerDismissed && !clickThrough"
+    role="status"
+    aria-live="polite"
     class="border-surface-700 bg-surface-900/95 fixed bottom-2 left-1/2 z-[1100] flex -translate-x-1/2 items-center gap-2 rounded-lg border px-3 py-1.5 text-xs shadow-lg"
   >
     <template v-if="!installFailed">

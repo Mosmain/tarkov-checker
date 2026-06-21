@@ -15,6 +15,11 @@ build/
 **/dev-dist/
 **/coverage/
 
+# Playwright (a11y test runner)
+**/test-results/
+**/playwright-report/
+**/.playwright/
+
 # vue-router auto-generated typed routes
 **/typed-router.d.ts
 

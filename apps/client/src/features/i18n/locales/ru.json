@@ -36,6 +36,20 @@
     "quests": "Квесты"
   },
   "close": "Закрыть",
+  "retry": "Повторить",
+  "mapError": "Ошибка загрузки карты: {error}",
+  "a11y": {
+    "connectionStatus": "Состояние соединения",
+    "connection": {
+      "open": "Подключено",
+      "connecting": "Подключение",
+      "closed": "Нет связи",
+      "idle": "Ожидание"
+    },
+    "mapRegion": "{name} — интерактивная карта",
+    "selectMap": "Выбор карты",
+    "opensNewWindow": "откроется в новом окне"
+  },
   "floorWheelHint": "Уровень — Alt + колесо для смены",
   "floor": "Уровень",
   "factions": {

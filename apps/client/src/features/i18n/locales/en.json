@@ -36,6 +36,20 @@
     "quests": "Quests"
   },
   "close": "Close",
+  "retry": "Retry",
+  "mapError": "Map load error: {error}",
+  "a11y": {
+    "connectionStatus": "Connection status",
+    "connection": {
+      "open": "Connected",
+      "connecting": "Connecting",
+      "closed": "Disconnected",
+      "idle": "Idle"
+    },
+    "mapRegion": "{name} — interactive map",
+    "selectMap": "Select map",
+    "opensNewWindow": "opens in a new window"
+  },
   "floorWheelHint": "Floor — Alt + scroll to change",
   "floor": "Floor",
   "factions": {
