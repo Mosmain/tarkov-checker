@@ -81,7 +81,7 @@ async function copyUrl(): Promise<void> {
     :dismissable-mask="true"
     class="!w-[22rem] !max-w-[90vw]"
   >
-    <div v-if="error" class="text-sm text-red-400">
+    <div v-if="error" role="alert" class="text-sm text-red-400">
       <p class="font-semibold mb-1">{{ t('pairing.error') }}</p>
       <p class="opacity-80">{{ error }}</p>
     </div>
@@ -96,11 +96,12 @@ async function copyUrl(): Promise<void> {
       <div class="bg-white p-3 rounded" v-html="data.svg" />
 
       <div class="w-full">
-        <label class="block text-[10px] uppercase tracking-wider opacity-70 mb-1">
+        <label for="pairing-url" class="block text-[10px] uppercase tracking-wider opacity-70 mb-1">
           {{ t('pairing.url') }}
         </label>
         <div class="flex items-center gap-2">
           <InputText
+            id="pairing-url"
             :model-value="data.url"
             readonly
             size="small"

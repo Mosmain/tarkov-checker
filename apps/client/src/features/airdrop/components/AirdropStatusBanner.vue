@@ -68,6 +68,8 @@ const severity = computed<'info' | 'warn' | 'success'>(() => {
 <template>
   <div
     v-if="store.phase !== 'idle'"
+    role="status"
+    aria-live="polite"
     class="pointer-events-none absolute top-14 inset-x-3 z-[1000] flex justify-center"
   >
     <Message

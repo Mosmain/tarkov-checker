@@ -9,11 +9,14 @@ const emit = defineEmits<{
   (e: 'dismissMap'): void;
   (e: 'retry'): void;
 }>();
+
+const { t } = useI18n();
 </script>
 
 <template>
   <div
     v-if="mapError"
+    role="alert"
     class="pointer-events-none absolute top-14 inset-x-3 z-[1000] flex flex-col items-center gap-1"
   >
     <Message
@@ -24,8 +27,8 @@ const emit = defineEmits<{
       @close="emit('dismissMap')"
     >
       <div class="flex items-center gap-2">
-        <span>Map load error: {{ mapError }}</span>
-        <Button size="small" severity="contrast" text @click="emit('retry')">Retry</Button>
+        <span>{{ t('mapError', { error: mapError }) }}</span>
+        <Button size="small" severity="contrast" text :label="t('retry')" @click="emit('retry')" />
       </div>
     </Message>
   </div>

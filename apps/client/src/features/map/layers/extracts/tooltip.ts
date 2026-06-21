@@ -27,6 +27,31 @@ function escapeHtml(s: string): string {
  * by its own faction colour. The colour goes inline from FACTION_COLORS —
  * the single source for faction colours, no CSS twin to keep in sync.
  */
+/**
+ * Plain-text accessible name for a marker (WCAG 4.1.2 / 2.4.4) — Leaflet makes
+ * each extract a focusable role="button", so it needs a name. One clause per
+ * distinct name with its faction(s): "Dorms V-Ex (PMC); Old Road Gate (Scav)".
+ */
+export function buildAriaLabel(
+  entries: ReadonlyArray<ExtractEntry>,
+  factionLabel: (f: FactionKey) => string,
+): string {
+  const byName = new Map<string, FactionKey[]>();
+  const order: string[] = [];
+  for (const e of entries) {
+    let bucket = byName.get(e.name);
+    if (!bucket) {
+      bucket = [];
+      byName.set(e.name, bucket);
+      order.push(e.name);
+    }
+    bucket.push(e.faction);
+  }
+  return order
+    .map((name) => `${name} (${byName.get(name)!.map(factionLabel).join(', ')})`)
+    .join('; ');
+}
+
 export function buildTooltipHtml(entries: ReadonlyArray<ExtractEntry>): string {
   const factionsByName = new Map<string, FactionKey[]>();
   // Preserve first-seen name order so the layout matches FACTION_ORDER input.

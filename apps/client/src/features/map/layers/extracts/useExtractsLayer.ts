@@ -1,7 +1,7 @@
 import L, { type Marker, type LayerGroup } from 'leaflet';
 import { FACTION_COLORS, type FactionKey } from '@shared/maps';
 import { makeIcon } from './icon';
-import { buildTooltipHtml, sortedEntries, type ExtractEntry } from './tooltip';
+import { buildAriaLabel, buildTooltipHtml, sortedEntries, type ExtractEntry } from './tooltip';
 import { createEdgeIndicators, type EdgeArrow } from './useEdgeIndicators';
 import { extractsForMap } from '@/features/map/data/extracts';
 import { useMapSettingsStore } from '@/features/map/store';
@@ -70,6 +70,9 @@ export function useExtractsLayer(ctx: MapLayerContext): void {
       const filtered = effectiveEntries(entry);
       if (filtered.length > 0) {
         const factions = filtered.map((e) => e.faction);
+        // Accessible name for Leaflet's role="button" marker (WCAG 4.1.2).
+        // Set on options so _initIcon re-applies it on every setIcon rebuild.
+        entry.marker.options.title = buildAriaLabel(filtered, (f) => t(`factions.${f}`));
         entry.marker.setIcon(makeIcon(factions));
         entry.marker.unbindTooltip();
         entry.marker.bindTooltip(buildTooltipHtml(filtered), {

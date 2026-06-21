@@ -31,6 +31,12 @@ const confirmClose = useCloseConfirm();
 const mapDisplayName = ref<string>('…');
 const mapError = ref<string | null>(null);
 
+// WCAG 2.4.2 Page Titled — reflect the current map in the document title so
+// the tab/title conveys context instead of a static "RaidMate".
+watch(mapDisplayName, (name) => {
+  document.title = name && name !== '…' ? `RaidMate — ${name}` : 'RaidMate';
+});
+
 // Template ref to MapView — its imperative methods are exposed via
 // defineExpose. `?.` keeps every shortcut handler safe to call before the
 // component mounts (e.g. immediately after a `:key` swap on map change).

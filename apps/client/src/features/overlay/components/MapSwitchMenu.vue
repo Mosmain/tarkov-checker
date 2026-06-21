@@ -3,6 +3,8 @@ import { VISIBLE_MAP_CODES, type TarkovMapCode } from '@shared/maps';
 import { useMapSettingsStore } from '@/features/map/store';
 import { useMapI18n } from '@/features/map/composables/useMapI18n';
 
+const { t } = useI18n();
+
 // Right-click-the-map-name → quick map switcher. Same teleported-popup pattern
 // as MapQuickMenu (open(x,y) / outside-click / Esc / blur dismissal).
 const { mapCode } = storeToRefs(useMapSettingsStore());
@@ -63,6 +65,7 @@ defineExpose({ open, close });
         class="fixed z-[2000] max-h-[80vh] w-52 origin-top-left overflow-y-auto rounded-md border border-surface-700 bg-surface-900/95 p-1 shadow-xl backdrop-blur"
         :style="{ left: position.x + 'px', top: position.y + 'px' }"
         role="menu"
+        :aria-label="t('a11y.selectMap')"
       >
         <button
           v-for="m in maps"

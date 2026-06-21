@@ -79,6 +79,7 @@ const overlayZoomOptions = computed(() => [
         option-label="label"
         option-value="value"
         :allow-empty="false"
+        :aria-label="t('overlay.zoom')"
         size="small"
         fluid
       />

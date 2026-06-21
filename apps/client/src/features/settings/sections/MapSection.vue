@@ -29,10 +29,16 @@ const manualOpen = ref(false);
       v-if="autoMapSwitch"
       type="button"
       class="border-surface-700 hover:bg-surface-800 flex w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-left text-sm transition-colors"
+      :aria-expanded="manualOpen"
+      :aria-label="`${t('map')}: ${currentMapName}`"
       @click="manualOpen = !manualOpen"
     >
       <span class="truncate">{{ currentMapName }}</span>
-      <i class="pi text-xs opacity-60" :class="manualOpen ? 'pi-chevron-up' : 'pi-chevron-down'" />
+      <i
+        class="pi text-xs opacity-60"
+        :class="manualOpen ? 'pi-chevron-up' : 'pi-chevron-down'"
+        aria-hidden="true"
+      />
     </button>
 
     <Listbox

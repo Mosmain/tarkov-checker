@@ -41,8 +41,15 @@ onBeforeUnmount(() => {
   if (raf !== undefined) cancelAnimationFrame(raf);
 });
 
+const { t } = useI18n();
+
 // Slide down out of the way when the overlay drag bar expands; back up after.
 const { active: headerActive } = useOverlayHeaderActive();
+
+const statusText = computed(() => {
+  const key = ['open', 'connecting', 'closed'].includes(props.status ?? '') ? props.status : 'idle';
+  return `${t('a11y.connectionStatus')}: ${t(`a11y.connection.${key}`)}`;
+});
 
 const statusDotClass = computed(() => {
   switch (props.status) {
@@ -87,6 +94,6 @@ const statusDotClass = computed(() => {
         }}</span>
       </span>
     </span>
-    <span v-if="status" class="sr-only" aria-live="polite">Connection: {{ status }}</span>
+    <span v-if="status" class="sr-only" aria-live="polite">{{ statusText }}</span>
   </div>
 </template>

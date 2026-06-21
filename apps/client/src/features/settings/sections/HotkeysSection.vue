@@ -79,6 +79,7 @@ function onAction(field: keyof HotkeyConfig, combo: string): void {
         <i
           v-tooltip.left="t('hotkeys.fixed')"
           class="pi pi-lock shrink-0 text-xs opacity-40"
+          role="img"
           :aria-label="t('hotkeys.fixed')"
         />
       </div>
